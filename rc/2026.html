@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>AI 포즈모델 운반로봇 조종기</title>
+  <title>운반로봇 포즈모델 조종기</title>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
@@ -670,7 +670,7 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">Pose Drive · 2026</p>
-        <h1>AI 운반로봇 조종기</h1>
+        <h1>운반로봇 포즈모델 조종기</h1>
       </div>
       <div id="systemChip" class="system-chip" role="status">시스템 확인</div>
     </header>
@@ -770,6 +770,7 @@
             <div class="setting-head">
               <label class="setting-label" for="speedSteps">속도 단계</label>
               <select id="speedSteps">
+                <option value="1">1단계</option>
                 <option value="2">2단계</option>
                 <option value="3">3단계</option>
                 <option value="4">4단계</option>
@@ -1014,7 +1015,7 @@
         return {
           stopDeadzone: clampNumber(value.stopDeadzone, 0.18, 0.45, DEFAULT_SETTINGS.stopDeadzone),
           speedSensitivity: clampNumber(value.speedSensitivity, 0.5, 2, DEFAULT_SETTINGS.speedSensitivity),
-          speedSteps: Math.round(clampNumber(value.speedSteps, 2, 5, DEFAULT_SETTINGS.speedSteps)),
+          speedSteps: Math.round(clampNumber(value.speedSteps, 1, 5, DEFAULT_SETTINGS.speedSteps)),
           steeringDeadzone: Math.round(clampNumber(value.steeringDeadzone, 5, 35, DEFAULT_SETTINGS.steeringDeadzone)),
           invertSteering: Boolean(value.invertSteering),
           invertDrive: Boolean(value.invertDrive),
