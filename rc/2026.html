@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0b0d10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>AI 포즈모델 운반로봇 조종기</title>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d10;
+      --surface: #13171c;
+      --surface-raised: #191e24;
+      --surface-soft: #101419;
+      --line: #29313a;
+      --line-strong: #38434f;
+      --text: #f4f7fa;
+      --muted: #909ba7;
+      --accent: #48dfb5;
+      --accent-strong: #20c997;
+      --blue: #74a7ff;
+      --amber: #ffca68;
+      --red: #ff7474;
+      --radius-lg: 22px;
+      --radius-md: 15px;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: max(18px, env(safe-area-inset-top)) 14px max(22px, env(safe-area-inset-bottom));
+      overscroll-behavior: none;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    .app-shell {
+      width: min(100%, 520px);
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+      padding: 4px 2px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(1.35rem, 6vw, 1.8rem);
+      letter-spacing: -0.045em;
+      line-height: 1.15;
+    }
+
+    .system-chip {
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      gap: 7px;
+      min-height: 34px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.73rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .system-chip::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      content: "";
+    }
+
+    .system-chip.online {
+      border-color: rgba(72, 223, 181, 0.32);
+      color: var(--accent);
+    }
+
+    .system-chip.online::before {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(72, 223, 181, 0.1);
+    }
+
+    .system-chip.warning {
+      border-color: rgba(255, 202, 104, 0.32);
+      color: var(--amber);
+    }
+
+    .system-chip.warning::before {
+      background: var(--amber);
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .control-bar {
+      display: grid;
+      grid-template-columns: 1fr minmax(0, 1fr) 48px;
+      gap: 9px;
+      padding: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .button {
+      min-height: 48px;
+      border: 1px solid transparent;
+      border-radius: 13px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 800;
+      transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease;
+    }
+
+    .button:active:not(:disabled) {
+      transform: scale(0.975);
+    }
+
+    .button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .button-primary {
+      background: var(--accent);
+      color: #05130f;
+    }
+
+    .button-secondary {
+      border-color: var(--line-strong);
+      background: var(--surface-raised);
+      color: var(--text);
+    }
+
+    .button-secondary.connected {
+      border-color: rgba(72, 223, 181, 0.42);
+      color: var(--accent);
+    }
+
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      min-width: 48px;
+      padding: 0;
+      border-color: var(--line-strong);
+      background: var(--surface-raised);
+      color: var(--text);
+      font-size: 1.18rem;
+    }
+
+    .camera-stage {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      background: #07090b;
+      overflow: hidden;
+    }
+
+    video {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .stage-badge {
+      position: absolute;
+      top: 13px;
+      left: 13px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 999px;
+      background: rgba(7, 9, 11, 0.78);
+      backdrop-filter: blur(10px);
+      color: #dbe2e8;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+
+    .stage-badge::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--amber);
+      content: "";
+    }
+
+    .stage-badge.live::before {
+      background: var(--accent);
+    }
+
+    .stage-help {
+      position: absolute;
+      right: 13px;
+      bottom: 13px;
+      left: 13px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: rgba(7, 9, 11, 0.78);
+      color: #b8c1ca;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .status-section {
+      padding: 15px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 11px;
+    }
+
+    .section-heading h2 {
+      font-size: 0.82rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section-note {
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      min-width: 0;
+      min-height: 72px;
+      padding: 11px 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-soft);
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+
+    .metric-value {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 850;
+      letter-spacing: -0.025em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .metric-value.accent {
+      color: var(--accent);
+    }
+
+    .log-section {
+      margin-top: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .log-header h2 {
+      font-size: 0.8rem;
+    }
+
+    .text-button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-weight: 750;
+    }
+
+    .log-panel {
+      max-height: 172px;
+      overflow-y: auto;
+      padding: 6px 14px 10px;
+      scrollbar-width: thin;
+    }
+
+    .log-item {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 8px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(41, 49, 58, 0.66);
+      color: #c5cdd5;
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .log-item:last-child {
+      border-bottom: 0;
+    }
+
+    .log-time {
+      color: #67727e;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer {
+      padding: 22px 10px 6px;
+      color: #66717c;
+      font-size: 0.68rem;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      align-items: end;
+      padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+    }
+
+    .settings-modal {
+      width: min(100%, 520px);
+      max-height: min(88vh, 760px);
+      margin: 0 auto;
+      border: 1px solid var(--line-strong);
+      border-radius: 24px;
+      background: #15191e;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      animation: modal-up 180ms ease-out;
+    }
+
+    @keyframes modal-up {
+      from { transform: translateY(18px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 17px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-header h2 {
+      font-size: 1rem;
+    }
+
+    .modal-close {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface-raised);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.15rem;
+    }
+
+    .settings-body {
+      max-height: calc(min(88vh, 760px) - 132px);
+      overflow-y: auto;
+      padding: 5px 18px 18px;
+    }
+
+    .settings-group {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .settings-group:last-child {
+      border-bottom: 0;
+    }
+
+    .settings-group-title {
+      margin-bottom: 13px;
+      color: var(--blue);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .setting-row + .setting-row {
+      margin-top: 16px;
+    }
+
+    .setting-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .setting-label {
+      font-size: 0.81rem;
+      font-weight: 750;
+    }
+
+    .setting-value {
+      min-width: 52px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .setting-description {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.45;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 22px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    select {
+      width: 104px;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .switch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 46px;
+      height: 27px;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: #242b33;
+      cursor: pointer;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .switch-track::after {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: #a5afb9;
+      content: "";
+      transition: transform 150ms ease, background-color 150ms ease;
+    }
+
+    .switch input:checked + .switch-track {
+      border-color: var(--accent-strong);
+      background: var(--accent-strong);
+    }
+
+    .switch input:checked + .switch-track::after {
+      background: #06120f;
+      transform: translateX(19px);
+    }
+
+    .switch input:focus-visible + .switch-track {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 0.8fr 1fr;
+      gap: 9px;
+      padding: 12px 18px max(12px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: #15191e;
+    }
+
+    .reset-button {
+      margin-right: auto;
+      color: var(--red);
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: max(18px, env(safe-area-inset-bottom));
+      left: 16px;
+      z-index: 40;
+      width: min(calc(100% - 32px), 440px);
+      margin: 0 auto;
+      padding: 13px 15px;
+      border: 1px solid var(--line-strong);
+      border-radius: 13px;
+      background: #20262d;
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.45);
+      color: var(--text);
+      font-size: 0.77rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    @media (min-width: 560px) {
+      body {
+        padding-top: 32px;
+      }
+
+      .modal-backdrop {
+        align-items: center;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .control-bar {
+        grid-template-columns: 1fr 1fr 46px;
+        gap: 7px;
+        padding: 10px;
+      }
+
+      .button {
+        min-height: 46px;
+        font-size: 0.78rem;
+      }
+
+      .icon-button {
+        width: 46px;
+        min-width: 46px;
+      }
+
+      .status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Pose Drive · 2026</p>
+        <h1>AI 운반로봇 조종기</h1>
+      </div>
+      <div id="systemChip" class="system-chip" role="status">시스템 확인</div>
+    </header>
+
+    <section class="panel" aria-label="로봇 조종기">
+      <div class="control-bar">
+        <button id="connectBtn" class="button button-secondary" type="button">BLE 연결</button>
+        <button id="cameraBtn" class="button button-primary" type="button">카메라 시작</button>
+        <button id="settingsBtn" class="button icon-button" type="button" aria-label="조종기 설정 열기" title="설정">⚙</button>
+      </div>
+
+      <div class="camera-stage" aria-label="전면 카메라 포즈 인식 화면">
+        <video id="videoElement" autoplay muted playsinline></video>
+        <canvas id="canvasElement" width="480" height="640"></canvas>
+        <div id="stageBadge" class="stage-badge">카메라 대기</div>
+        <div id="stageHelp" class="stage-help">BLE 연결 없이도 카메라를 시작해 포즈와 전송 신호를 테스트할 수 있습니다.</div>
+      </div>
+
+      <section class="status-section" aria-labelledby="statusTitle">
+        <div class="section-heading">
+          <h2 id="statusTitle">실시간 제어 상태</h2>
+          <span id="controlContext" class="section-note">오프라인 테스트 가능</span>
+        </div>
+        <div class="status-grid">
+          <div class="metric">
+            <span class="metric-label">주행 모드</span>
+            <strong id="modeStatus" class="metric-value">대기</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">속도 단계</span>
+            <strong id="speedStatus" class="metric-value">0 / 5</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">방향</span>
+            <strong id="directionStatus" class="metric-value">직진</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">두 주먹 거리</span>
+            <strong id="distanceStatus" class="metric-value">0.00</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">그리퍼</span>
+            <strong id="gripperStatus" class="metric-value">대기</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">최근 신호</span>
+            <strong id="signalStatus" class="metric-value accent">—</strong>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="log-section" aria-labelledby="logTitle">
+      <div class="log-header">
+        <h2 id="logTitle">신호 로그</h2>
+        <button id="clearLogBtn" class="text-button" type="button">로그 지우기</button>
+      </div>
+      <div id="logPanel" class="log-panel" role="log" aria-live="polite"></div>
+    </section>
+
+    <footer class="footer">
+      2026 Teacher Hong, Dept. of Robotics Mechanical Design,<br>
+      Seoul Robotics Highschool
+    </footer>
+  </main>
+
+  <div id="settingsBackdrop" class="modal-backdrop" hidden>
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header class="modal-header">
+        <h2 id="settingsTitle">조종기 설정</h2>
+        <button id="closeSettingsBtn" class="modal-close" type="button" aria-label="설정 닫기">×</button>
+      </header>
+
+      <div class="settings-body">
+        <div class="settings-group">
+          <h3 class="settings-group-title">Drive</h3>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="stopDeadzone">정지/출발 데드존</label>
+              <output id="stopDeadzoneValue" class="setting-value" for="stopDeadzone"></output>
+            </div>
+            <input id="stopDeadzone" type="range" min="0.18" max="0.45" step="0.01">
+            <p class="setting-description">값이 클수록 두 주먹을 더 멀리 벌려야 출발합니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="speedSensitivity">속도 민감도</label>
+              <output id="speedSensitivityValue" class="setting-value" for="speedSensitivity"></output>
+            </div>
+            <input id="speedSensitivity" type="range" min="0.5" max="2" step="0.1">
+            <p class="setting-description">값이 높을수록 작은 거리 변화에도 빠르게 가속합니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="speedSteps">속도 단계</label>
+              <select id="speedSteps">
+                <option value="2">2단계</option>
+                <option value="3">3단계</option>
+                <option value="4">4단계</option>
+                <option value="5">5단계</option>
+              </select>
+            </div>
+            <p class="setting-description">아두이노에 전송할 증속/감속 단계의 최대값입니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="steeringDeadzone">조향 데드존</label>
+              <output id="steeringDeadzoneValue" class="setting-value" for="steeringDeadzone"></output>
+            </div>
+            <input id="steeringDeadzone" type="range" min="5" max="35" step="1">
+            <p class="setting-description">수평에 가까운 손 떨림을 직진으로 처리하는 각도입니다.</p>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">좌/우 신호 반전</div>
+              <p class="setting-description">화면의 좌회전·우회전 신호를 서로 바꿉니다.</p>
+            </div>
+            <label class="switch">
+              <input id="invertSteering" type="checkbox" aria-label="좌우 신호 반전">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">전진/후진 신호 반전</div>
+              <p class="setting-description">전진 2와 후진 8 신호를 서로 바꿉니다.</p>
+            </div>
+            <label class="switch">
+              <input id="invertDrive" type="checkbox" aria-label="전후진 신호 반전">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">Vision</h3>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="winkSensitivity">윙크 민감도</label>
+              <output id="winkSensitivityValue" class="setting-value" for="winkSensitivity"></output>
+            </div>
+            <input id="winkSensitivity" type="range" min="1" max="10" step="1">
+            <p class="setting-description">오른쪽 눈 윙크는 그리퍼 열기(9), 왼쪽 눈 윙크는 닫기(7)입니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="winkHold">윙크 유지 시간</label>
+              <output id="winkHoldValue" class="setting-value" for="winkHold"></output>
+            </div>
+            <input id="winkHold" type="range" min="250" max="1000" step="50">
+            <p class="setting-description">짧은 눈 깜빡임이 임무 신호로 잘못 인식되는 것을 막습니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="poseConfidence">포즈 인식 신뢰도</label>
+              <output id="poseConfidenceValue" class="setting-value" for="poseConfidence"></output>
+            </div>
+            <input id="poseConfidence" type="range" min="0.30" max="0.80" step="0.05">
+            <p class="setting-description">오인식을 줄이려면 높이고, 어두운 환경에서는 낮춰 보세요.</p>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">Device</h3>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">신호 진동 피드백</div>
+              <p class="setting-description">지원하는 스마트폰에서 조종 신호가 바뀔 때 짧게 진동합니다.</p>
+            </div>
+            <label class="switch">
+              <input id="haptics" type="checkbox" aria-label="진동 피드백">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">화면 자동 꺼짐 방지</div>
+              <p class="setting-description">카메라 제어 중 지원되는 브라우저에서 화면을 켜 둡니다.</p>
+            </div>
+            <label class="switch">
+              <input id="keepAwake" type="checkbox" aria-label="화면 자동 꺼짐 방지">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <button id="resetSettingsBtn" class="text-button reset-button setting-row" type="button">기본 설정으로 초기화</button>
+        </div>
+      </div>
+
+      <footer class="modal-actions">
+        <button id="cancelSettingsBtn" class="button button-secondary" type="button">취소</button>
+        <button id="saveSettingsBtn" class="button button-primary" type="button">설정 저장</button>
+      </footer>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SERVICE_UUID = "00c0ffee-1234-1234-1234-123456789abc";
+      const CHARACTERISTIC_UUID = "00c0ffee-4321-4321-4321-cba987654321";
+      const STORAGE_KEY = "srh-pose-controller-settings-v2";
+      const DEVICE_KEY = "srh-pose-controller-device-id";
+      const POSE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/";
+      const FACE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
+      const MAX_DISTANCE = 0.9;
+
+      const COMMANDS = Object.freeze({
+        forward: { code: "2", label: "전진" },
+        backward: { code: "8", label: "후진" },
+        stop: { code: "5", label: "정지" },
+        speedUp: { code: "3", label: "속도 증가" },
+        speedDown: { code: "1", label: "속도 감소" },
+        left: { code: "4", label: "좌회전" },
+        right: { code: "6", label: "우회전" },
+        gripperClose: { code: "7", label: "그리퍼 닫기" },
+        gripperOpen: { code: "9", label: "그리퍼 열기" }
+      });
+
+      const DEFAULT_SETTINGS = Object.freeze({
+        stopDeadzone: 0.30,
+        speedSensitivity: 1.0,
+        speedSteps: 5,
+        steeringDeadzone: 15,
+        invertSteering: false,
+        invertDrive: false,
+        winkSensitivity: 5,
+        winkHold: 500,
+        poseConfidence: 0.50,
+        haptics: true,
+        keepAwake: true
+      });
+
+      const state = {
+        settings: { ...DEFAULT_SETTINGS },
+        bleDevice: null,
+        bleCharacteristic: null,
+        connecting: false,
+        manualDisconnect: false,
+        reconnectAttempts: 0,
+        reconnectTimer: null,
+        writeChain: Promise.resolve(),
+        cameraStream: null,
+        cameraRunning: false,
+        processingFrame: false,
+        animationFrame: 0,
+        frameCount: 0,
+        frameErrors: 0,
+        pose: null,
+        faceMesh: null,
+        faceResults: null,
+        lastFaceAt: 0,
+        smoothedWrists: null,
+        poseLostAt: 0,
+        motion: "stop",
+        speed: 0,
+        steering: "straight",
+        wakeLock: null,
+        toastTimer: null,
+        wink: {
+          left: { startedAt: 0, fired: false },
+          right: { startedAt: 0, fired: false }
+        }
+      };
+
+      const el = {};
+      const encoder = new TextEncoder();
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        [
+          "connectBtn", "cameraBtn", "settingsBtn", "systemChip", "videoElement", "canvasElement",
+          "stageBadge", "stageHelp", "controlContext", "modeStatus", "speedStatus", "directionStatus",
+          "distanceStatus", "gripperStatus", "signalStatus", "logPanel", "clearLogBtn", "settingsBackdrop",
+          "closeSettingsBtn", "cancelSettingsBtn", "saveSettingsBtn", "resetSettingsBtn", "toast"
+        ].forEach((id) => { el[id] = document.getElementById(id); });
+
+        el.canvasContext = el.canvasElement.getContext("2d", { alpha: false });
+        state.settings = loadSettings();
+        bindEvents();
+        populateSettingsForm(state.settings);
+        updateAllSettingOutputs();
+        updateControlStatus("대기", 0, "직진");
+        drawPlaceholder();
+        addLog("카메라 단독 테스트 또는 BLE 연결을 시작하세요.");
+        checkCapabilities();
+        restoreKnownDevice();
+      }
+
+      function bindEvents() {
+        el.connectBtn.addEventListener("click", handleConnectButton);
+        el.cameraBtn.addEventListener("click", toggleCamera);
+        el.settingsBtn.addEventListener("click", openSettings);
+        el.closeSettingsBtn.addEventListener("click", closeSettings);
+        el.cancelSettingsBtn.addEventListener("click", closeSettings);
+        el.saveSettingsBtn.addEventListener("click", saveSettingsFromForm);
+        el.resetSettingsBtn.addEventListener("click", resetSettingsForm);
+        el.clearLogBtn.addEventListener("click", () => {
+          el.logPanel.replaceChildren();
+          addLog("로그를 초기화했습니다.");
+        });
+        el.settingsBackdrop.addEventListener("click", (event) => {
+          if (event.target === el.settingsBackdrop) closeSettings();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !el.settingsBackdrop.hidden) closeSettings();
+        });
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("pagehide", handlePageHide);
+
+        ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence"]
+          .forEach((id) => document.getElementById(id).addEventListener("input", updateAllSettingOutputs));
+      }
+
+      function loadSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          return sanitizeSettings({ ...DEFAULT_SETTINGS, ...saved });
+        } catch (error) {
+          addConsoleError("설정 불러오기 실패", error);
+          return { ...DEFAULT_SETTINGS };
+        }
+      }
+
+      function sanitizeSettings(value) {
+        return {
+          stopDeadzone: clampNumber(value.stopDeadzone, 0.18, 0.45, DEFAULT_SETTINGS.stopDeadzone),
+          speedSensitivity: clampNumber(value.speedSensitivity, 0.5, 2, DEFAULT_SETTINGS.speedSensitivity),
+          speedSteps: Math.round(clampNumber(value.speedSteps, 2, 5, DEFAULT_SETTINGS.speedSteps)),
+          steeringDeadzone: Math.round(clampNumber(value.steeringDeadzone, 5, 35, DEFAULT_SETTINGS.steeringDeadzone)),
+          invertSteering: Boolean(value.invertSteering),
+          invertDrive: Boolean(value.invertDrive),
+          winkSensitivity: Math.round(clampNumber(value.winkSensitivity, 1, 10, DEFAULT_SETTINGS.winkSensitivity)),
+          winkHold: Math.round(clampNumber(value.winkHold, 250, 1000, DEFAULT_SETTINGS.winkHold)),
+          poseConfidence: clampNumber(value.poseConfidence, 0.3, 0.8, DEFAULT_SETTINGS.poseConfidence),
+          haptics: Boolean(value.haptics),
+          keepAwake: Boolean(value.keepAwake)
+        };
+      }
+
+      function clampNumber(value, min, max, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+      }
+
+      function openSettings() {
+        populateSettingsForm(state.settings);
+        updateAllSettingOutputs();
+        el.settingsBackdrop.hidden = false;
+        document.body.classList.add("modal-open");
+        requestAnimationFrame(() => document.getElementById("stopDeadzone").focus());
+      }
+
+      function closeSettings() {
+        el.settingsBackdrop.hidden = true;
+        document.body.classList.remove("modal-open");
+        el.settingsBtn.focus({ preventScroll: true });
+      }
+
+      function populateSettingsForm(settings) {
+        Object.entries(settings).forEach(([key, value]) => {
+          const input = document.getElementById(key);
+          if (!input) return;
+          if (input.type === "checkbox") input.checked = value;
+          else input.value = String(value);
+        });
+      }
+
+      function readSettingsForm() {
+        return sanitizeSettings({
+          stopDeadzone: document.getElementById("stopDeadzone").value,
+          speedSensitivity: document.getElementById("speedSensitivity").value,
+          speedSteps: document.getElementById("speedSteps").value,
+          steeringDeadzone: document.getElementById("steeringDeadzone").value,
+          invertSteering: document.getElementById("invertSteering").checked,
+          invertDrive: document.getElementById("invertDrive").checked,
+          winkSensitivity: document.getElementById("winkSensitivity").value,
+          winkHold: document.getElementById("winkHold").value,
+          poseConfidence: document.getElementById("poseConfidence").value,
+          haptics: document.getElementById("haptics").checked,
+          keepAwake: document.getElementById("keepAwake").checked
+        });
+      }
+
+      function updateAllSettingOutputs() {
+        const value = (id) => document.getElementById(id).value;
+        document.getElementById("stopDeadzoneValue").textContent = Number(value("stopDeadzone")).toFixed(2);
+        document.getElementById("speedSensitivityValue").textContent = Number(value("speedSensitivity")).toFixed(1) + "×";
+        document.getElementById("steeringDeadzoneValue").textContent = value("steeringDeadzone") + "°";
+        document.getElementById("winkSensitivityValue").textContent = value("winkSensitivity") + " / 10";
+        document.getElementById("winkHoldValue").textContent = value("winkHold") + " ms";
+        document.getElementById("poseConfidenceValue").textContent = Math.round(Number(value("poseConfidence")) * 100) + "%";
+      }
+
+      function saveSettingsFromForm() {
+        state.settings = readSettingsForm();
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.settings));
+        } catch (error) {
+          addConsoleError("설정 저장 실패", error);
+        }
+        applyModelSettings();
+        updateControlStatus(modeLabel(state.motion), state.speed, steeringLabel(state.steering));
+        if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
+        if (!state.settings.keepAwake) releaseWakeLock();
+        closeSettings();
+        showToast("설정을 이 기기에 저장했습니다.");
+        addLog("조종기 설정을 저장했습니다.");
+      }
+
+      function resetSettingsForm() {
+        populateSettingsForm(DEFAULT_SETTINGS);
+        updateAllSettingOutputs();
+        showToast("기본값을 불러왔습니다. 저장을 눌러 적용하세요.");
+      }
+
+      async function checkCapabilities() {
+        if (!window.isSecureContext) {
+          setSystemStatus("HTTPS 연결 필요", "warning");
+          el.connectBtn.disabled = true;
+          addLog("BLE와 카메라는 HTTPS 주소에서 실행해야 합니다.");
+          return;
+        }
+
+        if (!("mediaDevices" in navigator) || !("getUserMedia" in navigator.mediaDevices)) {
+          el.cameraBtn.disabled = true;
+          addLog("이 브라우저는 카메라 API를 지원하지 않습니다.");
+        }
+
+        if (!("bluetooth" in navigator)) {
+          setSystemStatus("BLE 미지원", "warning");
+          el.connectBtn.disabled = true;
+          el.connectBtn.textContent = "BLE 미지원";
+          addLog("BLE 미지원 브라우저입니다. Android Chrome/Edge 또는 iPhone Bluefy를 사용하세요.");
+          return;
+        }
+
+        try {
+          const available = typeof navigator.bluetooth.getAvailability === "function"
+            ? await navigator.bluetooth.getAvailability()
+            : true;
+          if (!available) {
+            setSystemStatus("Bluetooth 꺼짐", "warning");
+            addLog("스마트폰 Bluetooth를 켠 뒤 연결 버튼을 다시 누르세요.");
+          } else {
+            setSystemStatus("준비됨", "");
+          }
+        } catch (error) {
+          setSystemStatus("준비됨", "");
+        }
+      }
+
+      async function restoreKnownDevice() {
+        if (!("bluetooth" in navigator) || typeof navigator.bluetooth.getDevices !== "function") return;
+        try {
+          const savedId = localStorage.getItem(DEVICE_KEY);
+          if (!savedId) return;
+          const devices = await navigator.bluetooth.getDevices();
+          const known = devices.find((device) => device.id === savedId);
+          if (known) {
+            prepareBleDevice(known);
+            el.connectBtn.textContent = "BLE 재연결";
+            addLog("이전에 허용한 BLE 장치를 찾았습니다.");
+          }
+        } catch (error) {
+          addConsoleError("저장 장치 확인 실패", error);
+        }
+      }
+
+      async function handleConnectButton() {
+        if (state.bleDevice?.gatt?.connected) {
+          disconnectBLE();
+          return;
+        }
+
+        if (!("bluetooth" in navigator)) {
+          showToast("이 브라우저에서는 Web Bluetooth를 사용할 수 없습니다.");
+          return;
+        }
+
+        el.connectBtn.disabled = true;
+        el.connectBtn.textContent = "연결 중…";
+        state.manualDisconnect = false;
+
+        try {
+          let device = state.bleDevice;
+          if (!device) {
+            device = await navigator.bluetooth.requestDevice({
+              acceptAllDevices: true,
+              optionalServices: [SERVICE_UUID]
+            });
+            prepareBleDevice(device);
+            try { localStorage.setItem(DEVICE_KEY, device.id); } catch (error) { /* 저장 불가 시 연결은 계속 */ }
+          }
+          await connectGatt(device, 3);
+        } catch (error) {
+          handleBleError(error);
+        } finally {
+          el.connectBtn.disabled = false;
+          updateBleUi();
+        }
+      }
+
+      function prepareBleDevice(device) {
+        if (state.bleDevice && state.bleDevice !== device) {
+          state.bleDevice.removeEventListener("gattserverdisconnected", handleGattDisconnected);
+        }
+        state.bleDevice = device;
+        device.removeEventListener("gattserverdisconnected", handleGattDisconnected);
+        device.addEventListener("gattserverdisconnected", handleGattDisconnected);
+      }
+
+      async function connectGatt(device, attempts = 1) {
+        let lastError;
+        state.connecting = true;
+        try {
+          for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            try {
+              const server = device.gatt.connected ? device.gatt : await device.gatt.connect();
+              const service = await server.getPrimaryService(SERVICE_UUID);
+              state.bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+              state.reconnectAttempts = 0;
+              setSystemStatus("BLE 연결됨", "online");
+              updateBleUi();
+              addLog(`BLE 연결 성공 · ${device.name || "이름 없는 장치"}`);
+              await transmitCommand(COMMANDS.stop, { forceLog: true });
+              return;
+            } catch (error) {
+              lastError = error;
+              state.bleCharacteristic = null;
+              if (device.gatt.connected) device.gatt.disconnect();
+              if (attempt < attempts) await delay(350 * attempt);
+            }
+          }
+        } finally {
+          state.connecting = false;
+        }
+        throw lastError;
+      }
+
+      function disconnectBLE() {
+        state.manualDisconnect = true;
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = null;
+        state.bleCharacteristic = null;
+        if (state.bleDevice?.gatt?.connected) state.bleDevice.gatt.disconnect();
+        setSystemStatus("준비됨", "");
+        updateBleUi();
+        addLog("BLE 연결을 해제했습니다. 카메라는 테스트 모드로 계속 사용할 수 있습니다.");
+      }
+
+      function handleGattDisconnected() {
+        state.bleCharacteristic = null;
+        updateBleUi();
+        setSystemStatus("BLE 연결 끊김", "warning");
+        addLog("BLE 연결이 끊겼습니다.");
+
+        if (state.connecting || state.manualDisconnect || !state.bleDevice || state.reconnectAttempts >= 3) return;
+        state.reconnectAttempts += 1;
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = setTimeout(async () => {
+          try {
+            addLog(`BLE 자동 재연결 시도 ${state.reconnectAttempts}/3`);
+            await connectGatt(state.bleDevice, 1);
+          } catch (error) {
+            if (state.reconnectAttempts < 3) handleGattDisconnected();
+            else addLog("자동 재연결을 중단했습니다. BLE 연결 버튼을 눌러 다시 시도하세요.");
+          }
+        }, 900 * state.reconnectAttempts);
+      }
+
+      function handleBleError(error) {
+        const name = error?.name || "Error";
+        let message = "BLE 연결에 실패했습니다.";
+        if (name === "NotFoundError") message = "장치 선택이 취소되었거나 주변에서 장치를 찾지 못했습니다.";
+        else if (name === "SecurityError") message = "BLE 권한이 차단되었습니다. HTTPS 주소와 브라우저 권한을 확인하세요.";
+        else if (name === "NetworkError") message = "GATT 연결에 실패했습니다. 다른 앱의 BLE 연결을 끊고 다시 시도하세요.";
+        else if (name === "NotSupportedError") message = "선택한 장치에서 필요한 BLE 서비스 또는 쓰기 특성을 찾지 못했습니다.";
+        else if (error?.message) message += " " + error.message;
+        addLog(message);
+        showToast(message);
+        setSystemStatus("BLE 연결 실패", "warning");
+      }
+
+      function updateBleUi() {
+        const connected = Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
+        el.connectBtn.classList.toggle("connected", connected);
+        el.connectBtn.textContent = connected ? "BLE 해제" : (state.bleDevice ? "BLE 재연결" : "BLE 연결");
+        el.controlContext.textContent = connected ? "아두이노 실시간 전송" : "오프라인 신호 테스트";
+        if (state.cameraRunning) {
+          el.stageBadge.textContent = connected ? "실기 제어 중" : "오프라인 테스트 중";
+          el.stageBadge.classList.toggle("live", connected);
+        }
+      }
+
+      function transmitCommand(command, options = {}) {
+        const connectedAtQueueTime = Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
+        el.signalStatus.textContent = `${command.code} · ${command.label}`;
+
+        if (!connectedAtQueueTime) {
+          if (options.forceLog || options.logOffline !== false) addLog(`TEST · 신호 ${command.code} (${command.label})`);
+          pulseHaptic();
+          return Promise.resolve(false);
+        }
+
+        state.writeChain = state.writeChain
+          .catch(() => undefined)
+          .then(async () => {
+            const characteristic = state.bleCharacteristic;
+            if (!characteristic || !state.bleDevice?.gatt?.connected) return false;
+            const payload = encoder.encode(command.code + "\n");
+            if (characteristic.properties?.writeWithoutResponse && typeof characteristic.writeValueWithoutResponse === "function") {
+              await characteristic.writeValueWithoutResponse(payload);
+            } else if (characteristic.properties?.write && typeof characteristic.writeValueWithResponse === "function") {
+              await characteristic.writeValueWithResponse(payload);
+            } else if (typeof characteristic.writeValue === "function") {
+              await characteristic.writeValue(payload);
+            } else {
+              throw new Error("쓰기 가능한 BLE 특성이 아닙니다.");
+            }
+            addLog(`TX · 신호 ${command.code} (${command.label})`);
+            pulseHaptic();
+            return true;
+          })
+          .catch((error) => {
+            addLog(`BLE 전송 실패 · ${error.message || error}`);
+            if (!state.bleDevice?.gatt?.connected) handleGattDisconnected();
+            return false;
+          });
+
+        return state.writeChain;
+      }
+
+      async function toggleCamera() {
+        if (state.cameraRunning) {
+          stopCamera();
+          return;
+        }
+        await startCamera();
+      }
+
+      async function startCamera() {
+        if (!window.isSecureContext) {
+          showToast("카메라는 HTTPS로 접속했을 때만 사용할 수 있습니다.");
+          return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          showToast("이 브라우저는 카메라를 지원하지 않습니다.");
+          return;
+        }
+
+        el.cameraBtn.disabled = true;
+        el.cameraBtn.textContent = "준비 중…";
+
+        try {
+          let stream;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                facingMode: { ideal: "user" },
+                width: { ideal: 480, max: 720 },
+                height: { ideal: 640, max: 960 },
+                frameRate: { ideal: 20, max: 30 }
+              }
+            });
+          } catch (error) {
+            if (error?.name !== "OverconstrainedError") throw error;
+            stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } });
+          }
+
+          state.cameraStream = stream;
+          el.videoElement.srcObject = stream;
+          await el.videoElement.play();
+          await initializeModels();
+
+          const width = el.videoElement.videoWidth || 480;
+          const height = el.videoElement.videoHeight || 640;
+          el.canvasElement.width = width;
+          el.canvasElement.height = height;
+          state.cameraRunning = true;
+          state.frameCount = 0;
+          state.frameErrors = 0;
+          state.poseLostAt = 0;
+          state.smoothedWrists = null;
+          el.cameraBtn.textContent = "카메라 종료";
+          el.stageHelp.hidden = true;
+          updateBleUi();
+          if (!state.bleCharacteristic) {
+            el.stageBadge.textContent = "오프라인 테스트 중";
+            el.stageBadge.classList.remove("live");
+          }
+          addLog(state.bleCharacteristic ? "카메라 제어를 시작했습니다." : "카메라 테스트를 시작했습니다. 신호는 로그에만 표시됩니다.");
+          if (state.settings.keepAwake) requestWakeLock();
+          state.animationFrame = requestAnimationFrame(processVideoFrame);
+        } catch (error) {
+          cleanupCameraStream();
+          const message = cameraErrorMessage(error);
+          addLog(message);
+          showToast(message);
+          drawPlaceholder();
+        } finally {
+          el.cameraBtn.disabled = false;
+          if (!state.cameraRunning) el.cameraBtn.textContent = "카메라 시작";
+        }
+      }
+
+      async function initializeModels() {
+        if (typeof window.Pose !== "function" || typeof window.FaceMesh !== "function") {
+          throw new Error("포즈 모델 파일을 불러오지 못했습니다. 인터넷 연결을 확인하세요.");
+        }
+
+        if (!state.pose) {
+          state.pose = new Pose({ locateFile: (file) => POSE_ASSET_BASE + file });
+          state.pose.onResults(onPoseResults);
+        }
+        if (!state.faceMesh) {
+          state.faceMesh = new FaceMesh({ locateFile: (file) => FACE_ASSET_BASE + file });
+          state.faceMesh.onResults(onFaceResults);
+        }
+        applyModelSettings();
+      }
+
+      function applyModelSettings() {
+        if (state.pose) {
+          state.pose.setOptions({
+            modelComplexity: 0,
+            smoothLandmarks: true,
+            enableSegmentation: false,
+            selfieMode: false,
+            minDetectionConfidence: state.settings.poseConfidence,
+            minTrackingConfidence: state.settings.poseConfidence
+          });
+        }
+        if (state.faceMesh) {
+          state.faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: state.settings.poseConfidence,
+            minTrackingConfidence: state.settings.poseConfidence
+          });
+        }
+      }
+
+      async function processVideoFrame() {
+        if (!state.cameraRunning) return;
+        if (state.processingFrame || el.videoElement.readyState < 2) {
+          state.animationFrame = requestAnimationFrame(processVideoFrame);
+          return;
+        }
+
+        state.processingFrame = true;
+        try {
+          await state.pose.send({ image: el.videoElement });
+          state.frameCount += 1;
+          if (state.frameCount % 2 === 0) await state.faceMesh.send({ image: el.videoElement });
+          state.frameErrors = 0;
+        } catch (error) {
+          state.frameErrors += 1;
+          if (state.frameErrors === 1) addLog("영상 분석을 다시 시도하고 있습니다.");
+          if (state.frameErrors >= 8) {
+            addLog("영상 분석을 중단했습니다. 카메라를 다시 시작하세요.");
+            stopCamera();
+            return;
+          }
+        } finally {
+          state.processingFrame = false;
+        }
+
+        if (state.cameraRunning) state.animationFrame = requestAnimationFrame(processVideoFrame);
+      }
+
+      function onPoseResults(results) {
+        if (!state.cameraRunning) return;
+        drawCameraFrame(results);
+        const landmarks = results.poseLandmarks;
+        if (!landmarks) {
+          handlePoseMissing();
+          return;
+        }
+
+        // 전면 카메라 원본 좌표에서 16번(사용자 오른손)은 왼쪽, 15번(사용자 왼손)은 오른쪽에 보인다.
+        const leftOnScreen = offsetWrist(landmarks[16]);
+        const rightOnScreen = offsetWrist(landmarks[15]);
+        const visible = leftOnScreen.visibility > state.settings.poseConfidence && rightOnScreen.visibility > state.settings.poseConfidence;
+        const inBounds = pointInBounds(leftOnScreen) && pointInBounds(rightOnScreen);
+
+        if (!visible || !inBounds) {
+          handlePoseMissing();
+          return;
+        }
+
+        state.poseLostAt = 0;
+        const wrists = smoothWrists(leftOnScreen, rightOnScreen);
+        drawWristGuide(wrists.left, wrists.right);
+        processWristControl(wrists.left, wrists.right);
+      }
+
+      function onFaceResults(results) {
+        state.faceResults = results;
+        state.lastFaceAt = performance.now();
+        const landmarks = results.multiFaceLandmarks?.[0];
+        if (!landmarks) {
+          resetWinks();
+          return;
+        }
+        processEyeControl(landmarks);
+      }
+
+      function drawCameraFrame(results) {
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        ctx.save();
+        ctx.setTransform(-1, 0, 0, 1, width, 0);
+        ctx.drawImage(results.image || el.videoElement, 0, 0, width, height);
+
+        if (state.faceResults?.multiFaceLandmarks?.[0] && performance.now() - state.lastFaceAt < 800) {
+          const face = state.faceResults.multiFaceLandmarks[0];
+          drawEyeMarker(ctx, face, [159, 145, 33, 133], "#48dfb5");
+          drawEyeMarker(ctx, face, [386, 374, 362, 263], "#74a7ff");
+        }
+        ctx.restore();
+      }
+
+      function offsetWrist(point) {
+        return { x: point.x, y: point.y - 0.045, visibility: point.visibility ?? 0 };
+      }
+
+      function pointInBounds(point) {
+        return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+      }
+
+      function smoothWrists(left, right) {
+        const alpha = 0.36;
+        if (!state.smoothedWrists) {
+          state.smoothedWrists = { left: { ...left }, right: { ...right } };
+          return state.smoothedWrists;
+        }
+        for (const side of ["left", "right"]) {
+          const source = side === "left" ? left : right;
+          state.smoothedWrists[side].x += (source.x - state.smoothedWrists[side].x) * alpha;
+          state.smoothedWrists[side].y += (source.y - state.smoothedWrists[side].y) * alpha;
+          state.smoothedWrists[side].visibility = source.visibility;
+        }
+        return state.smoothedWrists;
+      }
+
+      function drawWristGuide(left, right) {
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        ctx.save();
+        ctx.setTransform(-1, 0, 0, 1, width, 0);
+        const lx = left.x * width;
+        const ly = left.y * height;
+        const rx = right.x * width;
+        const ry = right.y * height;
+
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(rx, ry);
+        ctx.strokeStyle = "rgba(72, 223, 181, 0.9)";
+        ctx.lineWidth = Math.max(3, width / 150);
+        ctx.setLineDash([12, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawPoint(ctx, lx, ly, "#48dfb5");
+        drawPoint(ctx, rx, ry, "#74a7ff");
+        ctx.restore();
+      }
+
+      function drawPoint(ctx, x, y, color) {
+        const radius = Math.max(9, el.canvasElement.width / 34);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      function drawEyeMarker(ctx, landmarks, indices, color) {
+        const points = indices.map((index) => landmarks[index]);
+        const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length * el.canvasElement.width;
+        const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length * el.canvasElement.height;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, Math.max(5, el.canvasElement.width / 70), 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      function handlePoseMissing() {
+        if (!state.poseLostAt) state.poseLostAt = performance.now();
+        if (performance.now() - state.poseLostAt > 320) {
+          setMotion("stop", 0, "straight", "인식 대기");
+        }
+        if (performance.now() - state.poseLostAt > 1000) state.smoothedWrists = null;
+      }
+
+      function processWristControl(left, right) {
+        const dx = right.x - left.x;
+        const dy = right.y - left.y;
+        const distance = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, Math.max(Math.abs(dx), 0.0001)) * 180 / Math.PI;
+        const crossed = left.x > right.x;
+        el.distanceStatus.textContent = distance.toFixed(2);
+
+        if (distance < state.settings.stopDeadzone) {
+          setMotion("stop", 0, "straight", "정지");
+          return;
+        }
+
+        const normalized = Math.min(1, Math.max(0, (distance - state.settings.stopDeadzone) / (MAX_DISTANCE - state.settings.stopDeadzone)));
+        const response = Math.pow(normalized, 1 / state.settings.speedSensitivity);
+        const speed = Math.min(state.settings.speedSteps, Math.max(1, Math.ceil(response * state.settings.speedSteps)));
+        const steering = Math.abs(angle) <= state.settings.steeringDeadzone
+          ? "straight"
+          : (angle > 0 ? "left" : "right");
+
+        setMotion(crossed ? "backward" : "forward", speed, steering);
+      }
+
+      function setMotion(targetMotion, targetSpeed, targetSteering, displayOverride = "") {
+        if (targetMotion === "stop") {
+          if (state.motion !== "stop") transmitCommand(COMMANDS.stop);
+          state.motion = "stop";
+          state.speed = 0;
+          state.steering = "straight";
+          updateControlStatus(displayOverride || "정지", 0, "직진");
+          return;
+        }
+
+        const motionChanged = targetMotion !== state.motion;
+        if (motionChanged) {
+          if (state.motion !== "stop") transmitCommand(COMMANDS.stop);
+          state.motion = targetMotion;
+          state.speed = 0;
+          state.steering = "straight";
+          transmitCommand(driveCommand(targetMotion));
+        }
+
+        if (targetSpeed !== state.speed) {
+          const speedCommand = targetSpeed > state.speed ? COMMANDS.speedUp : COMMANDS.speedDown;
+          const difference = Math.abs(targetSpeed - state.speed);
+          for (let count = 0; count < difference; count += 1) transmitCommand(speedCommand);
+          state.speed = targetSpeed;
+        }
+
+        if (targetSteering !== state.steering) {
+          transmitCommand(targetSteering === "straight" ? driveCommand(targetMotion) : steeringCommand(targetSteering));
+          state.steering = targetSteering;
+        }
+
+        updateControlStatus(modeLabel(targetMotion), targetSpeed, steeringLabel(targetSteering));
+      }
+
+      function driveCommand(motion) {
+        const invertedMotion = state.settings.invertDrive
+          ? (motion === "forward" ? "backward" : "forward")
+          : motion;
+        return COMMANDS[invertedMotion];
+      }
+
+      function steeringCommand(steering) {
+        const invertedSteering = state.settings.invertSteering
+          ? (steering === "left" ? "right" : "left")
+          : steering;
+        return COMMANDS[invertedSteering];
+      }
+
+      function processEyeControl(landmarks) {
+        // Face Mesh 기준 사용자의 오른쪽 눈은 33/133, 왼쪽 눈은 362/263 계열이다.
+        const rightEar = calculateEar(landmarks, 159, 145, 33, 133);
+        const leftEar = calculateEar(landmarks, 386, 374, 362, 263);
+        const threshold = 0.14 + state.settings.winkSensitivity * 0.012;
+        const rightClosed = rightEar < threshold;
+        const leftClosed = leftEar < threshold;
+        const rightOnly = rightClosed && leftEar > threshold * 1.08;
+        const leftOnly = leftClosed && rightEar > threshold * 1.08;
+
+        updateWink("right", rightOnly, rightClosed, COMMANDS.gripperOpen, "열림");
+        updateWink("left", leftOnly, leftClosed, COMMANDS.gripperClose, "닫힘");
+      }
+
+      function calculateEar(landmarks, topIndex, bottomIndex, outerIndex, innerIndex) {
+        const top = landmarks[topIndex];
+        const bottom = landmarks[bottomIndex];
+        const outer = landmarks[outerIndex];
+        const inner = landmarks[innerIndex];
+        return Math.hypot(top.x - bottom.x, top.y - bottom.y) /
+          Math.max(Math.hypot(outer.x - inner.x, outer.y - inner.y), 0.0001);
+      }
+
+      function updateWink(side, isOnlyEyeClosed, isPhysicallyClosed, command, gripperLabel) {
+        const wink = state.wink[side];
+        const now = performance.now();
+        if (isOnlyEyeClosed) {
+          if (!wink.startedAt) wink.startedAt = now;
+          if (!wink.fired && now - wink.startedAt >= state.settings.winkHold) {
+            wink.fired = true;
+            transmitCommand(command);
+            el.gripperStatus.textContent = gripperLabel;
+          }
+        } else {
+          wink.startedAt = 0;
+          if (!isPhysicallyClosed) wink.fired = false;
+        }
+      }
+
+      function resetWinks() {
+        for (const side of ["left", "right"]) {
+          state.wink[side].startedAt = 0;
+          state.wink[side].fired = false;
+        }
+      }
+
+      function stopCamera() {
+        if (!state.cameraRunning && !state.cameraStream) return;
+        state.cameraRunning = false;
+        cancelAnimationFrame(state.animationFrame);
+        cleanupCameraStream();
+        releaseWakeLock();
+        transmitCommand(COMMANDS.stop, { forceLog: true });
+        state.motion = "stop";
+        state.speed = 0;
+        state.steering = "straight";
+        state.smoothedWrists = null;
+        state.faceResults = null;
+        resetWinks();
+        el.cameraBtn.textContent = "카메라 시작";
+        el.stageBadge.textContent = "카메라 대기";
+        el.stageBadge.classList.remove("live");
+        el.stageHelp.hidden = false;
+        updateControlStatus("대기", 0, "직진");
+        drawPlaceholder();
+        addLog("카메라 제어를 종료하고 정지 신호를 처리했습니다.");
+      }
+
+      function cleanupCameraStream() {
+        if (state.cameraStream) state.cameraStream.getTracks().forEach((track) => track.stop());
+        state.cameraStream = null;
+        el.videoElement.srcObject = null;
+      }
+
+      function cameraErrorMessage(error) {
+        if (error?.name === "NotAllowedError") return "카메라 권한이 거부되었습니다. 브라우저 사이트 설정에서 카메라를 허용하세요.";
+        if (error?.name === "NotFoundError") return "사용할 수 있는 전면 카메라를 찾지 못했습니다.";
+        if (error?.name === "NotReadableError") return "다른 앱이 카메라를 사용 중입니다. 해당 앱을 닫고 다시 시도하세요.";
+        return error?.message || "카메라를 시작하지 못했습니다.";
+      }
+
+      async function requestWakeLock() {
+        if (!("wakeLock" in navigator) || !state.cameraRunning || document.visibilityState !== "visible") return;
+        try {
+          if (!state.wakeLock) {
+            state.wakeLock = await navigator.wakeLock.request("screen");
+            state.wakeLock.addEventListener("release", () => { state.wakeLock = null; });
+          }
+        } catch (error) {
+          addConsoleError("화면 켜짐 유지 실패", error);
+        }
+      }
+
+      async function releaseWakeLock() {
+        if (!state.wakeLock) return;
+        try { await state.wakeLock.release(); } catch (error) { /* 이미 해제됨 */ }
+        state.wakeLock = null;
+      }
+
+      function handleVisibilityChange() {
+        if (document.visibilityState === "visible" && state.cameraRunning && state.settings.keepAwake) requestWakeLock();
+      }
+
+      function handlePageHide() {
+        if (state.cameraRunning) transmitCommand(COMMANDS.stop, { forceLog: false });
+        cleanupCameraStream();
+      }
+
+      function pulseHaptic() {
+        if (state.settings.haptics && typeof navigator.vibrate === "function") navigator.vibrate(18);
+      }
+
+      function updateControlStatus(mode, speed, direction) {
+        el.modeStatus.textContent = mode;
+        el.speedStatus.textContent = `${speed} / ${state.settings.speedSteps}`;
+        el.directionStatus.textContent = direction;
+      }
+
+      function modeLabel(motion) {
+        return motion === "forward" ? "전진" : motion === "backward" ? "후진" : "정지";
+      }
+
+      function steeringLabel(steering) {
+        return steering === "left" ? "좌회전" : steering === "right" ? "우회전" : "직진";
+      }
+
+      function setSystemStatus(text, className) {
+        el.systemChip.textContent = text;
+        el.systemChip.className = "system-chip" + (className ? " " + className : "");
+      }
+
+      function drawPlaceholder() {
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = "#07090b";
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = "#20262d";
+        ctx.lineWidth = Math.max(2, width / 200);
+        ctx.beginPath();
+        ctx.arc(width / 2, height * 0.43, width * 0.12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(width * 0.25, height * 0.68);
+        ctx.quadraticCurveTo(width / 2, height * 0.50, width * 0.75, height * 0.68);
+        ctx.stroke();
+        ctx.fillStyle = "#68737e";
+        ctx.font = `700 ${Math.max(15, width / 27)}px -apple-system, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("CAMERA STANDBY", width / 2, height * 0.78);
+      }
+
+      function addLog(message) {
+        if (!el.logPanel) return;
+        const item = document.createElement("div");
+        const time = document.createElement("time");
+        const text = document.createElement("span");
+        item.className = "log-item";
+        time.className = "log-time";
+        time.textContent = new Date().toLocaleTimeString("ko-KR", { hour12: false });
+        text.textContent = message;
+        item.append(time, text);
+        el.logPanel.prepend(item);
+        while (el.logPanel.children.length > 30) el.logPanel.lastElementChild.remove();
+      }
+
+      function showToast(message) {
+        clearTimeout(state.toastTimer);
+        el.toast.textContent = message;
+        el.toast.hidden = false;
+        state.toastTimer = setTimeout(() => { el.toast.hidden = true; }, 3200);
+      }
+
+      function addConsoleError(context, error) {
+        console.error(context, error);
+      }
+
+      function delay(milliseconds) {
+        return new Promise((resolve) => setTimeout(resolve, milliseconds));
+      }
+    })();
+  </script>
+</body>
+</html>
+
