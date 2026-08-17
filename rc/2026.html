@@ -1497,6 +1497,12 @@
             recognition.phrases = [
               new window.SpeechRecognitionPhrase("열어", 6),
               new window.SpeechRecognitionPhrase("열어줘", 6),
+              new window.SpeechRecognitionPhrase("열기", 6),
+              new window.SpeechRecognitionPhrase("열어라", 6),
+              new window.SpeechRecognitionPhrase("열라고", 6),
+              new window.SpeechRecognitionPhrase("열으라고", 6),
+              new window.SpeechRecognitionPhrase("집게 열어", 6),
+              new window.SpeechRecognitionPhrase("그리퍼 열어", 6),
               new window.SpeechRecognitionPhrase("닫아", 6),
               new window.SpeechRecognitionPhrase("닫아줘", 6),
               new window.SpeechRecognitionPhrase("닫기", 6),
@@ -1612,9 +1618,17 @@
 
       function classifyVoiceTranscript(transcript) {
         const normalized = transcript.replace(/\s+/g, "");
-        const openIndex = normalized.indexOf("열");
+        const openKeywords = ["열", "여러", "열러", "여뤄"];
         const closeKeywords = ["닫", "다다", "타다", "다듬", "다끼"];
+        let openIndex = -1;
         let closeIndex = -1;
+
+        openKeywords.forEach((keyword) => {
+          const keywordIndex = normalized.indexOf(keyword);
+          if (keywordIndex >= 0 && (openIndex < 0 || keywordIndex < openIndex)) {
+            openIndex = keywordIndex;
+          }
+        });
 
         closeKeywords.forEach((keyword) => {
           const keywordIndex = normalized.indexOf(keyword);
