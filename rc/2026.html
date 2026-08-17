@@ -890,9 +890,10 @@
               <select id="gripperControlMode">
                 <option value="wink">윙크</option>
                 <option value="voice">보이스</option>
+                <option value="mouth">입 모션</option>
               </select>
             </div>
-            <p class="setting-description">보이스 모드에서는 메인 화면의 음성명령 시작 버튼으로 마이크를 켭니다.</p>
+            <p class="setting-description">윙크, 음성명령, 입 벌림·다묾 중 그리퍼 제어 방식을 선택합니다.</p>
           </div>
 
           <div id="winkSettings">
@@ -912,6 +913,19 @@
               </div>
               <input id="winkHold" type="range" min="250" max="1000" step="50">
               <p class="setting-description">짧은 눈 깜빡임이 임무 신호로 잘못 인식되는 것을 막습니다.</p>
+            </div>
+          </div>
+
+          <div id="mouthSettings" hidden>
+            <div class="setting-row toggle-row">
+              <div>
+                <div class="setting-label">입 그리퍼 반전</div>
+                <p class="setting-description">기본은 입을 벌리면 열기(9), 다물면 닫기(7)입니다. 반전하면 두 신호가 서로 바뀝니다.</p>
+              </div>
+              <label class="switch">
+                <input id="invertMouthGripper" type="checkbox" aria-label="입 그리퍼 신호 반전">
+                <span class="switch-track"></span>
+              </label>
             </div>
           </div>
 
@@ -974,6 +988,9 @@
       const POSE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/";
       const FACE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
       const MAX_DISTANCE = 0.9;
+      const MOUTH_OPEN_THRESHOLD = 0.16;
+      const MOUTH_CLOSE_THRESHOLD = 0.09;
+      const MOUTH_STABLE_DURATION = 180;
 
       const COMMANDS = Object.freeze({
         forward: { code: "2", label: "전진" },
@@ -995,6 +1012,7 @@
         invertSteering: false,
         invertDrive: false,
         gripperControlMode: "wink",
+        invertMouthGripper: false,
         winkSensitivity: 5,
         winkHold: 500,
         poseConfidence: 0.50,
@@ -1033,6 +1051,11 @@
         voiceListening: false,
         voiceRestartTimer: null,
         lastVoiceCommandAt: 0,
+        mouth: {
+          candidate: null,
+          candidateSince: 0,
+          applied: null
+        },
         wink: {
           left: { startedAt: 0, fired: false },
           right: { startedAt: 0, fired: false }
@@ -1090,7 +1113,7 @@
 
         ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence"]
           .forEach((id) => document.getElementById(id).addEventListener("input", updateAllSettingOutputs));
-        document.getElementById("gripperControlMode").addEventListener("change", syncWinkSettingsVisibility);
+        document.getElementById("gripperControlMode").addEventListener("change", syncGripperSettingsVisibility);
       }
 
       function loadSettings() {
@@ -1111,7 +1134,8 @@
           steeringDeadzone: Math.round(clampNumber(value.steeringDeadzone, 5, 35, DEFAULT_SETTINGS.steeringDeadzone)),
           invertSteering: Boolean(value.invertSteering),
           invertDrive: Boolean(value.invertDrive),
-          gripperControlMode: value.gripperControlMode === "voice" ? "voice" : "wink",
+          gripperControlMode: ["wink", "voice", "mouth"].includes(value.gripperControlMode) ? value.gripperControlMode : "wink",
+          invertMouthGripper: Boolean(value.invertMouthGripper),
           winkSensitivity: Math.round(clampNumber(value.winkSensitivity, 1, 10, DEFAULT_SETTINGS.winkSensitivity)),
           winkHold: Math.round(clampNumber(value.winkHold, 250, 1000, DEFAULT_SETTINGS.winkHold)),
           poseConfidence: clampNumber(value.poseConfidence, 0.3, 0.8, DEFAULT_SETTINGS.poseConfidence),
@@ -1128,7 +1152,7 @@
       function openSettings() {
         populateSettingsForm(state.settings);
         updateAllSettingOutputs();
-        syncWinkSettingsVisibility();
+        syncGripperSettingsVisibility();
         el.settingsBackdrop.hidden = false;
         document.body.classList.add("modal-open");
         requestAnimationFrame(() => document.getElementById("stopDeadzone").focus());
@@ -1158,6 +1182,7 @@
           invertSteering: document.getElementById("invertSteering").checked,
           invertDrive: document.getElementById("invertDrive").checked,
           gripperControlMode: document.getElementById("gripperControlMode").value,
+          invertMouthGripper: document.getElementById("invertMouthGripper").checked,
           winkSensitivity: document.getElementById("winkSensitivity").value,
           winkHold: document.getElementById("winkHold").value,
           poseConfidence: document.getElementById("poseConfidence").value,
@@ -1178,6 +1203,7 @@
 
       function saveSettingsFromForm() {
         const previousMode = state.settings.gripperControlMode;
+        const previousMouthInverted = state.settings.invertMouthGripper;
         state.settings = readSettingsForm();
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state.settings));
@@ -1186,8 +1212,14 @@
         }
         if (previousMode !== state.settings.gripperControlMode) {
           resetWinks();
+          resetMouthControl();
           state.faceResults = null;
-          if (state.settings.gripperControlMode === "wink") stopVoiceRecognition();
+          el.gripperStatus.textContent = state.settings.gripperControlMode === "mouth" ? "입 인식 대기" : "대기";
+          if (state.settings.gripperControlMode !== "voice") stopVoiceRecognition();
+        }
+        if (previousMouthInverted !== state.settings.invertMouthGripper) {
+          resetMouthControl();
+          if (state.settings.gripperControlMode === "mouth") el.gripperStatus.textContent = "입 인식 대기";
         }
         applyModelSettings();
         updateGripperModeUi();
@@ -1202,12 +1234,14 @@
       function resetSettingsForm() {
         populateSettingsForm(DEFAULT_SETTINGS);
         updateAllSettingOutputs();
-        syncWinkSettingsVisibility();
+        syncGripperSettingsVisibility();
         showToast("기본값을 불러왔습니다. 저장을 눌러 적용하세요.");
       }
 
-      function syncWinkSettingsVisibility() {
-        document.getElementById("winkSettings").hidden = document.getElementById("gripperControlMode").value !== "wink";
+      function syncGripperSettingsVisibility() {
+        const mode = document.getElementById("gripperControlMode").value;
+        document.getElementById("winkSettings").hidden = mode !== "wink";
+        document.getElementById("mouthSettings").hidden = mode !== "mouth";
       }
 
       function updateGripperModeUi() {
@@ -1724,7 +1758,7 @@
         try {
           await state.pose.send({ image: el.videoElement });
           state.frameCount += 1;
-          if (state.settings.gripperControlMode === "wink" && state.frameCount % 2 === 0) {
+          if (state.settings.gripperControlMode !== "voice" && state.frameCount % 2 === 0) {
             await state.faceMesh.send({ image: el.videoElement });
           }
           state.frameErrors = 0;
@@ -1770,15 +1804,18 @@
       }
 
       function onFaceResults(results) {
-        if (state.settings.gripperControlMode !== "wink") return;
+        const gripperMode = state.settings.gripperControlMode;
+        if (gripperMode === "voice") return;
         state.faceResults = results;
         state.lastFaceAt = performance.now();
         const landmarks = results.multiFaceLandmarks?.[0];
         if (!landmarks) {
           resetWinks();
+          clearMouthCandidate();
           return;
         }
-        processEyeControl(landmarks);
+        if (gripperMode === "wink") processEyeControl(landmarks);
+        if (gripperMode === "mouth") processMouthControl(landmarks);
       }
 
       function drawCameraFrame(results) {
@@ -1789,10 +1826,14 @@
         ctx.setTransform(-1, 0, 0, 1, width, 0);
         ctx.drawImage(results.image || el.videoElement, 0, 0, width, height);
 
-        if (state.settings.gripperControlMode === "wink" && state.faceResults?.multiFaceLandmarks?.[0] && performance.now() - state.lastFaceAt < 800) {
+        if (state.settings.gripperControlMode !== "voice" && state.faceResults?.multiFaceLandmarks?.[0] && performance.now() - state.lastFaceAt < 800) {
           const face = state.faceResults.multiFaceLandmarks[0];
-          drawEyeMarker(ctx, face, [159, 145, 33, 133], "#48dfb5");
-          drawEyeMarker(ctx, face, [386, 374, 362, 263], "#74a7ff");
+          if (state.settings.gripperControlMode === "wink") {
+            drawEyeMarker(ctx, face, [159, 145, 33, 133], "#48dfb5");
+            drawEyeMarker(ctx, face, [386, 374, 362, 263], "#74a7ff");
+          } else if (state.settings.gripperControlMode === "mouth") {
+            drawMouthMarker(ctx, face);
+          }
         }
         ctx.restore();
       }
@@ -1863,6 +1904,27 @@
         ctx.arc(centerX, centerY, Math.max(5, el.canvasElement.width / 70), 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
+      }
+
+      function drawMouthMarker(ctx, landmarks) {
+        const top = landmarks[13];
+        const bottom = landmarks[14];
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        const x1 = top.x * width;
+        const y1 = top.y * height;
+        const x2 = bottom.x * width;
+        const y2 = bottom.y * height;
+        const color = state.mouth.applied === "open" ? "#48dfb5" : "#ffca68";
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(4, width / 100);
+        ctx.stroke();
+        drawPoint(ctx, x1, y1, color);
+        drawPoint(ctx, x2, y2, color);
       }
 
       function handlePoseMissing() {
@@ -1991,6 +2053,62 @@
         }
       }
 
+      function processMouthControl(landmarks) {
+        if (state.settings.gripperControlMode !== "mouth") return;
+
+        const top = landmarks[13];
+        const bottom = landmarks[14];
+        const leftCorner = landmarks[78];
+        const rightCorner = landmarks[308];
+        const vertical = Math.hypot(top.x - bottom.x, top.y - bottom.y);
+        const horizontal = Math.max(
+          Math.hypot(leftCorner.x - rightCorner.x, leftCorner.y - rightCorner.y),
+          0.0001
+        );
+        const mouthRatio = vertical / horizontal;
+        const reference = state.mouth.candidate || state.mouth.applied;
+        let detectedState = null;
+
+        if (reference === "open") {
+          detectedState = mouthRatio > MOUTH_CLOSE_THRESHOLD ? "open" : "closed";
+        } else if (reference === "closed") {
+          detectedState = mouthRatio >= MOUTH_OPEN_THRESHOLD ? "open" : "closed";
+        } else if (mouthRatio >= MOUTH_OPEN_THRESHOLD) {
+          detectedState = "open";
+        } else if (mouthRatio <= MOUTH_CLOSE_THRESHOLD) {
+          detectedState = "closed";
+        }
+
+        if (!detectedState) return;
+        const now = performance.now();
+        if (state.mouth.candidate !== detectedState) {
+          state.mouth.candidate = detectedState;
+          state.mouth.candidateSince = now;
+          return;
+        }
+        if (now - state.mouth.candidateSince < MOUTH_STABLE_DURATION || state.mouth.applied === detectedState) return;
+
+        state.mouth.applied = detectedState;
+        const mouthIsOpen = detectedState === "open";
+        const gripperShouldOpen = state.settings.invertMouthGripper ? !mouthIsOpen : mouthIsOpen;
+        const command = gripperShouldOpen ? COMMANDS.gripperOpen : COMMANDS.gripperClose;
+        const mouthLabel = mouthIsOpen ? "입 벌림" : "입 다묾";
+        const gripperLabel = gripperShouldOpen ? "열림" : "닫힘";
+        transmitCommand(command);
+        el.gripperStatus.textContent = `${mouthLabel} · ${gripperLabel}`;
+        addLog(`MOUTH · ${mouthLabel} → 신호 ${command.code}`);
+      }
+
+      function clearMouthCandidate() {
+        state.mouth.candidate = null;
+        state.mouth.candidateSince = 0;
+      }
+
+      function resetMouthControl() {
+        clearMouthCandidate();
+        state.mouth.applied = null;
+      }
+
       function stopCamera() {
         if (!state.cameraRunning && !state.cameraStream) return;
         state.cameraRunning = false;
@@ -2004,6 +2122,7 @@
         state.smoothedWrists = null;
         state.faceResults = null;
         resetWinks();
+        resetMouthControl();
         el.cameraBtn.textContent = "카메라 시작";
         el.stageBadge.textContent = "카메라 대기";
         el.stageBadge.classList.remove("live");
