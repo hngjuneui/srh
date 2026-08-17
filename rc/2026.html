@@ -215,6 +215,63 @@
       font-size: 1.18rem;
     }
 
+    .voice-control {
+      display: grid;
+      grid-template-columns: minmax(138px, 0.72fr) minmax(0, 1.28fr);
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .voice-button.listening {
+      border-color: rgba(255, 116, 116, 0.5);
+      background: rgba(255, 116, 116, 0.09);
+      color: var(--red);
+    }
+
+    .voice-status {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1.4;
+    }
+
+    .voice-status-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .voice-status.listening {
+      color: var(--accent);
+    }
+
+    .voice-status.listening .voice-status-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(72, 223, 181, 0.1);
+    }
+
+    .voice-status.error {
+      color: var(--red);
+    }
+
+    .voice-status.error .voice-status-dot {
+      background: var(--red);
+    }
+
+    .voice-status-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .camera-stage {
       position: relative;
       aspect-ratio: 3 / 4;
@@ -653,6 +710,10 @@
       .status-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .voice-control {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -680,6 +741,14 @@
         <button id="connectBtn" class="button button-secondary" type="button">BLE 연결</button>
         <button id="cameraBtn" class="button button-primary" type="button">카메라 시작</button>
         <button id="settingsBtn" class="button icon-button" type="button" aria-label="조종기 설정 열기" title="설정">⚙</button>
+      </div>
+
+      <div id="voiceControl" class="voice-control" hidden>
+        <button id="voiceBtn" class="button button-secondary voice-button" type="button">음성명령 시작</button>
+        <div id="voiceStatus" class="voice-status" role="status" aria-live="polite">
+          <span class="voice-status-dot" aria-hidden="true"></span>
+          <span id="voiceStatusText" class="voice-status-text">열 또는 닫 소리를 기다립니다.</span>
+        </div>
       </div>
 
       <div class="camera-stage" aria-label="전면 카메라 포즈 인식 화면">
@@ -817,20 +886,33 @@
 
           <div class="setting-row">
             <div class="setting-head">
-              <label class="setting-label" for="winkSensitivity">윙크 민감도</label>
-              <output id="winkSensitivityValue" class="setting-value" for="winkSensitivity"></output>
+              <label class="setting-label" for="gripperControlMode">그리퍼 작동 방식</label>
+              <select id="gripperControlMode">
+                <option value="wink">윙크</option>
+                <option value="voice">보이스</option>
+              </select>
             </div>
-            <input id="winkSensitivity" type="range" min="1" max="10" step="1">
-            <p class="setting-description">오른쪽 눈 윙크는 그리퍼 열기(9), 왼쪽 눈 윙크는 닫기(7)입니다.</p>
+            <p class="setting-description">보이스 모드에서는 메인 화면의 음성명령 시작 버튼으로 마이크를 켭니다.</p>
           </div>
 
-          <div class="setting-row">
-            <div class="setting-head">
-              <label class="setting-label" for="winkHold">윙크 유지 시간</label>
-              <output id="winkHoldValue" class="setting-value" for="winkHold"></output>
+          <div id="winkSettings">
+            <div class="setting-row">
+              <div class="setting-head">
+                <label class="setting-label" for="winkSensitivity">윙크 민감도</label>
+                <output id="winkSensitivityValue" class="setting-value" for="winkSensitivity"></output>
+              </div>
+              <input id="winkSensitivity" type="range" min="1" max="10" step="1">
+              <p class="setting-description">오른쪽 눈 윙크는 그리퍼 열기(9), 왼쪽 눈 윙크는 닫기(7)입니다.</p>
             </div>
-            <input id="winkHold" type="range" min="250" max="1000" step="50">
-            <p class="setting-description">짧은 눈 깜빡임이 임무 신호로 잘못 인식되는 것을 막습니다.</p>
+
+            <div class="setting-row">
+              <div class="setting-head">
+                <label class="setting-label" for="winkHold">윙크 유지 시간</label>
+                <output id="winkHoldValue" class="setting-value" for="winkHold"></output>
+              </div>
+              <input id="winkHold" type="range" min="250" max="1000" step="50">
+              <p class="setting-description">짧은 눈 깜빡임이 임무 신호로 잘못 인식되는 것을 막습니다.</p>
+            </div>
           </div>
 
           <div class="setting-row">
@@ -912,6 +994,7 @@
         steeringDeadzone: 15,
         invertSteering: false,
         invertDrive: false,
+        gripperControlMode: "wink",
         winkSensitivity: 5,
         winkHold: 500,
         poseConfidence: 0.50,
@@ -945,6 +1028,11 @@
         steering: "straight",
         wakeLock: null,
         toastTimer: null,
+        speechRecognition: null,
+        voiceWanted: false,
+        voiceListening: false,
+        voiceRestartTimer: null,
+        lastVoiceCommandAt: 0,
         wink: {
           left: { startedAt: 0, fired: false },
           right: { startedAt: 0, fired: false }
@@ -959,6 +1047,7 @@
       function init() {
         [
           "connectBtn", "cameraBtn", "settingsBtn", "systemChip", "videoElement", "canvasElement",
+          "voiceControl", "voiceBtn", "voiceStatus", "voiceStatusText",
           "stageBadge", "stageHelp", "controlContext", "modeStatus", "speedStatus", "directionStatus",
           "distanceStatus", "gripperStatus", "signalStatus", "logPanel", "clearLogBtn", "settingsBackdrop",
           "closeSettingsBtn", "cancelSettingsBtn", "saveSettingsBtn", "resetSettingsBtn", "toast"
@@ -969,6 +1058,7 @@
         bindEvents();
         populateSettingsForm(state.settings);
         updateAllSettingOutputs();
+        updateGripperModeUi();
         updateControlStatus("대기", 0, "직진");
         drawPlaceholder();
         addLog("카메라 단독 테스트 또는 BLE 연결을 시작하세요.");
@@ -979,6 +1069,7 @@
       function bindEvents() {
         el.connectBtn.addEventListener("click", handleConnectButton);
         el.cameraBtn.addEventListener("click", toggleCamera);
+        el.voiceBtn.addEventListener("click", toggleVoiceRecognition);
         el.settingsBtn.addEventListener("click", openSettings);
         el.closeSettingsBtn.addEventListener("click", closeSettings);
         el.cancelSettingsBtn.addEventListener("click", closeSettings);
@@ -999,6 +1090,7 @@
 
         ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence"]
           .forEach((id) => document.getElementById(id).addEventListener("input", updateAllSettingOutputs));
+        document.getElementById("gripperControlMode").addEventListener("change", syncWinkSettingsVisibility);
       }
 
       function loadSettings() {
@@ -1019,6 +1111,7 @@
           steeringDeadzone: Math.round(clampNumber(value.steeringDeadzone, 5, 35, DEFAULT_SETTINGS.steeringDeadzone)),
           invertSteering: Boolean(value.invertSteering),
           invertDrive: Boolean(value.invertDrive),
+          gripperControlMode: value.gripperControlMode === "voice" ? "voice" : "wink",
           winkSensitivity: Math.round(clampNumber(value.winkSensitivity, 1, 10, DEFAULT_SETTINGS.winkSensitivity)),
           winkHold: Math.round(clampNumber(value.winkHold, 250, 1000, DEFAULT_SETTINGS.winkHold)),
           poseConfidence: clampNumber(value.poseConfidence, 0.3, 0.8, DEFAULT_SETTINGS.poseConfidence),
@@ -1035,6 +1128,7 @@
       function openSettings() {
         populateSettingsForm(state.settings);
         updateAllSettingOutputs();
+        syncWinkSettingsVisibility();
         el.settingsBackdrop.hidden = false;
         document.body.classList.add("modal-open");
         requestAnimationFrame(() => document.getElementById("stopDeadzone").focus());
@@ -1063,6 +1157,7 @@
           steeringDeadzone: document.getElementById("steeringDeadzone").value,
           invertSteering: document.getElementById("invertSteering").checked,
           invertDrive: document.getElementById("invertDrive").checked,
+          gripperControlMode: document.getElementById("gripperControlMode").value,
           winkSensitivity: document.getElementById("winkSensitivity").value,
           winkHold: document.getElementById("winkHold").value,
           poseConfidence: document.getElementById("poseConfidence").value,
@@ -1082,13 +1177,20 @@
       }
 
       function saveSettingsFromForm() {
+        const previousMode = state.settings.gripperControlMode;
         state.settings = readSettingsForm();
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state.settings));
         } catch (error) {
           addConsoleError("설정 저장 실패", error);
         }
+        if (previousMode !== state.settings.gripperControlMode) {
+          resetWinks();
+          state.faceResults = null;
+          if (state.settings.gripperControlMode === "wink") stopVoiceRecognition();
+        }
         applyModelSettings();
+        updateGripperModeUi();
         updateControlStatus(modeLabel(state.motion), state.speed, steeringLabel(state.steering));
         if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
         if (!state.settings.keepAwake) releaseWakeLock();
@@ -1100,7 +1202,28 @@
       function resetSettingsForm() {
         populateSettingsForm(DEFAULT_SETTINGS);
         updateAllSettingOutputs();
+        syncWinkSettingsVisibility();
         showToast("기본값을 불러왔습니다. 저장을 눌러 적용하세요.");
+      }
+
+      function syncWinkSettingsVisibility() {
+        document.getElementById("winkSettings").hidden = document.getElementById("gripperControlMode").value !== "wink";
+      }
+
+      function updateGripperModeUi() {
+        const voiceMode = state.settings.gripperControlMode === "voice";
+        el.voiceControl.hidden = !voiceMode;
+        if (!voiceMode) return;
+
+        const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+        el.voiceBtn.disabled = !supported;
+        if (!supported) {
+          el.voiceBtn.textContent = "음성명령 미지원";
+          setVoiceStatus("이 브라우저에서는 음성 인식을 사용할 수 없습니다.", "error");
+        } else if (!state.voiceListening && !state.voiceWanted) {
+          el.voiceBtn.textContent = "음성명령 시작";
+          setVoiceStatus("열 또는 닫 소리를 기다립니다.", "");
+        }
       }
 
       async function checkCapabilities() {
@@ -1320,6 +1443,165 @@
         return state.writeChain;
       }
 
+      function toggleVoiceRecognition() {
+        if (state.voiceWanted || state.voiceListening) stopVoiceRecognition();
+        else startVoiceRecognition();
+      }
+
+      function createVoiceRecognition() {
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Recognition) return null;
+
+        const recognition = new Recognition();
+        recognition.lang = "ko-KR";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 3;
+
+        try {
+          if ("phrases" in recognition && typeof window.SpeechRecognitionPhrase === "function") {
+            recognition.phrases = [
+              new window.SpeechRecognitionPhrase("열어", 5),
+              new window.SpeechRecognitionPhrase("열어줘", 5),
+              new window.SpeechRecognitionPhrase("닫아", 5),
+              new window.SpeechRecognitionPhrase("닫아줘", 5)
+            ];
+          }
+        } catch (error) {
+          addConsoleError("음성 명령어 우선순위 설정 실패", error);
+        }
+
+        recognition.onstart = () => {
+          state.voiceListening = true;
+          el.voiceBtn.disabled = false;
+          el.voiceBtn.textContent = "음성명령 중지";
+          el.voiceBtn.classList.add("listening");
+          setVoiceStatus("듣는 중 · ‘열어’ 또는 ‘닫아’라고 말하세요.", "listening");
+          addLog("음성명령 듣기를 시작했습니다.");
+        };
+
+        recognition.onresult = (event) => {
+          for (let index = event.resultIndex; index < event.results.length; index += 1) {
+            const transcript = event.results[index]?.[0]?.transcript?.trim() || "";
+            if (!transcript) continue;
+            setVoiceStatus(`인식 · ${transcript}`, "listening");
+            if (processVoiceTranscript(transcript)) {
+              try { recognition.stop(); } catch (error) { /* 이미 종료 중 */ }
+              break;
+            }
+          }
+        };
+
+        recognition.onerror = (event) => {
+          state.voiceListening = false;
+          const fatalErrors = ["not-allowed", "service-not-allowed", "audio-capture", "language-not-supported"];
+          if (event.error === "aborted") return;
+          if (fatalErrors.includes(event.error)) state.voiceWanted = false;
+
+          const message = voiceErrorMessage(event.error);
+          setVoiceStatus(message, "error");
+          addLog(message);
+          if (!state.voiceWanted) {
+            el.voiceBtn.textContent = "음성명령 시작";
+            el.voiceBtn.classList.remove("listening");
+          }
+        };
+
+        recognition.onend = () => {
+          state.voiceListening = false;
+          el.voiceBtn.classList.remove("listening");
+          clearTimeout(state.voiceRestartTimer);
+          if (state.voiceWanted && state.settings.gripperControlMode === "voice" && document.visibilityState === "visible") {
+            el.voiceBtn.textContent = "마이크 재연결 중…";
+            state.voiceRestartTimer = setTimeout(() => startVoiceRecognition(true), 280);
+          } else if (!state.voiceWanted) {
+            el.voiceBtn.textContent = "음성명령 시작";
+          }
+        };
+
+        return recognition;
+      }
+
+      function startVoiceRecognition(isRestart = false) {
+        if (state.settings.gripperControlMode !== "voice") return;
+        if (!state.speechRecognition) state.speechRecognition = createVoiceRecognition();
+        if (!state.speechRecognition) {
+          state.voiceWanted = false;
+          el.voiceBtn.disabled = true;
+          el.voiceBtn.textContent = "음성명령 미지원";
+          setVoiceStatus("이 브라우저에서는 음성 인식을 사용할 수 없습니다.", "error");
+          return;
+        }
+        if (state.voiceListening) return;
+
+        state.voiceWanted = true;
+        clearTimeout(state.voiceRestartTimer);
+        el.voiceBtn.disabled = true;
+        el.voiceBtn.textContent = isRestart ? "마이크 재연결 중…" : "마이크 연결 중…";
+        setVoiceStatus("마이크 권한을 확인하고 있습니다.", "");
+        try {
+          state.speechRecognition.start();
+        } catch (error) {
+          el.voiceBtn.disabled = false;
+          if (error?.name !== "InvalidStateError") {
+            state.voiceWanted = false;
+            el.voiceBtn.textContent = "음성명령 시작";
+            setVoiceStatus("음성 인식을 시작하지 못했습니다.", "error");
+            addConsoleError("음성 인식 시작 실패", error);
+          }
+        }
+      }
+
+      function stopVoiceRecognition() {
+        state.voiceWanted = false;
+        state.voiceListening = false;
+        clearTimeout(state.voiceRestartTimer);
+        state.voiceRestartTimer = null;
+        if (state.speechRecognition) {
+          try { state.speechRecognition.abort(); } catch (error) { /* 이미 종료됨 */ }
+        }
+        el.voiceBtn.disabled = false;
+        el.voiceBtn.textContent = "음성명령 시작";
+        el.voiceBtn.classList.remove("listening");
+        setVoiceStatus("음성명령이 중지되었습니다.", "");
+      }
+
+      function processVoiceTranscript(transcript) {
+        const normalized = transcript.replace(/\s+/g, "");
+        const openIndex = normalized.indexOf("열");
+        const closeIndex = normalized.indexOf("닫");
+        if (openIndex < 0 && closeIndex < 0) return false;
+
+        const now = performance.now();
+        if (now - state.lastVoiceCommandAt < 900) return false;
+        state.lastVoiceCommandAt = now;
+
+        const shouldOpen = openIndex >= 0 && (closeIndex < 0 || openIndex < closeIndex);
+        const command = shouldOpen ? COMMANDS.gripperOpen : COMMANDS.gripperClose;
+        const gripperLabel = shouldOpen ? "열림" : "닫힘";
+        transmitCommand(command);
+        el.gripperStatus.textContent = gripperLabel;
+        setVoiceStatus(`명령 인식 · ${transcript} → ${gripperLabel}`, "listening");
+        addLog(`VOICE · “${transcript}” → 신호 ${command.code}`);
+        return true;
+      }
+
+      function setVoiceStatus(message, stateClass) {
+        el.voiceStatusText.textContent = message;
+        el.voiceStatus.className = "voice-status" + (stateClass ? " " + stateClass : "");
+      }
+
+      function voiceErrorMessage(error) {
+        if (error === "not-allowed" || error === "service-not-allowed") {
+          return "마이크 또는 음성 인식 권한이 거부되었습니다. 브라우저 권한을 확인하세요.";
+        }
+        if (error === "audio-capture") return "사용할 수 있는 마이크를 찾지 못했습니다.";
+        if (error === "language-not-supported") return "이 브라우저는 한국어 음성 인식을 지원하지 않습니다.";
+        if (error === "network") return "음성 인식 네트워크 연결을 확인하세요.";
+        if (error === "no-speech") return "음성이 들리지 않아 다시 듣고 있습니다.";
+        return `음성 인식 오류 · ${error}`;
+      }
+
       async function toggleCamera() {
         if (state.cameraRunning) {
           stopCamera();
@@ -1442,7 +1724,9 @@
         try {
           await state.pose.send({ image: el.videoElement });
           state.frameCount += 1;
-          if (state.frameCount % 2 === 0) await state.faceMesh.send({ image: el.videoElement });
+          if (state.settings.gripperControlMode === "wink" && state.frameCount % 2 === 0) {
+            await state.faceMesh.send({ image: el.videoElement });
+          }
           state.frameErrors = 0;
         } catch (error) {
           state.frameErrors += 1;
@@ -1486,6 +1770,7 @@
       }
 
       function onFaceResults(results) {
+        if (state.settings.gripperControlMode !== "wink") return;
         state.faceResults = results;
         state.lastFaceAt = performance.now();
         const landmarks = results.multiFaceLandmarks?.[0];
@@ -1504,7 +1789,7 @@
         ctx.setTransform(-1, 0, 0, 1, width, 0);
         ctx.drawImage(results.image || el.videoElement, 0, 0, width, height);
 
-        if (state.faceResults?.multiFaceLandmarks?.[0] && performance.now() - state.lastFaceAt < 800) {
+        if (state.settings.gripperControlMode === "wink" && state.faceResults?.multiFaceLandmarks?.[0] && performance.now() - state.lastFaceAt < 800) {
           const face = state.faceResults.multiFaceLandmarks[0];
           drawEyeMarker(ctx, face, [159, 145, 33, 133], "#48dfb5");
           drawEyeMarker(ctx, face, [386, 374, 362, 263], "#74a7ff");
@@ -1660,6 +1945,7 @@
       }
 
       function processEyeControl(landmarks) {
+        if (state.settings.gripperControlMode !== "wink") return;
         // Face Mesh 기준 사용자의 오른쪽 눈은 33/133, 왼쪽 눈은 362/263 계열이다.
         const rightEar = calculateEar(landmarks, 159, 145, 33, 133);
         const leftEar = calculateEar(landmarks, 386, 374, 362, 263);
@@ -1759,11 +2045,23 @@
       }
 
       function handleVisibilityChange() {
-        if (document.visibilityState === "visible" && state.cameraRunning && state.settings.keepAwake) requestWakeLock();
+        if (document.visibilityState === "hidden") {
+          if (state.voiceListening && state.speechRecognition) {
+            try { state.speechRecognition.abort(); } catch (error) { /* 이미 종료됨 */ }
+          }
+          return;
+        }
+        if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
+        if (state.voiceWanted && state.settings.gripperControlMode === "voice") startVoiceRecognition(true);
       }
 
       function handlePageHide() {
         if (state.cameraRunning) transmitCommand(COMMANDS.stop, { forceLog: false });
+        state.voiceWanted = false;
+        clearTimeout(state.voiceRestartTimer);
+        if (state.speechRecognition) {
+          try { state.speechRecognition.abort(); } catch (error) { /* 이미 종료됨 */ }
+        }
         cleanupCameraStream();
       }
 
@@ -1844,4 +2142,3 @@
   </script>
 </body>
 </html>
-
