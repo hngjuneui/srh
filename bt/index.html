@@ -1,932 +1,282 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BLE 모터 제어</title>
-<style>
-* {
-    box-sizing: border-box;
-}
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f2f2f7;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0;
-    padding: 20px;
-    color: #1c1c1e;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-}
-h1 {
-    font-size: 1.5em;
-    color: #007aff;
-    font-weight: 600;
-    margin-bottom: 10px;
-}
-h3 {
-    font-size: 1em;
-    font-weight: 600;
-    margin: 20px 0 10px;
-    text-align: center;
-}
-#status {
-    width: 100%;
-    max-width: 400px;
-    margin: 10px 0;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 12px;
-    background-color: #ffffff;
-    color: #1c1c1e;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    font-size: 0.9em;
-    cursor: pointer;
-}
-#status.connected {
-    background-color: #e8f7ed;
-    color: #176b34;
-}
-.tab-buttons {
-    display: flex;
-    width: 100%;
-    max-width: 400px;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-.tab-button {
-    flex: 1;
-    padding: 10px;
-    border-radius: 16px;
-    background-color: #e5e5ea;
-    color: #1c1c1e;
-}
-.tab-button.active {
-    background-color: #0051d5;
-    color: #ffffff;
-}
-.tab {
-    display: none;
-    width: 100%;
-    max-width: 400px;
-}
-.tab.active {
-    display: block;
-}
-input[type="text"] {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border: 1px solid #d1d1d6;
-    border-radius: 12px;
-    background-color: #ffffff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    font-size: 1em;
-    user-select: text;
-    -webkit-user-select: text;
-}
-button {
-    width: 100%;
-    max-width: 400px;
-    padding: 12px;
-    margin: 5px 0;
-    border: none;
-    border-radius: 12px;
-    background-color: #007aff;
-    color: white;
-    font-size: 1em;
-    font-weight: 500;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    -webkit-touch-callout: none;
-}
-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-.control-button {
-    touch-action: none;
-}
-.control-button.active {
-    background-color: #ff3b30;
-    transform: scale(0.95);
-}
-.preset-buttons-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 20px;
-}
-.preset-button-single {
-    width: 33%;
-    margin: 10px auto;
-    text-align: center;
-}
-.preset-button-row {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-}
-.preset-button-triple {
-    width: 28%;
-    margin: 10px 5px;
-    text-align: center;
-}
-.preset-inputs-section {
-    width: 100%;
-}
-.help {
-    margin: 0 0 8px;
-    color: #636366;
-    font-size: 0.8em;
-    text-align: center;
-}
-footer {
-    width: 100%;
-    max-width: 400px;
-    margin-top: 20px;
-    padding: 10px 0;
-    color: #8e8e93;
-    font-size: 0.8em;
-    text-align: center;
-}
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BLE 웹 시리얼 통신</title>
+    <style>
+        /* 전체 레이아웃 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f2f2f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #1c1c1e;
+        }
+        h1 {
+            font-size: 1.5em;
+            color: #007aff;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        /* 페어링 상태 */
+        #status {
+            margin: 10px 0;
+            padding: 12px 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            user-select: none;
+            cursor: pointer;
+        }
+        /* 탭 버튼 스타일 */
+        .tab-buttons {
+            display: flex;
+            width: 100%;
+            max-width: 400px;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 16px;
+            background-color: #e5e5ea;
+            color: #1c1c1e;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .tab-button.active {
+            background-color: #007aff;
+            color: #ffffff;
+        }
+        /* 탭 섹션 */
+        .tab {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+        }
+        .tab.active {
+            display: block;
+        }
+        /* 입력 필드 */
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #d1d1d6;
+            border-radius: 12px;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        /* 일반 버튼 */
+        button {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 12px;
+            background-color: #007aff;
+            color: white;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #005ecb;
+        }
+        /* 프리셋 버튼 스타일 */
+        .preset-buttons-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .preset-button-single {
+            width: 33%;
+            margin: 10px auto;
+            text-align: center;
+        }
+        .preset-button-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .preset-button-triple {
+            width: 28%;
+            margin: 10px 5px;
+            text-align: center;
+        }
+        /* 프리셋 입력 필드 스타일 */
+        .preset-input {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #d1d1d6;
+            border-radius: 12px;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+    </style>    
 </head>
-
 <body>
-<h1>BLE 모터 제어</h1>
+    <h1>BLE 웹 시리얼 통신</h1>
+    <p id="status">이 곳을 터치하여 기기 검색...</p>
 
-<button id="status" type="button">
-    이곳을 터치하여 기기 검색...
-</button>
-
-<div class="tab-buttons" role="tablist" aria-label="제어 모드">
-    <button
-        class="tab-button active"
-        type="button"
-        data-tab="1"
-        role="tab"
-        aria-selected="true"
-    >
-        입력 모드
-    </button>
-
-    <button
-        class="tab-button"
-        type="button"
-        data-tab="2"
-        role="tab"
-        aria-selected="false"
-    >
-        버튼 모드
-    </button>
-</div>
-
-<div id="tab1" class="tab active" role="tabpanel">
-    <p class="help">
-        Arduino 코드에 정의한 영문 또는 숫자 한 글자를 입력하세요.
-    </p>
-
-    <input
-        type="text"
-        id="inputText"
-        maxlength="1"
-        autocomplete="off"
-        placeholder="보낼 문자 한 글자"
-    >
-
-    <button id="sendButton" type="button">전송</button>
-</div>
-
-<div id="tab2" class="tab" role="tabpanel">
-    <div class="preset-buttons-container">
-        <div class="preset-button-single">
-            <button
-                class="control-button"
-                type="button"
-                data-preset="1"
-            >
-                버튼1
-            </button>
-        </div>
-
-        <div class="preset-button-row">
-            <div class="preset-button-triple">
-                <button
-                    class="control-button"
-                    type="button"
-                    data-preset="2"
-                >
-                    버튼2
-                </button>
-            </div>
-
-            <div class="preset-button-triple">
-                <button
-                    class="control-button"
-                    type="button"
-                    data-preset="3"
-                >
-                    버튼3
-                </button>
-            </div>
-
-            <div class="preset-button-triple">
-                <button
-                    class="control-button"
-                    type="button"
-                    data-preset="4"
-                >
-                    버튼4
-                </button>
-            </div>
-        </div>
-
-        <div class="preset-button-single">
-            <button
-                class="control-button"
-                type="button"
-                data-preset="5"
-            >
-                버튼5
-            </button>
-        </div>
+    <!-- 탭 버튼 -->
+    <div class="tab-buttons">
+        <button class="tab-button active" onclick="showTab(1)">입력 모드</button>
+        <button class="tab-button" onclick="showTab(2)">버튼 모드</button>
     </div>
 
-    <div class="preset-inputs-section">
-        <p class="help">
-            각 프리셋은 영문 또는 숫자 한 글자를 사용합니다.
-        </p>
-
-        <h3>버튼 눌렀을 때</h3>
-
-        <input
-            type="text"
-            id="preset1-press"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼1 누를 때"
-            value="8"
-        >
-        <input
-            type="text"
-            id="preset2-press"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼2 누를 때"
-            value="4"
-        >
-        <input
-            type="text"
-            id="preset3-press"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼3 누를 때"
-            value="5"
-        >
-        <input
-            type="text"
-            id="preset4-press"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼4 누를 때"
-            value="6"
-        >
-        <input
-            type="text"
-            id="preset5-press"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼5 누를 때"
-            value="2"
-        >
-
-        <h3>버튼 뗐을 때</h3>
-
-        <input
-            type="text"
-            id="preset1-release"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼1 뗄 때"
-            value="5"
-        >
-        <input
-            type="text"
-            id="preset2-release"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼2 뗄 때"
-            value="5"
-        >
-        <input
-            type="text"
-            id="preset3-release"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼3 뗄 때"
-            value="5"
-        >
-        <input
-            type="text"
-            id="preset4-release"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼4 뗄 때"
-            value="5"
-        >
-        <input
-            type="text"
-            id="preset5-release"
-            class="preset-input"
-            maxlength="1"
-            autocomplete="off"
-            placeholder="버튼5 뗄 때"
-            value="5"
-        >
+    <!-- 첫 번째 탭: 텍스트 입력 -->
+    <div id="tab1" class="tab active">
+        <input type="text" id="inputText" placeholder="보낼 데이터를 입력하세요" />
+        <button onclick="sendData()">전송</button>
     </div>
-</div>
 
-<footer>
-    <hr style="
-        border: none;
-        border-top: 1px solid #d1d1d6;
-        margin: 10px 0;
-    ">
-    2024 Teacher Jun, Dept. of Robotics Mechanical Design,
-    Seoul Robotics Highschool
-</footer>
-
-<script>
-const SERVICE_UUID =
-    '00c0ffee-1234-1234-1234-123456789abc';
-
-const CHARACTERISTIC_UUID =
-    '00c0ffee-4321-4321-4321-cba987654321';
-
-const HEARTBEAT_INTERVAL_MS = 100;
-const HEARTBEAT_VALUE = Uint8Array.of(0x00);
-
-let device = null;
-let characteristic = null;
-
-let writeInFlight = false;
-let pendingWrite = null;
-
-let heartbeatTimer = null;
-let activeControl = null;
-let activePointerId = null;
-
-const statusButton =
-    document.getElementById('status');
-
-const encoder = new TextEncoder();
-
-function setStatus(message, connected = false) {
-    statusButton.textContent = message;
-
-    statusButton.classList.toggle(
-        'connected',
-        connected
-    );
-}
-
-function getSingleByteValue(inputId) {
-    const input =
-        document.getElementById(inputId);
-
-    const value = input.value;
-    const bytes = encoder.encode(value);
-
-    if (
-        bytes.length !== 1 ||
-        bytes[0] === 0x00
-    ) {
-        setStatus(
-            '영문 또는 숫자 한 글자만 입력하세요.'
-        );
-        return null;
-    }
-
-    return bytes;
-}
-
-async function scanAndConnect() {
-    if (
-        characteristic &&
-        device?.gatt?.connected
-    ) {
-        setStatus(
-            `상태: ${
-                device.name || '이름 없는 기기'
-            } 연결됨`,
-            true
-        );
-        return;
-    }
-
-    if (!window.isSecureContext) {
-        setStatus(
-            'HTTPS 주소에서 접속해야 Bluetooth를 사용할 수 있습니다.'
-        );
-        return;
-    }
-
-    if (!('bluetooth' in navigator)) {
-        setStatus(
-            '이 브라우저는 Web Bluetooth를 지원하지 않습니다. ' +
-            'iOS는 Bluefy를 사용하세요.'
-        );
-        return;
-    }
-
-    statusButton.disabled = true;
-    setStatus(
-        '수업용 Arduino 보드를 검색하는 중...'
-    );
-
-    try {
-        /*
-         * 서비스 UUID만 사용해 검색합니다.
-         * 이름이나 이름 프리픽스는 필터링하지 않습니다.
-         */
-        const selectedDevice =
-            await navigator.bluetooth.requestDevice({
-                filters: [
-                    {
-                        services: [SERVICE_UUID]
-                    }
-                ]
-            });
-
-        if (
-            device &&
-            device !== selectedDevice &&
-            device.gatt?.connected
-        ) {
-            device.gatt.disconnect();
-        }
-
-        device = selectedDevice;
-
-        device.addEventListener(
-            'gattserverdisconnected',
-            handleDisconnected,
-            { once: true }
-        );
-
-        const server =
-            await device.gatt.connect();
-
-        const service =
-            await server.getPrimaryService(
-                SERVICE_UUID
-            );
-
-        characteristic =
-            await service.getCharacteristic(
-                CHARACTERISTIC_UUID
-            );
-
-        if (
-            !characteristic.properties.write &&
-            !characteristic.properties
-                .writeWithoutResponse
-        ) {
-            throw new Error(
-                '선택한 characteristic에 쓰기 권한이 없습니다.'
-            );
-        }
-
-        setStatus(
-            `상태: ${
-                device.name || '이름 없는 기기'
-            } 연결됨`,
-            true
-        );
-    } catch (error) {
-        characteristic = null;
-
-        if (error.name === 'NotFoundError') {
-            setStatus(
-                '기기 선택이 취소되었습니다. ' +
-                '다시 터치하여 검색하세요.'
-            );
-        } else {
-            setStatus(
-                `BLE 연결 실패: ${
-                    error.message || error.name
-                }`
-            );
-
-            console.error(
-                'BLE 연결 오류:',
-                error
-            );
-        }
-    } finally {
-        statusButton.disabled = false;
-    }
-}
-
-function handleDisconnected() {
-    stopHeartbeat();
-    clearActiveControl();
-
-    pendingWrite = null;
-    characteristic = null;
-
-    setStatus(
-        '연결이 끊어졌습니다. ' +
-        '터치하여 다시 연결하세요.'
-    );
-}
-
-/*
- * BLE 쓰기를 계속 쌓지 않습니다.
- * 아직 전송되지 않은 신호는 항상 가장 최신 신호로
- * 교체됩니다.
- */
-function queueLatestWrite(
-    data,
-    preferResponse = true
-) {
-    if (
-        !characteristic ||
-        !device?.gatt?.connected
-    ) {
-        setStatus(
-            '연결된 Arduino가 없습니다.'
-        );
-        return false;
-    }
-
-    pendingWrite = {
-        data: Uint8Array.from(data),
-        preferResponse
-    };
-
-    void flushWrites();
-    return true;
-}
-
-async function flushWrites() {
-    if (writeInFlight) return;
-
-    writeInFlight = true;
-
-    try {
-        while (
-            pendingWrite &&
-            characteristic &&
-            device?.gatt?.connected
-        ) {
-            const job = pendingWrite;
-
-            /*
-             * 전송할 신호를 꺼낸 뒤 대기 공간을 비웁니다.
-             * 전송 중 새 신호가 들어오면 pendingWrite에는
-             * 가장 마지막 신호 하나만 남습니다.
-             */
-            pendingWrite = null;
-
-            await writeCharacteristic(
-                job.data,
-                job.preferResponse
-            );
-        }
-    } catch (error) {
-        pendingWrite = null;
-
-        setStatus(
-            `BLE 전송 실패: ${
-                error.message || error.name
-            }`
-        );
-
-        console.error(
-            'BLE 전송 오류:',
-            error
-        );
-    } finally {
-        writeInFlight = false;
-
-        if (pendingWrite) {
-            void flushWrites();
-        }
-    }
-}
-
-async function writeCharacteristic(
-    data,
-    preferResponse
-) {
-    const canWrite =
-        characteristic.properties.write;
-
-    const canWriteWithoutResponse =
-        characteristic.properties
-            .writeWithoutResponse;
-
-    if (
-        preferResponse &&
-        canWrite &&
-        typeof characteristic
-            .writeValueWithResponse === 'function'
-    ) {
-        await characteristic
-            .writeValueWithResponse(data);
-    } else if (
-        canWriteWithoutResponse &&
-        typeof characteristic
-            .writeValueWithoutResponse === 'function'
-    ) {
-        await characteristic
-            .writeValueWithoutResponse(data);
-    } else if (
-        canWrite &&
-        typeof characteristic
-            .writeValueWithResponse === 'function'
-    ) {
-        await characteristic
-            .writeValueWithResponse(data);
-    } else if (
-        typeof characteristic.writeValue ===
-        'function'
-    ) {
-        /*
-         * 구형 Web Bluetooth 구현과
-         * Bluefy를 위한 호환 경로입니다.
-         */
-        await characteristic.writeValue(data);
-    } else {
-        throw new Error(
-            '사용 가능한 BLE 쓰기 메서드가 없습니다.'
-        );
-    }
-}
-
-function sendInputData() {
-    const data =
-        getSingleByteValue('inputText');
-
-    if (data) {
-        queueLatestWrite(data, true);
-    }
-}
-
-function sendPresetData(
-    presetNumber,
-    action
-) {
-    const data = getSingleByteValue(
-        `preset${presetNumber}-${action}`
-    );
-
-    return data
-        ? queueLatestWrite(data, true)
-        : false;
-}
-
-function startHeartbeat() {
-    stopHeartbeat();
-
-    heartbeatTimer = window.setInterval(
-        () => {
-            /*
-             * heartbeat는 모터 속도를 바꾸지 않고
-             * Arduino의 안전 타이머만 갱신합니다.
-             */
-            queueLatestWrite(
-                HEARTBEAT_VALUE,
-                false
-            );
-        },
-        HEARTBEAT_INTERVAL_MS
-    );
-}
-
-function stopHeartbeat() {
-    if (heartbeatTimer !== null) {
-        window.clearInterval(
-            heartbeatTimer
-        );
-
-        heartbeatTimer = null;
-    }
-}
-
-function clearActiveControl() {
-    if (activeControl) {
-        activeControl.classList.remove(
-            'active'
-        );
-    }
-
-    activeControl = null;
-    activePointerId = null;
-}
-
-function releaseActiveControl() {
-    if (!activeControl) return;
-
-    const presetNumber =
-        activeControl.dataset.preset;
-
-    stopHeartbeat();
-    clearActiveControl();
-
-    /*
-     * 대기 중인 heartbeat가 있다면
-     * release 신호로 교체됩니다.
-     */
-    sendPresetData(
-        presetNumber,
-        'release'
-    );
-}
-
-function handleControlDown(event) {
-    if (
-        event.pointerType === 'mouse' &&
-        event.button !== 0
-    ) {
-        return;
-    }
-
-    event.preventDefault();
-
-    /*
-     * 동시에 두 개 이상의 제어 버튼이 눌리는 것을
-     * 방지합니다.
-     */
-    if (
-        activeControl &&
-        activePointerId !== event.pointerId
-    ) {
-        return;
-    }
-
-    if (activeControl) return;
-
-    const button = event.currentTarget;
-
-    if (
-        !sendPresetData(
-            button.dataset.preset,
-            'press'
-        )
-    ) {
-        return;
-    }
-
-    activeControl = button;
-    activePointerId = event.pointerId;
-
-    button.classList.add('active');
-
-    button.setPointerCapture?.(
-        event.pointerId
-    );
-
-    startHeartbeat();
-}
-
-function handleControlUp(event) {
-    if (
-        activePointerId !== event.pointerId
-    ) {
-        return;
-    }
-
-    event.preventDefault();
-    releaseActiveControl();
-}
-
-function showTab(tabNumber) {
-    document
-        .querySelectorAll('.tab')
-        .forEach(tab => {
-            tab.classList.remove('active');
-        });
-
-    document
-        .querySelectorAll('.tab-button')
-        .forEach(button => {
-            const selected =
-                button.dataset.tab ===
-                String(tabNumber);
-
-            button.classList.toggle(
-                'active',
-                selected
-            );
-
-            button.setAttribute(
-                'aria-selected',
-                String(selected)
-            );
-        });
-
-    document
-        .getElementById(`tab${tabNumber}`)
-        .classList.add('active');
-}
-
-statusButton.addEventListener(
-    'click',
-    scanAndConnect
-);
-
-document
-    .getElementById('sendButton')
-    .addEventListener(
-        'click',
-        sendInputData
-    );
-
-document
-    .getElementById('inputText')
-    .addEventListener(
-        'keydown',
-        event => {
-            if (event.key === 'Enter') {
-                sendInputData();
+    <!-- 두 번째 탭: 버튼 할당 -->
+    <div id="tab2" class="tab">
+        <div class="preset-buttons-container">
+            <div class="preset-button-single">
+                <button onclick="sendPresetData(1)">버튼1</button>
+            </div>
+            <div class="preset-button-row">
+                <div class="preset-button-triple">
+                    <button onclick="sendPresetData(2)">버튼2</button>
+                </div>
+                <div class="preset-button-triple">
+                    <button onclick="sendPresetData(3)">버튼3</button>
+                </div>
+                <div class="preset-button-triple">
+                    <button onclick="sendPresetData(4)">버튼4</button>
+                </div>
+            </div>
+            <div class="preset-button-single">
+                <button onclick="sendPresetData(5)">버튼5</button>
+            </div>
+        </div>
+        <input type="text" id="preset1" class="preset-input" placeholder="프리셋 1 입력" value="8" />
+        <input type="text" id="preset2" class="preset-input" placeholder="프리셋 2 입력" value="4" />
+        <input type="text" id="preset3" class="preset-input" placeholder="프리셋 3 입력" value="5" />
+        <input type="text" id="preset4" class="preset-input" placeholder="프리셋 4 입력" value="6" />
+        <input type="text" id="preset5" class="preset-input" placeholder="프리셋 5 입력" value="2" />
+    </div>
+
+    <div style="width: 100%; max-width: 400px; text-align: center; padding: 10px 0; margin-top: 20px; font-size: 0.8em; color: #8e8e93;">
+        <hr style="border: none; border-top: 1px solid #d1d1d6; margin: 10px 0;" />
+        2024 Teacher Jun, Dept. of Robotics Mechanical Design, Seoul Robotics Highschool
+    </div>
+
+    <script>
+        let device;
+        let characteristic;
+
+        async function scanAndConnect() {
+            try {
+                const selectedDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['00c0ffee-1234-1234-1234-123456789abc']
+                });
+
+                device = selectedDevice;
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('00c0ffee-1234-1234-1234-123456789abc');
+                characteristic = await service.getCharacteristic('00c0ffee-4321-4321-4321-cba987654321');
+
+                document.getElementById('status').innerText = `상태: ${device.name} 연결됨`;
+                console.log(`기기 "${device.name}"에 연결되었습니다.`);
+
+                device.addEventListener('gattserverdisconnected', () => {
+                    document.getElementById('status').innerText = "이 곳을 터치하여 기기 검색...";
+                    characteristic = null;
+                });
+            } catch (error) {
+                document.getElementById('status').innerText = "이 곳을 터치하여 기기 검색...";
+                console.error("BLE 연결 오류:", error);
             }
         }
-    );
 
-document
-    .querySelectorAll('.tab-button')
-    .forEach(button => {
-        button.addEventListener(
-            'click',
-            () => {
-                showTab(
-                    Number(
-                        button.dataset.tab
-                    )
-                );
+        async function sendData() {
+            if (!characteristic) {
+                document.getElementById('status').innerText = "상태: 페어링 기기가 없습니다.";
+                return;
             }
-        );
-    });
+            const text = document.getElementById('inputText').value;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
 
-document
-    .querySelectorAll('.control-button')
-    .forEach(button => {
-        button.addEventListener(
-            'pointerdown',
-            handleControlDown
-        );
-
-        button.addEventListener(
-            'pointerup',
-            handleControlUp
-        );
-
-        button.addEventListener(
-            'pointercancel',
-            handleControlUp
-        );
-
-        button.addEventListener(
-            'lostpointercapture',
-            handleControlUp
-        );
-    });
-
-window.addEventListener(
-    'blur',
-    releaseActiveControl
-);
-
-window.addEventListener(
-    'pagehide',
-    releaseActiveControl
-);
-
-document.addEventListener(
-    'visibilitychange',
-    () => {
-        if (document.hidden) {
-            releaseActiveControl();
+            try {
+                await characteristic.writeValue(data);
+                console.log("데이터 전송 완료:", text);
+            } catch (error) {
+                document.getElementById('status').innerText = "전송 상태: 전송이 실패하였습니다.";
+                console.error("데이터 전송 오류:", error);
+            }
         }
-    }
-);
-</script>
+
+        async function sendPresetData(presetNumber) {
+            if (!characteristic) {
+                document.getElementById('status').innerText = "페어링 상태: 페어링 기기가 없습니다.";
+                return;
+            }
+            const text = document.getElementById(`preset${presetNumber}`).value;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+
+            try {
+                await characteristic.writeValue(data);
+                console.log(`프리셋 ${presetNumber} 데이터 전송 완료:`, text);
+            } catch (error) {
+                document.getElementById('status').innerText = "전송 상태: 전송이 실패하였습니다.";
+                console.error(`프리셋 ${presetNumber} 데이터 전송 오류:`, error);
+            }
+        }
+
+        function showTab(tabNumber) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(`tab${tabNumber}`).classList.add('active');
+            document.querySelectorAll('.tab-button')[tabNumber - 1].classList.add('active');
+        }
+
+        // status 박스 클릭 시 기기 검색 팝업 띄우기
+        document.getElementById('status').addEventListener('click', () => {
+            scanAndConnect();
+        });
+
+        // 터치 확대 및 텍스트 선택 방지 (기존 유지)
+        document.addEventListener('touchstart', function preventZoom(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = new Date().getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
 </body>
 </html>
