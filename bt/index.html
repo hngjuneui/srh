@@ -29,7 +29,6 @@ h1 {
 }
 h3 {
     font-size: 1em;
-    color: #1c1c1e;
     font-weight: 600;
     margin: 20px 0 10px;
     text-align: center;
@@ -64,8 +63,6 @@ h3 {
     border-radius: 16px;
     background-color: #e5e5ea;
     color: #1c1c1e;
-    font-size: 1em;
-    font-weight: 500;
 }
 .tab-button.active {
     background-color: #0051d5;
@@ -163,135 +160,383 @@ footer {
 
 <body>
 <h1>BLE 모터 제어</h1>
-<button id="status" type="button">이곳을 터치하여 기기 검색...</button>
+
+<button id="status" type="button">
+    이곳을 터치하여 기기 검색...
+</button>
 
 <div class="tab-buttons" role="tablist" aria-label="제어 모드">
-    <button class="tab-button active" type="button" data-tab="1" role="tab" aria-selected="true">입력 모드</button>
-    <button class="tab-button" type="button" data-tab="2" role="tab" aria-selected="false">버튼 모드</button>
+    <button
+        class="tab-button active"
+        type="button"
+        data-tab="1"
+        role="tab"
+        aria-selected="true"
+    >
+        입력 모드
+    </button>
+
+    <button
+        class="tab-button"
+        type="button"
+        data-tab="2"
+        role="tab"
+        aria-selected="false"
+    >
+        버튼 모드
+    </button>
 </div>
 
 <div id="tab1" class="tab active" role="tabpanel">
-    <p class="help">Arduino 코드에 정의한 영문 또는 숫자 한 글자를 입력하세요.</p>
-    <input type="text" id="inputText" maxlength="1" autocomplete="off" placeholder="보낼 문자 한 글자">
+    <p class="help">
+        Arduino 코드에 정의한 영문 또는 숫자 한 글자를 입력하세요.
+    </p>
+
+    <input
+        type="text"
+        id="inputText"
+        maxlength="1"
+        autocomplete="off"
+        placeholder="보낼 문자 한 글자"
+    >
+
     <button id="sendButton" type="button">전송</button>
 </div>
 
 <div id="tab2" class="tab" role="tabpanel">
     <div class="preset-buttons-container">
         <div class="preset-button-single">
-            <button class="control-button" type="button" data-preset="1">버튼1</button>
+            <button
+                class="control-button"
+                type="button"
+                data-preset="1"
+            >
+                버튼1
+            </button>
         </div>
+
         <div class="preset-button-row">
-            <div class="preset-button-triple"><button class="control-button" type="button" data-preset="2">버튼2</button></div>
-            <div class="preset-button-triple"><button class="control-button" type="button" data-preset="3">버튼3</button></div>
-            <div class="preset-button-triple"><button class="control-button" type="button" data-preset="4">버튼4</button></div>
+            <div class="preset-button-triple">
+                <button
+                    class="control-button"
+                    type="button"
+                    data-preset="2"
+                >
+                    버튼2
+                </button>
+            </div>
+
+            <div class="preset-button-triple">
+                <button
+                    class="control-button"
+                    type="button"
+                    data-preset="3"
+                >
+                    버튼3
+                </button>
+            </div>
+
+            <div class="preset-button-triple">
+                <button
+                    class="control-button"
+                    type="button"
+                    data-preset="4"
+                >
+                    버튼4
+                </button>
+            </div>
         </div>
+
         <div class="preset-button-single">
-            <button class="control-button" type="button" data-preset="5">버튼5</button>
+            <button
+                class="control-button"
+                type="button"
+                data-preset="5"
+            >
+                버튼5
+            </button>
         </div>
     </div>
 
     <div class="preset-inputs-section">
-        <p class="help">각 프리셋은 영문 또는 숫자 한 글자를 사용합니다.</p>
+        <p class="help">
+            각 프리셋은 영문 또는 숫자 한 글자를 사용합니다.
+        </p>
+
         <h3>버튼 눌렀을 때</h3>
-        <input type="text" id="preset1-press" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼1 누를 때" value="8">
-        <input type="text" id="preset2-press" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼2 누를 때" value="4">
-        <input type="text" id="preset3-press" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼3 누를 때" value="5">
-        <input type="text" id="preset4-press" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼4 누를 때" value="6">
-        <input type="text" id="preset5-press" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼5 누를 때" value="2">
+
+        <input
+            type="text"
+            id="preset1-press"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼1 누를 때"
+            value="8"
+        >
+        <input
+            type="text"
+            id="preset2-press"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼2 누를 때"
+            value="4"
+        >
+        <input
+            type="text"
+            id="preset3-press"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼3 누를 때"
+            value="5"
+        >
+        <input
+            type="text"
+            id="preset4-press"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼4 누를 때"
+            value="6"
+        >
+        <input
+            type="text"
+            id="preset5-press"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼5 누를 때"
+            value="2"
+        >
 
         <h3>버튼 뗐을 때</h3>
-        <input type="text" id="preset1-release" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼1 뗄 때" value="5">
-        <input type="text" id="preset2-release" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼2 뗄 때" value="5">
-        <input type="text" id="preset3-release" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼3 뗄 때" value="5">
-        <input type="text" id="preset4-release" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼4 뗄 때" value="5">
-        <input type="text" id="preset5-release" class="preset-input" maxlength="1" autocomplete="off" placeholder="버튼5 뗄 때" value="5">
+
+        <input
+            type="text"
+            id="preset1-release"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼1 뗄 때"
+            value="5"
+        >
+        <input
+            type="text"
+            id="preset2-release"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼2 뗄 때"
+            value="5"
+        >
+        <input
+            type="text"
+            id="preset3-release"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼3 뗄 때"
+            value="5"
+        >
+        <input
+            type="text"
+            id="preset4-release"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼4 뗄 때"
+            value="5"
+        >
+        <input
+            type="text"
+            id="preset5-release"
+            class="preset-input"
+            maxlength="1"
+            autocomplete="off"
+            placeholder="버튼5 뗄 때"
+            value="5"
+        >
     </div>
 </div>
 
 <footer>
-    <hr style="border: none; border-top: 1px solid #d1d1d6; margin: 10px 0;">
-    2024 Teacher Jun, Dept. of Robotics Mechanical Design, Seoul Robotics Highschool
+    <hr style="
+        border: none;
+        border-top: 1px solid #d1d1d6;
+        margin: 10px 0;
+    ">
+    2024 Teacher Jun, Dept. of Robotics Mechanical Design,
+    Seoul Robotics Highschool
 </footer>
 
 <script>
-const SERVICE_UUID = '00c0ffee-1234-1234-1234-123456789abc';
-const CHARACTERISTIC_UUID = '00c0ffee-4321-4321-4321-cba987654321';
+const SERVICE_UUID =
+    '00c0ffee-1234-1234-1234-123456789abc';
+
+const CHARACTERISTIC_UUID =
+    '00c0ffee-4321-4321-4321-cba987654321';
+
 const HEARTBEAT_INTERVAL_MS = 100;
 const HEARTBEAT_VALUE = Uint8Array.of(0x00);
 
 let device = null;
 let characteristic = null;
+
 let writeInFlight = false;
 let pendingWrite = null;
+
 let heartbeatTimer = null;
 let activeControl = null;
 let activePointerId = null;
 
-const statusButton = document.getElementById('status');
+const statusButton =
+    document.getElementById('status');
+
 const encoder = new TextEncoder();
 
 function setStatus(message, connected = false) {
     statusButton.textContent = message;
-    statusButton.classList.toggle('connected', connected);
+
+    statusButton.classList.toggle(
+        'connected',
+        connected
+    );
 }
 
 function getSingleByteValue(inputId) {
-    const value = document.getElementById(inputId).value;
+    const input =
+        document.getElementById(inputId);
+
+    const value = input.value;
     const bytes = encoder.encode(value);
 
-    if (bytes.length !== 1 || bytes[0] === 0x00) {
-        setStatus('영문 또는 숫자 한 글자만 입력하세요.');
+    if (
+        bytes.length !== 1 ||
+        bytes[0] === 0x00
+    ) {
+        setStatus(
+            '영문 또는 숫자 한 글자만 입력하세요.'
+        );
         return null;
     }
+
     return bytes;
 }
 
 async function scanAndConnect() {
-    if (characteristic && device?.gatt?.connected) {
-        setStatus(`상태: ${device.name || '이름 없는 기기'} 연결됨`, true);
+    if (
+        characteristic &&
+        device?.gatt?.connected
+    ) {
+        setStatus(
+            `상태: ${
+                device.name || '이름 없는 기기'
+            } 연결됨`,
+            true
+        );
         return;
     }
+
     if (!window.isSecureContext) {
-        setStatus('HTTPS 주소에서 접속해야 Bluetooth를 사용할 수 있습니다.');
+        setStatus(
+            'HTTPS 주소에서 접속해야 Bluetooth를 사용할 수 있습니다.'
+        );
         return;
     }
+
     if (!('bluetooth' in navigator)) {
-        setStatus('이 브라우저는 Web Bluetooth를 지원하지 않습니다. iOS는 Bluefy를 사용하세요.');
+        setStatus(
+            '이 브라우저는 Web Bluetooth를 지원하지 않습니다. ' +
+            'iOS는 Bluefy를 사용하세요.'
+        );
         return;
     }
 
     statusButton.disabled = true;
-    setStatus('수업용 Arduino 보드를 검색하는 중...');
+    setStatus(
+        '수업용 Arduino 보드를 검색하는 중...'
+    );
 
     try {
-        const selectedDevice = await navigator.bluetooth.requestDevice({
-            filters: [{ services: [SERVICE_UUID] }]
-        });
+        /*
+         * 서비스 UUID만 사용해 검색합니다.
+         * 이름이나 이름 프리픽스는 필터링하지 않습니다.
+         */
+        const selectedDevice =
+            await navigator.bluetooth.requestDevice({
+                filters: [
+                    {
+                        services: [SERVICE_UUID]
+                    }
+                ]
+            });
 
-        if (device && device !== selectedDevice && device.gatt?.connected) {
+        if (
+            device &&
+            device !== selectedDevice &&
+            device.gatt?.connected
+        ) {
             device.gatt.disconnect();
         }
 
         device = selectedDevice;
-        device.addEventListener('gattserverdisconnected', handleDisconnected, { once: true });
 
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService(SERVICE_UUID);
-        characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+        device.addEventListener(
+            'gattserverdisconnected',
+            handleDisconnected,
+            { once: true }
+        );
 
-        if (!characteristic.properties.write && !characteristic.properties.writeWithoutResponse) {
-            throw new Error('선택한 characteristic에 쓰기 권한이 없습니다.');
+        const server =
+            await device.gatt.connect();
+
+        const service =
+            await server.getPrimaryService(
+                SERVICE_UUID
+            );
+
+        characteristic =
+            await service.getCharacteristic(
+                CHARACTERISTIC_UUID
+            );
+
+        if (
+            !characteristic.properties.write &&
+            !characteristic.properties
+                .writeWithoutResponse
+        ) {
+            throw new Error(
+                '선택한 characteristic에 쓰기 권한이 없습니다.'
+            );
         }
 
-        setStatus(`상태: ${device.name || '이름 없는 기기'} 연결됨`, true);
+        setStatus(
+            `상태: ${
+                device.name || '이름 없는 기기'
+            } 연결됨`,
+            true
+        );
     } catch (error) {
         characteristic = null;
+
         if (error.name === 'NotFoundError') {
-            setStatus('기기 선택이 취소되었습니다. 다시 터치하여 검색하세요.');
+            setStatus(
+                '기기 선택이 취소되었습니다. ' +
+                '다시 터치하여 검색하세요.'
+            );
         } else {
-            setStatus(`BLE 연결 실패: ${error.message || error.name}`);
-            console.error('BLE 연결 오류:', error);
+            setStatus(
+                `BLE 연결 실패: ${
+                    error.message || error.name
+                }`
+            );
+
+            console.error(
+                'BLE 연결 오류:',
+                error
+            );
         }
     } finally {
         statusButton.disabled = false;
@@ -301,91 +546,197 @@ async function scanAndConnect() {
 function handleDisconnected() {
     stopHeartbeat();
     clearActiveControl();
+
     pendingWrite = null;
     characteristic = null;
-    setStatus('연결이 끊어졌습니다. 터치하여 다시 연결하세요.');
+
+    setStatus(
+        '연결이 끊어졌습니다. ' +
+        '터치하여 다시 연결하세요.'
+    );
 }
 
-function queueLatestWrite(data, preferResponse = true) {
-    if (!characteristic || !device?.gatt?.connected) {
-        setStatus('연결된 Arduino가 없습니다.');
+/*
+ * BLE 쓰기를 계속 쌓지 않습니다.
+ * 아직 전송되지 않은 신호는 항상 가장 최신 신호로
+ * 교체됩니다.
+ */
+function queueLatestWrite(
+    data,
+    preferResponse = true
+) {
+    if (
+        !characteristic ||
+        !device?.gatt?.connected
+    ) {
+        setStatus(
+            '연결된 Arduino가 없습니다.'
+        );
         return false;
     }
 
-    // 대기 중인 오래된 신호는 최신 신호로 덮어써서 명령 적체를 방지한다.
     pendingWrite = {
         data: Uint8Array.from(data),
         preferResponse
     };
+
     void flushWrites();
     return true;
 }
 
 async function flushWrites() {
     if (writeInFlight) return;
+
     writeInFlight = true;
 
     try {
-        while (pendingWrite && characteristic && device?.gatt?.connected) {
+        while (
+            pendingWrite &&
+            characteristic &&
+            device?.gatt?.connected
+        ) {
             const job = pendingWrite;
+
+            /*
+             * 전송할 신호를 꺼낸 뒤 대기 공간을 비웁니다.
+             * 전송 중 새 신호가 들어오면 pendingWrite에는
+             * 가장 마지막 신호 하나만 남습니다.
+             */
             pendingWrite = null;
-            await writeCharacteristic(job.data, job.preferResponse);
+
+            await writeCharacteristic(
+                job.data,
+                job.preferResponse
+            );
         }
     } catch (error) {
         pendingWrite = null;
-        setStatus(`BLE 전송 실패: ${error.message || error.name}`);
-        console.error('BLE 전송 오류:', error);
+
+        setStatus(
+            `BLE 전송 실패: ${
+                error.message || error.name
+            }`
+        );
+
+        console.error(
+            'BLE 전송 오류:',
+            error
+        );
     } finally {
         writeInFlight = false;
-        if (pendingWrite) void flushWrites();
+
+        if (pendingWrite) {
+            void flushWrites();
+        }
     }
 }
 
-async function writeCharacteristic(data, preferResponse) {
-    const canWrite = characteristic.properties.write;
-    const canWriteWithoutResponse = characteristic.properties.writeWithoutResponse;
+async function writeCharacteristic(
+    data,
+    preferResponse
+) {
+    const canWrite =
+        characteristic.properties.write;
 
-    if (preferResponse && canWrite && typeof characteristic.writeValueWithResponse === 'function') {
-        await characteristic.writeValueWithResponse(data);
-    } else if (canWriteWithoutResponse && typeof characteristic.writeValueWithoutResponse === 'function') {
-        await characteristic.writeValueWithoutResponse(data);
-    } else if (canWrite && typeof characteristic.writeValueWithResponse === 'function') {
-        await characteristic.writeValueWithResponse(data);
-    } else if (typeof characteristic.writeValue === 'function') {
-        // 구형 Web Bluetooth 구현과 Bluefy를 위한 호환 경로
+    const canWriteWithoutResponse =
+        characteristic.properties
+            .writeWithoutResponse;
+
+    if (
+        preferResponse &&
+        canWrite &&
+        typeof characteristic
+            .writeValueWithResponse === 'function'
+    ) {
+        await characteristic
+            .writeValueWithResponse(data);
+    } else if (
+        canWriteWithoutResponse &&
+        typeof characteristic
+            .writeValueWithoutResponse === 'function'
+    ) {
+        await characteristic
+            .writeValueWithoutResponse(data);
+    } else if (
+        canWrite &&
+        typeof characteristic
+            .writeValueWithResponse === 'function'
+    ) {
+        await characteristic
+            .writeValueWithResponse(data);
+    } else if (
+        typeof characteristic.writeValue ===
+        'function'
+    ) {
+        /*
+         * 구형 Web Bluetooth 구현과
+         * Bluefy를 위한 호환 경로입니다.
+         */
         await characteristic.writeValue(data);
     } else {
-        throw new Error('사용 가능한 BLE 쓰기 메서드가 없습니다.');
+        throw new Error(
+            '사용 가능한 BLE 쓰기 메서드가 없습니다.'
+        );
     }
 }
 
 function sendInputData() {
-    const data = getSingleByteValue('inputText');
-    if (data) queueLatestWrite(data, true);
+    const data =
+        getSingleByteValue('inputText');
+
+    if (data) {
+        queueLatestWrite(data, true);
+    }
 }
 
-function sendPresetData(presetNumber, action) {
-    const data = getSingleByteValue(`preset${presetNumber}-${action}`);
-    return data ? queueLatestWrite(data, true) : false;
+function sendPresetData(
+    presetNumber,
+    action
+) {
+    const data = getSingleByteValue(
+        `preset${presetNumber}-${action}`
+    );
+
+    return data
+        ? queueLatestWrite(data, true)
+        : false;
 }
 
 function startHeartbeat() {
     stopHeartbeat();
-    heartbeatTimer = window.setInterval(() => {
-        // heartbeat는 속도를 변경하지 않고 Arduino의 안전 타이머만 갱신한다.
-        queueLatestWrite(HEARTBEAT_VALUE, false);
-    }, HEARTBEAT_INTERVAL_MS);
+
+    heartbeatTimer = window.setInterval(
+        () => {
+            /*
+             * heartbeat는 모터 속도를 바꾸지 않고
+             * Arduino의 안전 타이머만 갱신합니다.
+             */
+            queueLatestWrite(
+                HEARTBEAT_VALUE,
+                false
+            );
+        },
+        HEARTBEAT_INTERVAL_MS
+    );
 }
 
 function stopHeartbeat() {
     if (heartbeatTimer !== null) {
-        window.clearInterval(heartbeatTimer);
+        window.clearInterval(
+            heartbeatTimer
+        );
+
         heartbeatTimer = null;
     }
 }
 
 function clearActiveControl() {
-    if (activeControl) activeControl.classList.remove('active');
+    if (activeControl) {
+        activeControl.classList.remove(
+            'active'
+        );
+    }
+
     activeControl = null;
     activePointerId = null;
 }
@@ -393,66 +744,189 @@ function clearActiveControl() {
 function releaseActiveControl() {
     if (!activeControl) return;
 
-    const presetNumber = activeControl.dataset.preset;
+    const presetNumber =
+        activeControl.dataset.preset;
+
     stopHeartbeat();
     clearActiveControl();
-    // 대기 중인 heartbeat는 release 신호로 덮어쓴다.
-    sendPresetData(presetNumber, 'release');
+
+    /*
+     * 대기 중인 heartbeat가 있다면
+     * release 신호로 교체됩니다.
+     */
+    sendPresetData(
+        presetNumber,
+        'release'
+    );
 }
 
 function handleControlDown(event) {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (
+        event.pointerType === 'mouse' &&
+        event.button !== 0
+    ) {
+        return;
+    }
+
     event.preventDefault();
 
-    if (activeControl && activePointerId !== event.pointerId) return;
+    /*
+     * 동시에 두 개 이상의 제어 버튼이 눌리는 것을
+     * 방지합니다.
+     */
+    if (
+        activeControl &&
+        activePointerId !== event.pointerId
+    ) {
+        return;
+    }
+
     if (activeControl) return;
 
     const button = event.currentTarget;
-    if (!sendPresetData(button.dataset.preset, 'press')) return;
+
+    if (
+        !sendPresetData(
+            button.dataset.preset,
+            'press'
+        )
+    ) {
+        return;
+    }
 
     activeControl = button;
     activePointerId = event.pointerId;
+
     button.classList.add('active');
-    button.setPointerCapture?.(event.pointerId);
+
+    button.setPointerCapture?.(
+        event.pointerId
+    );
+
     startHeartbeat();
 }
 
 function handleControlUp(event) {
-    if (activePointerId !== event.pointerId) return;
+    if (
+        activePointerId !== event.pointerId
+    ) {
+        return;
+    }
+
     event.preventDefault();
     releaseActiveControl();
 }
 
 function showTab(tabNumber) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(button => {
-        const selected = button.dataset.tab === String(tabNumber);
-        button.classList.toggle('active', selected);
-        button.setAttribute('aria-selected', String(selected));
-    });
-    document.getElementById(`tab${tabNumber}`).classList.add('active');
+    document
+        .querySelectorAll('.tab')
+        .forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+    document
+        .querySelectorAll('.tab-button')
+        .forEach(button => {
+            const selected =
+                button.dataset.tab ===
+                String(tabNumber);
+
+            button.classList.toggle(
+                'active',
+                selected
+            );
+
+            button.setAttribute(
+                'aria-selected',
+                String(selected)
+            );
+        });
+
+    document
+        .getElementById(`tab${tabNumber}`)
+        .classList.add('active');
 }
 
-statusButton.addEventListener('click', scanAndConnect);
-document.getElementById('sendButton').addEventListener('click', sendInputData);
-document.getElementById('inputText').addEventListener('keydown', event => {
-    if (event.key === 'Enter') sendInputData();
-});
-document.querySelectorAll('.tab-button').forEach(button => {
-    button.addEventListener('click', () => showTab(Number(button.dataset.tab)));
-});
-document.querySelectorAll('.control-button').forEach(button => {
-    button.addEventListener('pointerdown', handleControlDown);
-    button.addEventListener('pointerup', handleControlUp);
-    button.addEventListener('pointercancel', handleControlUp);
-    button.addEventListener('lostpointercapture', handleControlUp);
-});
+statusButton.addEventListener(
+    'click',
+    scanAndConnect
+);
 
-window.addEventListener('blur', releaseActiveControl);
-window.addEventListener('pagehide', releaseActiveControl);
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) releaseActiveControl();
-});
+document
+    .getElementById('sendButton')
+    .addEventListener(
+        'click',
+        sendInputData
+    );
+
+document
+    .getElementById('inputText')
+    .addEventListener(
+        'keydown',
+        event => {
+            if (event.key === 'Enter') {
+                sendInputData();
+            }
+        }
+    );
+
+document
+    .querySelectorAll('.tab-button')
+    .forEach(button => {
+        button.addEventListener(
+            'click',
+            () => {
+                showTab(
+                    Number(
+                        button.dataset.tab
+                    )
+                );
+            }
+        );
+    });
+
+document
+    .querySelectorAll('.control-button')
+    .forEach(button => {
+        button.addEventListener(
+            'pointerdown',
+            handleControlDown
+        );
+
+        button.addEventListener(
+            'pointerup',
+            handleControlUp
+        );
+
+        button.addEventListener(
+            'pointercancel',
+            handleControlUp
+        );
+
+        button.addEventListener(
+            'lostpointercapture',
+            handleControlUp
+        );
+    });
+
+window.addEventListener(
+    'blur',
+    releaseActiveControl
+);
+
+window.addEventListener(
+    'pagehide',
+    releaseActiveControl
+);
+
+document.addEventListener(
+    'visibilitychange',
+    () => {
+        if (document.hidden) {
+            releaseActiveControl();
+        }
+    }
+);
 </script>
 </body>
 </html>
