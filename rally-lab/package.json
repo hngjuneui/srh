@@ -1,0 +1,17 @@
+{
+  "name": "rally-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ui": "node tests/browser.mjs",
+    "test:worker": "node --test tests/worker.test.mjs",
+    "check:worker": "tsc --noEmit",
+    "deploy": "wrangler deploy --keep-vars"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260914.1",
+    "@types/node": "^26.5.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.131.2"
+  }
+}

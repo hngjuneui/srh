@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+data/
+models/*.task
+*.log
+test-results/
+.env
+.env.*
+.dev.vars*
+node_modules/
+.wrangler/
+.tools/
+.deploy/
