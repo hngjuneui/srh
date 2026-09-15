@@ -4,7 +4,7 @@
 
 ## 실행
 
-공개 웹 화면: [Rally Lab](https://rally-lab.hngjuneui.workers.dev). **현재 PC 외부 연결은 승인 대기 중이므로 원격 분석은 아직 사용할 수 없습니다.** 배포 구성과 재배포 방법은 [DEPLOYMENT.md](DEPLOYMENT.md)를 참고하세요.
+공개 웹앱: [Rally Lab](https://rally-lab.hngjuneui.workers.dev). **사용자 승인 후 PC 임시 터널 연결 및 공개 주소 분석 테스트를 완료했습니다. PC와 터널이 실행 중이어야 합니다.** 배포 구성과 재배포 방법은 [DEPLOYMENT.md](DEPLOYMENT.md)를 참고하세요.
 
 Windows / Python 3.12 권장. 현재 작업 PC에는 `.venv`와 포즈 모델 설치를 완료했습니다.
 
