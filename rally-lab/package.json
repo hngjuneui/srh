@@ -6,7 +6,9 @@
     "test:ui": "node tests/browser.mjs",
     "test:worker": "node --test tests/worker.test.mjs",
     "check:worker": "tsc --noEmit",
-    "deploy": "wrangler deploy --keep-vars"
+    "deploy": "wrangler deploy --keep-vars",
+    "test:scoreboard": "node --test tests/scoreboard.test.mjs",
+    "test:scoreboard-ui": "node tests/scoreboard-ui.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260914.1",
