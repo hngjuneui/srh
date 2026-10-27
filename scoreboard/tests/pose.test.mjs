@@ -67,6 +67,7 @@ test('hold: either of two players counts', () => {
 const TEE = person({lw: [0.8, 0.5], rw: [0.2, 0.5], le: [0.68, 0.5], re: [0.32, 0.5]});
 const X_OVERHEAD = person({lw: [0.42, 0.18], rw: [0.58, 0.18], le: [0.62, 0.3], re: [0.38, 0.3]});
 const HEAD = person({lw: [0.53, 0.3], rw: [0.42, 0.68], le: [0.62, 0.42], re: [0.4, 0.62]});
+const FOREHEAD = person({lw: [0.52, 0.35], rw: [0.42, 0.68], le: [0.6, 0.55], re: [0.4, 0.62]});
 const HEAD_OTHER_HAND = person({rw: [0.47, 0.3], lw: [0.58, 0.68], re: [0.38, 0.42], le: [0.6, 0.62]});
 const SERVE = person({lw: [0.52, 0.62], rw: [0.38, 0.75], le: [0.6, 0.6], re: [0.4, 0.62]});
 const OVERHEAD_SMASH = person({lw: [0.62, 0.62], rw: [0.4, 0.12], re: [0.4, 0.3]});
@@ -80,6 +81,7 @@ test('pose: X with a half-hidden wrist still reads as X', () => {
 test('pose: one hand on the head, the other down (either hand)', () => {
   assert.equal(classify(HEAD), 'head');
   assert.equal(classify(HEAD_OTHER_HAND), 'head');
+  assert.equal(classify(FOREHEAD), 'head', 'a hand on the forehead counts too');
 });
 test('pose: serve, overhead smash and ready stance are nothing', () => {
   for (const p of [SERVE, OVERHEAD_SMASH, READY]) assert.equal(classify(p), null);

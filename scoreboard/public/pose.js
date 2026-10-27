@@ -47,8 +47,9 @@ export function classify(lm) {
   const elbowsUpOut = le.y < shoulderY && re.y < shoulderY && Math.abs(le.x - re.x) > 1.15 * sw;
   if (lUp && rUp && elbowsUpOut && wristGap < 0.9 * sw) return 'circle';
 
-  // Head: one hand resting on the head (raised elbow), the other hanging down.
-  const onHead = (/** @type {Point} */ w, /** @type {Point} */ e) => w.y < nose.y + 0.15 * sw && w.y > nose.y - 1.3 * sw && Math.abs(w.x - nose.x) < 0.9 * sw && e.y < shoulderY + 0.1 * sw;
+  // Head: one hand on the forehead or the top of the head, the other hanging down.
+  // The hand may rest on the forehead or on top of the head; the elbow comes up to around shoulder height.
+  const onHead = (/** @type {Point} */ w, /** @type {Point} */ e) => w.y < nose.y + 0.15 * sw && w.y > nose.y - 1.3 * sw && Math.abs(w.x - nose.x) < 0.9 * sw && e.y < shoulderY + 0.6 * sw;
   const down = (/** @type {Point} */ w) => w.y > shoulderY + 0.9 * sw;
   if ((onHead(lw, le) && down(rw)) || (onHead(rw, re) && down(lw))) return 'head';
 

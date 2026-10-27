@@ -20,6 +20,11 @@
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="8" r="2"/><path d="M12 14v3"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+  <!-- Pose pictograms: a stick figure (head, body, legs) with the arms in each gesture. -->
+  <symbol id="p-o" viewBox="0 0 64 64"><circle cx="32" cy="18" r="6"/><path d="M32 24v20M32 44l-8 16M32 44l8 16"/><path d="M27 28C12 22 14 2 32 2s20 20 5 26"/></symbol>
+  <symbol id="p-head" viewBox="0 0 64 64"><circle cx="32" cy="18" r="6"/><path d="M32 24v20M32 44l-8 16M32 44l8 16"/><path d="M36 28l11-8-9-9"/><path d="M28 28l-6 18"/></symbol>
+  <symbol id="p-x" viewBox="0 0 64 64"><circle cx="32" cy="12" r="6"/><path d="M32 18v26M32 44l-8 16M32 44l8 16"/><path d="M18 18l28 20M46 18L18 38"/></symbol>
+  <symbol id="p-t" viewBox="0 0 64 64"><circle cx="32" cy="14" r="6"/><path d="M32 20v24M32 44l-8 16M32 44l8 16"/><path d="M4 26h56"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
   <symbol id="i-new" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></symbol>
@@ -72,7 +77,7 @@
 <!-- AI pose: the whole board takes on the colour of the team about to score while a pose is held. -->
 <div class="pose-tint" id="poseTint" aria-hidden="true"></div>
 <div class="preset-name" id="presetName" aria-live="polite"></div>
-<div class="pose-pill" id="posePill" hidden><i class="pose-ring" id="poseRing"></i><span id="posePillText">AI 포즈</span></div>
+<div class="pose-pill" id="posePill" hidden><div class="pose-ring"><svg><use id="posePic" href="#p-o"/></svg></div><strong id="posePillName"></strong><span id="posePillText"></span></div>
 
 <!-- AI pose: the camera keeps running here, unseen, during play. -->
 <video id="poseVideo" class="pose-video-hidden" muted playsinline aria-hidden="true"></video>
@@ -80,11 +85,14 @@
 <div class="pose-test" id="poseTest" hidden role="dialog" aria-label="AI 포즈 스코어링 테스트">
   <div class="pose-stage" id="poseStage"><canvas id="poseCanvas"></canvas><div class="pose-mid" aria-hidden="true"></div></div>
   <div class="pose-panel glass">
-    <h2>AI 포즈 스코어링 테스트</h2>
-    <p class="pose-step">카메라가 볼 수 있는 곳에서, 머리 위로 크게 <b>O</b>를 만들고 <b id="poseHoldSec">1</b>초 유지하세요.</p>
-    <div class="pose-meter"><i id="poseMeter"></i></div>
+    <h2>AI 포즈 테스트 · 세 동작을 각각 <b id="poseHoldSec">1</b>초씩 유지하세요 <small>순서는 상관없어요</small></h2>
+    <div class="pose-tiles">
+      <div class="pose-tile" data-g="circle"><div class="tile-ring"><svg><use href="#p-o"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>O</strong><span>머리 위로 크게 O<br>= 카메라 쪽 팀 +1</span></div></div>
+      <div class="pose-tile" data-g="head"><div class="tile-ring"><svg><use href="#p-head"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>이마 손</strong><span>한 손 이마·머리 위, 한 손 아래<br>= 상대 팀 +1</span></div></div>
+      <div class="pose-tile" data-g="tee"><div class="tile-ring"><svg><use href="#p-t"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>T</strong><span>두 팔을 옆으로 쭉<br>= 되돌리기</span></div></div>
+    </div>
     <p class="pose-status" id="poseStatus">카메라를 켜는 중…</p>
-    <p class="hint small">경기 중 동작: <b>O</b> = 카메라 쪽 팀 +1 · <b>한 손 머리 위 + 한 손 아래</b>(아쉬움) 또는 <b>X</b>(팔 교차) = 상대 팀 +1 · <b>T</b>(두 팔 옆으로, Time!) = 되돌리기. 테스트를 한 사람이 서 있는 쪽 팀이 첫 서브를 하고, 그 사람보다 훨씬 작게(멀리) 보이는 사람은 무시합니다.</p>
+    <p class="hint small">팔을 교차한 X도 상대 팀 +1이에요. O를 한 사람이 서 있는 쪽 팀이 첫 서브를 하고, 그 사람보다 훨씬 작게(멀리) 보이는 사람은 무시합니다.</p>
     <div class="pose-actions"><button type="button" class="glass-btn" id="poseCancel">취소</button><button type="button" class="glass-btn" id="poseSkip">테스트 건너뛰기</button></div>
   </div>
 </div>

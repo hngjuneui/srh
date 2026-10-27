@@ -714,7 +714,8 @@ function placeVideo(/** @type {boolean} */ onStage) {
   poseVideo.play().catch(() => {});
 }
 
-const GESTURE_NAME = /** @type {Record<string, string>} */ ({circle: 'O', head: '머리 위 손', cross: 'X', tee: 'T · 되돌리기'});
+const GESTURE_NAME = /** @type {Record<string, string>} */ ({circle: 'O', head: '이마 손', cross: 'X', tee: 'T'});
+const GESTURE_ICON = /** @type {Record<string, string>} */ ({circle: '#p-o', head: '#p-head', cross: '#p-x', tee: '#p-t'});
 function onPeople(/** @type {any[][]} */ seenPeople, /** @type {number} */ now) {
   // During play only people about as close as the tester count; the test itself just prefers the biggest.
   const people = nearPeople(seenPeople, poseMode === 'live' ? prefs.pose.refScale : null);
@@ -728,23 +729,27 @@ function onPeople(/** @type {any[][]} */ seenPeople, /** @type {number} */ now) 
   const blocked = Boolean(document.querySelector('dialog[open]')) || editingName || !$('#intro').hidden;
   if (fire && !blocked) {
     const team = teamFor(fire);
-    if (!team) { undo('pose-tee'); showPoseTint(null, 1, 'T · 되돌리기', true); return; }
+    if (!team) { undo('pose-tee'); showPoseTint(null, 1, fire, '되돌렸어요', true); return; }
     if (derive(match).gameOver) { clearPoseTint(); point(team, 'pose'); return; } // point() explains why nothing was added
     point(team, `pose-${fire}`);
-    showPoseTint(team, 1, `${GESTURE_NAME[fire]} · ${name(team)} +1`, true);
+    showPoseTint(team, 1, fire, `${name(team)} +1 ✓`, true);
   } else if (gesture && progress > 0 && !blocked) {
-    showPoseTint(teamFor(gesture), progress, `${GESTURE_NAME[gesture]} 인식 중`, false);
+    const team = teamFor(gesture);
+    showPoseTint(team, progress, gesture, team ? `${name(team)} +1` : '되돌리기', false);
   } else if (!fireShowing) clearPoseTint();
 }
 
-// The whole board takes the scoring team's colour (white for undo), deepening as the pose is held, then flashes.
+// The whole board takes the scoring team's colour (white for undo), deepening as the pose is held, and a big card
+// in the middle shows which pose it sees and what it will do; then it flashes the result.
 let fireShowing = false, fireTimer = 0;
-function showPoseTint(/** @type {Team|null} */ team, /** @type {number} */ p, /** @type {string} */ label, /** @type {boolean} */ fired) {
+function showPoseTint(/** @type {Team|null} */ team, /** @type {number} */ p, /** @type {string} */ gesture, /** @type {string} */ meaning, /** @type {boolean} */ fired) {
   if (fireShowing && !fired) return;
   const tint = $('#poseTint'), pill = $('#posePill');
   const color = team ? `var(--team-${team.toLowerCase()})` : '#ffffff';
   for (const el of [tint, pill]) { el.style.setProperty('--tint-color', color); el.style.setProperty('--p', String(p)); }
-  $('#posePillText').textContent = label;
+  $('#posePic').setAttribute('href', GESTURE_ICON[gesture]);
+  $('#posePillName').textContent = GESTURE_NAME[gesture];
+  $('#posePillText').textContent = meaning;
   pill.hidden = false;
   tint.classList.toggle('holding', !fired);
   pill.classList.toggle('fire', fired);
@@ -782,34 +787,52 @@ function drawPose(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ 
   });
 }
 
+// The test passes once O, hand-on-head and T have each been held, in any order. Where the O was made
+// decides the camera's team; the body size of every pass is averaged into the near/far reference.
+const TEST_POSES = ['circle', 'head', 'tee'];
+/** @type {Map<string, {scale: number, x: number}>} */ const passed = new Map();
 function testStep(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ gestures, /** @type {string|null} */ gesture, /** @type {number} */ progress, /** @type {string|null} */ fire) {
-  /** @type {HTMLElement} */ ($('#poseMeter')).style.transform = `scaleX(${gesture === 'circle' ? progress : 0})`;
-  const status = $('#poseStatus');
-  if (fire === 'circle') {
-    const who = people[gestures.indexOf('circle')];
+  if (fire && TEST_POSES.includes(fire) && !passed.has(fire)) {
+    const who = people[gestures.indexOf(fire)];
+    passed.set(fire, {scale: bodyScale(who), x: torsoX(who)});
+    tone(SOUND.A);
+  }
+  for (const tile of $$('.pose-tile')) {
+    const g = /** @type {string} */ (tile.dataset.g);
+    tile.classList.toggle('done', passed.has(g));
+    tile.classList.toggle('active', g === gesture && !passed.has(g));
+    tile.style.setProperty('--p', String(passed.has(g) ? 1 : g === gesture ? progress : 0));
+  }
+  const left = TEST_POSES.filter(g => !passed.has(g));
+  if (!left.length) {
+    const o = /** @type {{scale: number, x: number}} */ (passed.get('circle'));
     // The preview is mirrored, so a player standing on the screen's left shows up on the camera's right.
-    const onLeft = 1 - torsoX(who) < 0.5;
-    prefs.pose.refScale = bodyScale(who); // how big a player on our court looks from here
+    const onLeft = 1 - o.x < 0.5;
+    prefs.pose.refScale = [...passed.values()].reduce((s, v) => s + v.scale, 0) / passed.size; // how big a player on our court looks from here
     finishPoseTest(/** @type {Team} */ (sides[onLeft ? 0 : 1].dataset.team));
-  } else if (gesture === 'head' || gesture === 'cross') status.textContent = `${GESTURE_NAME[gesture]} 동작이 보여요 — 경기 중엔 상대 팀 +1입니다. 테스트는 머리 위 O로 해 주세요.`;
-  else if (gesture === 'tee') status.textContent = 'T 동작(되돌리기)이 보여요. 테스트는 머리 위 O로 해 주세요.';
-  else if (gesture === 'circle') status.textContent = 'O 인식 중… 그대로 유지하세요';
+    return;
+  }
+  const todo = left.map(g => GESTURE_NAME[g]).join(' · ');
+  const status = $('#poseStatus');
+  if (gesture === 'cross') status.textContent = 'X가 보여요 — 경기 중엔 상대 팀 +1이에요. 테스트는 위의 세 동작으로 해 주세요.';
+  else if (gesture && !passed.has(gesture)) status.textContent = `${GESTURE_NAME[gesture]} 인식 중… 그대로 유지하세요`;
   else if (!people.length) status.textContent = '사람을 찾는 중… 상체와 두 팔이 화면에 다 보이게 서 주세요.';
-  else status.textContent = `${people.length}명 보임 · 머리 위로 크게 O를 만들어 주세요.`;
+  else status.textContent = `남은 동작: ${todo}`;
 }
 
 function openPoseTest() {
-  poseMode = 'test'; hold.reset();
+  poseMode = 'test'; hold.reset(); passed.clear();
+  hold.opts.cooldownMs = 600; // in the test the next pose can follow straight away
   $('#poseHoldSec').textContent = String(prefs.pose.holdMs / 1000);
   $('#poseTest').hidden = false; clearPoseTint();
   $('#poseStatus').textContent = '카메라와 AI 모델을 준비하는 중… 처음에는 몇 초 걸려요.';
-  /** @type {HTMLElement} */ ($('#poseMeter')).style.transform = 'scaleX(0)';
+  for (const tile of $$('.pose-tile')) { tile.classList.remove('done', 'active'); tile.style.setProperty('--p', '0'); }
   placeVideo(true);
   startCamera().then(() => { if (poseMode === 'test') { placeVideo(true); $('#poseStatus').textContent = '사람을 찾는 중…'; } })
     .catch(e => { $('#poseStatus').textContent = e.message; });
 }
 function closePoseTest() { $('#poseTest').hidden = true; placeVideo(false); poseCanvas.getContext('2d')?.clearRect(0, 0, poseCanvas.width, poseCanvas.height); }
-function goLive() { poseMode = 'live'; hold.reset(); renderPoseToggle(); }
+function goLive() { poseMode = 'live'; hold.reset(); hold.opts.cooldownMs = DEFAULT_POSE.cooldownMs; renderPoseToggle(); }
 
 // Top-right switch: off → run the test (which turns it on); on → camera off.
 const poseToggle = $('#poseToggle');
