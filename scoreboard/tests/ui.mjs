@@ -1,11 +1,12 @@
-// Browser check for the standalone scoreboard: serve `web/` and set SCOREBOARD_URL, e.g.
-//   python -m http.server 8811 --directory web   then   SCOREBOARD_URL=http://127.0.0.1:8811/scoreboard/ node tests/scoreboard-ui.mjs
+// Browser check: serve `public/` first, e.g.
+//   python -m http.server 8811 --directory public   then   node tests/ui.mjs
+// SCOREBOARD_URL points it at another address (such as the deployed site).
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
-const url = process.env.SCOREBOARD_URL || 'http://127.0.0.1:8811/scoreboard/';
+const url = process.env.SCOREBOARD_URL || 'http://127.0.0.1:8811/';
 const browser = await chromium.launch();
 const page = await (await browser.newContext({viewport: {width: 1280, height: 800}, hasTouch: true})).newPage();
 const errors = [];

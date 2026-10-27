@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides, serviceCourt, isDecidingInterval, toCsv} from '../web/scoreboard/core.js';
-import {RemoteInput, DEFAULT_REMOTE} from '../web/scoreboard/remote.js';
+import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides, serviceCourt, isDecidingInterval, toCsv} from '../public/core.js';
+import {RemoteInput, DEFAULT_REMOTE} from '../public/remote.js';
 
 const play = (match, seq) => { for (const t of seq) scorePoint(match, t, 'tap'); };
 

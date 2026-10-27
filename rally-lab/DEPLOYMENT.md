@@ -19,8 +19,6 @@
 
 ## 구조
 
-`/scoreboard/`(태블릿 점수판)는 정적 파일만 사용하므로 PC·터널이 꺼져 있어도 동작합니다. 같은 `npm run deploy`로 함께 배포됩니다.
-
 휴대폰 HTTPS → Cloudflare Worker → HTTPS Tunnel → PC FastAPI(127.0.0.1:8765).
 
 Worker는 `web/`만 정적 배포하고 `/api/*`, `/ws/*`를 지정된 PC 주소로 중계합니다. 분석 모델과 영상은 PC에 남습니다. Cloudflare는 전송 경로에서 영상 데이터를 처리하므로 완전한 로컬 전용 처리는 아닙니다. PC와 터널이 꺼지면 분석은 중단되지만 웹 화면은 열립니다.
