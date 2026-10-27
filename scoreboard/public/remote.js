@@ -10,7 +10,7 @@
  * @typedef {'single'|'double'|'long'|'opponent'|'cancel'} RemoteAction
  */
 
-export const DEFAULT_REMOTE = /** @type {RemoteConfig} */ ({primary: null, opponent: null, cancel: null, longMs: 700, releaseGrace: 120, doubleMs: 350, useLong: true});
+export const DEFAULT_REMOTE = /** @type {RemoteConfig} */ ({primary: null, opponent: null, cancel: null, longMs: 700, releaseGrace: 50, doubleMs: 300, useLong: true});
 
 const IGNORED = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Unidentified', 'Process']);
 
@@ -65,8 +65,10 @@ export class RemoteInput {
       this.flushTap();
       press.longDone = true;
       this.onAction(role, {id, heldMs: 0});
-    } else if (this.config.useLong) {
-      press.longTimer = this.timers.set(() => {
+    } else {
+      // The double window only has to catch the second key-down; how long that press lasts decides double vs. long.
+      if (this.pendingTap?.id === id) this.timers.clear(this.pendingTap.timer);
+      if (this.config.useLong) press.longTimer = this.timers.set(() => {
         // A tap just before a hold still counts as its own single press.
         this.flushTap();
         press.longDone = true;

@@ -229,7 +229,8 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
   .side { padding-bottom: 76px; }
   .glass-btn { min-height: 44px; }
 }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* The how-to demos keep moving: the motion is the instruction. Everything else goes still. */
+@media (prefers-reduced-motion: reduce) { *:not(.demo *, .remote-demo *) { animation: none !important; transition: none !important; } }
 
 /* ---------- solid team backgrounds (colour sets) ---------- */
 body.colored .side { background: var(--team); }
@@ -288,6 +289,10 @@ body.colored .name-edit { color: var(--ink); }
 .tag { position: absolute; right: 12px; top: 10px; font-size: 22px; font-weight: 900; opacity: 0; }
 .demo figcaption { display: grid; justify-items: center; gap: 2px; font-size: 16px; }
 .demo figcaption span { color: rgba(255, 255, 255, .7); font-size: 14px; }
+/* A faint arrow states the direction even in a still frame. */
+.down .pad::before, .up .pad::before { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 30px; font-weight: 800; color: rgba(255, 255, 255, .35); }
+.down .pad::before { content: "↓"; }
+.up .pad::before { content: "↑"; }
 .tap .finger { animation: tapf 1.8s ease-in-out infinite; }
 .tap .tag { animation: tagp 1.8s ease-out infinite; animation-delay: .25s; }
 @keyframes tapf { 0%, 100% { transform: scale(1); } 12% { transform: scale(.7); } 24% { transform: scale(1.05); } 32% { transform: scale(1); } }
