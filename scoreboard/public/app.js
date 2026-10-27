@@ -853,13 +853,24 @@ function openPoseTest() {
   hold.opts.cooldownMs = 600; // in the test the next pose can follow straight away
   $('#poseHoldSec').textContent = String(prefs.pose.holdMs / 1000);
   $('#poseTest').hidden = false; clearPoseTint();
+  showPoseHelp(true);
   $('#poseStatus').textContent = '카메라와 AI 모델을 준비하는 중… 처음에는 몇 초 걸려요.';
   for (const tile of $$('.pose-tile')) { tile.classList.remove('done', 'active'); tile.style.setProperty('--p', '0'); }
   placeVideo(true);
   startCamera().then(() => { if (poseMode === 'test') { placeVideo(true); $('#poseStatus').textContent = '사람을 찾는 중…'; } })
     .catch(e => { $('#poseStatus').textContent = e.message; });
 }
-function closePoseTest() { $('#poseTest').hidden = true; placeVideo(false); poseCanvas.getContext('2d')?.clearRect(0, 0, poseCanvas.width, poseCanvas.height); }
+// The how-to sits over the camera at the start, closes on a tap or after a while, and comes back with 설명 보기.
+let poseHelpTimer = 0;
+function showPoseHelp(/** @type {boolean} */ show) {
+  $('#poseHelp').hidden = !show;
+  $('#poseHelpBtn').textContent = show ? '설명 닫기' : '설명 보기';
+  clearTimeout(poseHelpTimer);
+  if (show) poseHelpTimer = window.setTimeout(() => showPoseHelp(false), 9000);
+}
+$('#poseHelpBtn').addEventListener('click', e => { /** @type {HTMLElement} */ (e.currentTarget).blur(); showPoseHelp($('#poseHelp').hidden); });
+$('#poseHelp').addEventListener('click', () => showPoseHelp(false));
+function closePoseTest() { showPoseHelp(false); $('#poseTest').hidden = true; placeVideo(false); poseCanvas.getContext('2d')?.clearRect(0, 0, poseCanvas.width, poseCanvas.height); }
 function goLive() { poseMode = 'live'; hold.reset(); hold.opts.cooldownMs = DEFAULT_POSE.cooldownMs; renderPoseToggle(); }
 
 // Top-right switch: off → run the test (which turns it on); on → camera off.

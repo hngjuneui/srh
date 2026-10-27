@@ -84,16 +84,31 @@
 
 <div class="pose-test" id="poseTest" hidden role="dialog" aria-label="AI 포즈 스코어링 테스트">
   <div class="pose-stage" id="poseStage"><canvas id="poseCanvas"></canvas><div class="pose-mid" aria-hidden="true"></div></div>
-  <div class="pose-panel glass">
-    <h2>AI 포즈 테스트 · 세 동작을 각각 <b id="poseHoldSec">1</b>초씩 유지하세요 <small>순서는 상관없어요</small></h2>
+  <!-- Always on top of the camera: three status chips, one status line, the buttons. -->
+  <div class="pose-hud">
     <div class="pose-tiles">
-      <div class="pose-tile" data-g="circle"><div class="tile-ring"><svg><use href="#p-o"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>O</strong><span>머리 위로 크게 O<br>= 카메라 쪽 팀 +1</span></div></div>
-      <div class="pose-tile" data-g="head"><div class="tile-ring"><svg><use href="#p-head"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>이마 손</strong><span>한 손 이마·머리 위, 한 손 아래<br>= 상대 팀 +1</span></div></div>
-      <div class="pose-tile" data-g="tee"><div class="tile-ring"><svg><use href="#p-t"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>T</strong><span>두 팔을 옆으로 쭉<br>= 되돌리기</span></div></div>
+      <div class="pose-tile" data-g="circle"><div class="tile-ring"><svg><use href="#p-o"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>O</strong><span>카메라 쪽 +1</span></div></div>
+      <div class="pose-tile" data-g="head"><div class="tile-ring"><svg><use href="#p-head"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>이마 손</strong><span>상대 +1</span></div></div>
+      <div class="pose-tile" data-g="tee"><div class="tile-ring"><svg><use href="#p-t"/></svg><b class="tile-check">✓</b></div><div class="tile-text"><strong>T</strong><span>되돌리기</span></div></div>
     </div>
-    <p class="pose-status" id="poseStatus">카메라를 켜는 중…</p>
-    <p class="hint small">팔을 교차한 X도 상대 팀 +1이에요. O를 한 사람이 서 있는 쪽 팀이 첫 서브를 하고, 그 사람보다 훨씬 작게(멀리) 보이는 사람은 무시합니다.</p>
-    <div class="pose-actions"><button type="button" class="glass-btn" id="poseCancel">취소</button><button type="button" class="glass-btn" id="poseSkip">테스트 건너뛰기</button></div>
+    <div class="pose-bar glass">
+      <p class="pose-status" id="poseStatus">카메라를 켜는 중…</p>
+      <div class="pose-actions"><button type="button" class="glass-btn" id="poseHelpBtn">설명 보기</button><button type="button" class="glass-btn" id="poseCancel">취소</button><button type="button" class="glass-btn" id="poseSkip">건너뛰기</button></div>
+    </div>
+  </div>
+  <!-- The full how-to: shown at the start, then on demand. -->
+  <div class="pose-help" id="poseHelp" hidden>
+    <div class="pose-help-card">
+      <h2>AI 포즈 테스트</h2>
+      <p class="pose-help-lead">세 동작을 각각 <b id="poseHoldSec">1</b>초씩 유지하세요. 순서는 상관없어요.</p>
+      <div class="help-rows">
+        <div class="help-row"><svg><use href="#p-o"/></svg><div><strong>O</strong><span>머리 위로 두 팔을 크게 둥글게 모아요</span><em>카메라 쪽 팀 +1</em></div></div>
+        <div class="help-row"><svg><use href="#p-head"/></svg><div><strong>이마 손</strong><span>한 손은 이마나 머리 위에, 다른 손은 아래로</span><em>상대 팀 +1</em></div></div>
+        <div class="help-row"><svg><use href="#p-t"/></svg><div><strong>T</strong><span>두 팔을 옆으로 쭉 펴요 (Time!)</span><em>되돌리기</em></div></div>
+      </div>
+      <p class="pose-help-note">팔을 교차한 X도 상대 팀 +1이에요. O를 한 사람이 서 있는 쪽 팀이 첫 서브를 하고, 그 사람보다 훨씬 작게(멀리) 보이는 사람은 무시해요. 평소 경기하는 자리에서 테스트하세요.</p>
+      <button type="button" class="glass-btn primary" id="poseHelpClose">알겠어요</button>
+    </div>
   </div>
 </div>
 
