@@ -29,7 +29,7 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
-  volume: 0.5, idleDim: true, light: false, autoSwap: true, intro: true,
+  volume: 0.5, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -62,10 +62,11 @@ function saveMatch() {
   // Keep the newest 60 matches; older ones are removed from this device.
   for (const old of index.splice(60)) { try { localStorage.removeItem(KEY.match(old.id)); } catch {} }
   const indexOk = store.set(KEY.index, index);
-  const el = $('#saveState');
-  el.classList.toggle('error', !(ok && indexOk));
-  el.textContent = ok && indexOk ? `기기에 저장됨 ${new Date().toTimeString().slice(0, 8)}` : '저장 실패 · 저장 공간 확인';
+  // Saving is silent; only a failure is worth interrupting the game for.
+  if (!(ok && indexOk) && !saveFailShown) { saveFailShown = true; setTimeout(() => toast('기기에 저장하지 못했습니다. 저장 공간을 확인하세요.', 4000)); }
+  if (ok && indexOk) saveFailShown = false;
 }
+let saveFailShown = false;
 
 // ---------- feedback ----------
 // Short synthesised sounds, soft enough to hear every rally without getting on anyone's nerves:
@@ -255,7 +256,7 @@ const court = $('#court');
 court.addEventListener('pointerdown', e => {
   const side = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('.side'));
   if (!side || !e.isPrimary && pointers.size) return; // ignore a second finger or palm while one is down
-  if (/** @type {HTMLElement} */ (e.target).closest('.team-name, .name-edit')) return; // renaming, not scoring
+  if (editingName || /** @type {HTMLElement} */ (e.target).closest('.team-name, .name-edit, .name-picker')) return; // renaming, not scoring
   pointers.set(e.pointerId, {x: e.clientX, y: e.clientY, t: performance.now(), team: /** @type {Team} */ (side.dataset.team)});
   try { side.setPointerCapture(e.pointerId); } catch {}
 });
@@ -595,7 +596,29 @@ $('#exportJson').addEventListener('click', () => download(JSON.stringify(viewedM
 // ---------- settings ----------
 const form = /** @type {HTMLFormElement} */ ($('#settingsForm'));
 const field = (/** @type {string} */ n) => /** @type {HTMLInputElement} */ (form.elements.namedItem(n));
+function renderPlayers() {
+  const list = $('#playerList');
+  list.replaceChildren(...sortedPlayers().map(p => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'name-chip removable'; b.textContent = p; b.setAttribute('aria-label', `${p} 지우기`);
+    b.addEventListener('click', () => { prefs.players = prefs.players.filter(x => x !== p); savePrefs(); renderPlayers(); });
+    return b;
+  }));
+  list.hidden = !prefs.players.length;
+}
+function addPlayer() {
+  const input = /** @type {HTMLInputElement} */ ($('#playerInput'));
+  const v = input.value.trim();
+  input.value = '';
+  if (!v) return;
+  if (prefs.players.includes(v)) { toast(`${v}은(는) 이미 있어요`); return; }
+  prefs.players.push(v); savePrefs(); renderPlayers();
+}
+$('#playerAdd').addEventListener('click', addPlayer);
+$('#playerInput').addEventListener('keydown', e => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') { e.preventDefault(); e.stopPropagation(); addPlayer(); } });
+
 function fillSettings() {
+  renderPlayers();
   const {names, rules, firstServer} = match.settings;
   field('nameA').value = names.A; field('nameB').value = names.B;
   field('firstServer').value = firstServer;
@@ -678,25 +701,69 @@ $('#settingsSheet').addEventListener('close', () => {
   if (JSON.stringify(prefs.colors) !== JSON.stringify(savedColors)) { prefs.colors = {...savedColors}; applyColors(); }
 });
 
-// ---------- tap a team name to rename it in place ----------
+// ---------- tap a team name: pick a saved player like a keyboard suggestion, or type one ----------
+const sortedPlayers = () => [...prefs.players].sort((a, b) => a.localeCompare(b, 'ko'));
 let editingName = false;
+/** @type {null | (() => void)} */ let closeNamePicker = null;
+let namePickerClosedAt = 0;
 $$('.team-name').forEach(el => el.addEventListener('click', () => {
+  if (editingName || performance.now() - namePickerClosedAt < 400) return; // the tap that closed it must not reopen it
   const side = /** @type {HTMLElement} */ (el.closest('.side'));
   const team = /** @type {Team} */ (side.dataset.team);
-  const input = document.createElement('input');
-  input.className = 'name-edit'; input.maxLength = 16; input.value = name(team); input.setAttribute('aria-label', '팀 이름');
-  el.hidden = true; el.after(input); editingName = true;
-  input.focus(); input.select();
+  editingName = true;
+  const picker = document.createElement('div');
+  picker.className = 'name-picker';
+  /** @type {HTMLInputElement|null} */ let input = null;
   let done = false;
-  const finish = (/** @type {boolean} */ keep) => {
+  const finish = (/** @type {string|null} */ value) => {
     if (done) return; done = true;
-    const v = input.value.trim();
-    if (keep && v && v !== name(team)) { match.settings.names[team] = v; saveMatch(); }
-    input.remove(); el.hidden = false; editingName = false; render();
+    const v = value?.trim();
+    if (v && v !== name(team)) { match.settings.names[team] = v; saveMatch(); }
+    input?.remove(); picker.remove(); el.hidden = false; editingName = false; closeNamePicker = null; render();
   };
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); e.stopPropagation(); });
-  input.addEventListener('blur', () => finish(true));
+  closeNamePicker = () => finish(input ? input.value : null);
+  const chip = (/** @type {string} */ label, /** @type {string} */ cls, /** @type {() => void} */ act) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = `name-chip ${cls}`; b.textContent = label;
+    // pointerdown keeps the typing field focused, so a chip wins over the half-typed text
+    b.addEventListener('pointerdown', e => e.preventDefault());
+    b.addEventListener('click', e => { e.stopPropagation(); act(); });
+    picker.append(b);
+    return b;
+  };
+  chip('직접 입력', 'manual', () => {
+    if (input) { input.focus(); return; }
+    input = document.createElement('input');
+    input.className = 'name-edit'; input.maxLength = 16; input.value = name(team); input.setAttribute('aria-label', '팀 이름');
+    el.hidden = true; el.after(input);
+    input.focus(); input.select();
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(/** @type {HTMLInputElement} */ (input).value); else if (e.key === 'Escape') finish(null); e.stopPropagation(); });
+    input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) finish(input?.value ?? null); }));
+  });
+  const otherName = name(other(team));
+  for (const p of sortedPlayers()) {
+    const b = chip(p, p === name(team) ? 'on' : '', () => finish(p));
+    if (p === otherName) { b.disabled = true; b.title = '다른 팀이 쓰는 이름'; }
+  }
+  if (!prefs.players.length) {
+    const tip = document.createElement('span');
+    tip.className = 'name-tip'; tip.textContent = '설정 → 선수에서 자주 치는 사람을 등록하면 여기서 바로 고를 수 있어요';
+    picker.append(tip);
+  }
+  // Floats just under the name, over the score, so nothing on the board moves.
+  const head = /** @type {HTMLElement} */ (side.querySelector('.side-head'));
+  picker.style.top = `${head.offsetTop + head.offsetHeight + 8}px`;
+  head.after(picker);
 }));
+// A tap anywhere else closes the picker and does nothing else.
+document.addEventListener('pointerdown', e => {
+  if (!closeNamePicker) return;
+  const t = /** @type {HTMLElement} */ (e.target);
+  if (t.closest('.name-picker, .name-edit')) return;
+  e.stopPropagation(); e.preventDefault();
+  namePickerClosedAt = performance.now();
+  closeNamePicker();
+}, true);
 
 // ---------- how-to popup on arrival: gone on the first touch or after a few seconds ----------
 let introTimer = 0;

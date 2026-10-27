@@ -47,11 +47,22 @@ try {
   // Rename by tapping the team name.
   await page.touchscreen.tap(...await page.$eval('.side[data-side=left] .team-name', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
   await page.waitForTimeout(200);
+  await page.touchscreen.tap(...await page.$eval('.name-picker .manual', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+  await page.waitForTimeout(200);
   await page.keyboard.press('Control+A'); await page.keyboard.type('청팀'); await page.keyboard.press('Enter'); await page.waitForTimeout(200);
   assert.equal(await page.textContent('.side[data-side=left] .team-name'), '청팀', 'tap on name renames');
   assert.equal(await score(), '3-0', 'renaming does not score');
+  // Saved players show up as chips; the other team's name is greyed out.
+  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('sb.v1.prefs')) ?? {}; p.intro = false; p.players = ['준의', '청팀']; localStorage.setItem('sb.v1.prefs', JSON.stringify(p)); });
   await page.reload(); await page.waitForTimeout(500);
-  await page.touchscreen.tap(640, 400); await page.waitForTimeout(400);
+  await page.touchscreen.tap(...await page.$eval('.side[data-side=right] .team-name', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+  await page.waitForTimeout(200);
+  assert.deepEqual(await page.$$eval('.name-picker .name-chip', e => e.map(x => x.textContent + (x.disabled ? '×' : ''))), ['직접 입력', '준의', '청팀×'], 'player chips, other team disabled');
+  await page.touchscreen.tap(...await page.$eval('.name-picker .name-chip:nth-child(2)', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+  await page.waitForTimeout(200);
+  assert.equal(await page.textContent('.side[data-side=right] .team-name'), '준의', 'a chip sets the name');
+  assert.equal(await score(), '3-0', 'picking a name does not score');
+  await page.reload(); await page.waitForTimeout(500);
   assert.equal(await score(), '3-0', 'score restored after reload');
   await page.click('#toolbar [data-act=undo]'); await page.waitForTimeout(200);
   assert.equal(await score(), '2-0', 'undo removes the latest point');

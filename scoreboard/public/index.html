@@ -45,7 +45,7 @@
 </main>
 
 <div class="hud glass" id="hud">
-  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span><span class="dot-sep"></span><span id="saveState" class="save">기기에 저장됨</span>
+  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span>
 </div>
 
 <div class="banner glass" id="banner" hidden>
@@ -158,6 +158,11 @@
       <label class="row">두 번째 팀 이름<input name="nameB" maxlength="16" autocomplete="off"></label>
       <label class="row">첫 서브<select name="firstServer"><option value="A">첫 번째 팀</option><option value="B">두 번째 팀</option></select></label>
       <p class="hint small">경기 화면에서 팀 이름을 터치해도 바로 바꿀 수 있어요.</p>
+    </fieldset>
+    <fieldset class="field-group"><legend>선수</legend>
+      <div class="row player-add"><input id="playerInput" maxlength="16" autocomplete="off" placeholder="이름 입력" aria-label="선수 이름"><button type="button" class="glass-btn" id="playerAdd">추가</button></div>
+      <div class="player-list" id="playerList"></div>
+      <p class="hint small">팀 이름을 누르면 여기 등록한 이름이 가나다순으로 떠요. 이름을 누르면 지울 수 있어요.</p>
     </fieldset>
     <fieldset class="field-group"><legend>팀 배경색</legend>
       <div class="swatches" role="group" aria-label="색상 세트"></div>
