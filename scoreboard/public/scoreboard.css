@@ -377,7 +377,7 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 .pose-tile {
   --p: 0; min-width: 0; display: flex; align-items: center; gap: clamp(6px, 1.4vmin, 14px); padding: clamp(6px, 1.2vmin, 12px) clamp(8px, 1.6vmin, 16px);
   border-radius: clamp(14px, 2.6vmin, 24px); background: rgba(10, 12, 16, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, .12); transition: border-color .2s, background .2s;
+  border: 2px solid rgba(255, 255, 255, .12); transition: border-color .2s, background .2s, --p var(--pose-dt, 80ms) linear;
 }
 .pose-tile.active { border-color: #fff; background: rgba(40, 44, 52, .7); }
 .pose-tile.done { border-color: #36e0a2; background: rgba(20, 70, 52, .7); }
@@ -390,7 +390,7 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 .pose-status { flex: 1 1 220px; min-width: 0; margin: 0; font-size: clamp(13px, 2.4vmin, 18px); font-weight: 650; line-height: 1.35; }
 .pose-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .pose-actions .glass-btn { min-height: 40px; padding: 0 12px; font-size: clamp(13px, 2.2vmin, 16px); }
-.pose-help { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, .35); animation: fade .2s ease-out; }
+.pose-howto { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, .35); animation: fade .2s ease-out; }
 .pose-help-card {
   width: min(760px, 100%); max-height: 100%; overflow: hidden auto; touch-action: pan-y; border-radius: 26px; padding: clamp(14px, 3vmin, 28px);
   background: rgba(16, 18, 22, .78); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, .14);
@@ -465,11 +465,13 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 .toolbar.open .more-btn svg { transform: rotate(180deg); }
 
 /* ---------- AI pose: a colour filter over the whole board while a pose is held ---------- */
+/* The AI looks only every --pose-dt, so --p glides between looks: smooth rings at no extra AI cost. */
+@property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
 /* --tint-color is the colour of the team about to score; --p is how far the hold has got (0..1). */
 .pose-tint {
   --p: 0; position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
   background: radial-gradient(120% 120% at 50% 50%, color-mix(in srgb, var(--tint-color, #fff) 55%, transparent), var(--tint-color, #fff));
-  mix-blend-mode: normal; transition: opacity .15s linear;
+  mix-blend-mode: normal; transition: opacity .15s linear, --p var(--pose-dt, 80ms) linear;
 }
 .pose-tint.holding { opacity: calc(.06 + var(--p) * .26); }
 .pose-tint.fire { animation: tint-fire .9s ease-out forwards; }
@@ -503,7 +505,7 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
   --p: 0; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5; pointer-events: none;
   display: grid; justify-items: center; gap: 6px; padding: 24px 40px 26px; border-radius: 36px; text-align: center;
   color: #fff; background: rgba(8, 10, 14, .62); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  max-width: 92vw; white-space: nowrap;
+  max-width: 92vw; white-space: nowrap; transition: --p var(--pose-dt, 80ms) linear;
 }
 .pose-ring {
   position: relative; width: clamp(130px, 30vmin, 280px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;

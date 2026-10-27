@@ -1,10 +1,9 @@
 // @ts-check
 // Front camera + MediaPipe Pose Landmarker (lite). Everything is served from ./vendor so it works offline,
 // and nothing here is downloaded until AI pose scoring is switched on.
-// Detection runs about 12 times a second, which is plenty for gestures held for a second and keeps tablets cool.
+// Detection runs `fps` times a second (12 by default): enough for gestures held for a second, and it keeps tablets cool.
 
 const BASE = new URL('./vendor/mediapipe/', import.meta.url).href;
-const FRAME_MS = 80;
 
 export class PoseCamera {
   /** @param {HTMLVideoElement} video @param {(people: {x: number, y: number, visibility?: number}[][], now: number) => void} onPeople */
@@ -15,6 +14,7 @@ export class PoseCamera {
     /** @type {MediaStream|null} */ this.stream = null;
     this.running = false;
     this.lastRun = 0;
+    this.frameMs = 1000 / 12;
     this.raf = 0;
   }
 
@@ -49,7 +49,7 @@ export class PoseCamera {
     if (!this.running) return;
     this.raf = requestAnimationFrame(() => this.loop());
     const now = performance.now();
-    if (now - this.lastRun < FRAME_MS || this.video.readyState < 2) return;
+    if (now - this.lastRun < this.frameMs - 4 || this.video.readyState < 2) return;
     this.lastRun = now;
     try {
       const result = this.landmarker.detectForVideo(this.video, now);

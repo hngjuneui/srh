@@ -97,7 +97,7 @@
     </div>
   </div>
   <!-- The full how-to: shown at the start, then on demand. -->
-  <div class="pose-help" id="poseHelp" hidden>
+  <div class="pose-howto" id="poseHelp" hidden>
     <div class="pose-help-card">
       <h2>AI 포즈 테스트</h2>
       <p class="pose-help-lead">세 동작을 각각 <b id="poseHoldSec">1</b>초씩 유지하세요. 순서는 상관없어요.</p>
@@ -191,6 +191,7 @@
       <p class="hint small pose-help">전면 카메라로 한쪽 팀 선수의 동작을 인식합니다. 머리 위로 큰 <b>O</b> = 그 팀 +1, <b>한 손은 머리 위·한 손은 아래</b>(아쉬움) 또는 팔을 교차한 <b>X</b> = 상대 팀 +1, 두 팔을 옆으로 뻗은 <b>T</b>(Time!) = 되돌리기. 동작을 잠깐 유지해야 인식되고, 옆 코트처럼 멀리 있는 사람은 무시합니다. 영상은 기기 안에서만 처리되고 저장·전송되지 않습니다.</p>
       <div class="row"><span id="poseState">꺼짐</span><span class="pose-btns"><button type="button" class="glass-btn" id="poseTestBtn">켜고 테스트</button><button type="button" class="glass-btn danger" id="poseOffBtn" hidden>끄기</button></span></div>
       <label class="row">동작 유지 시간 <output id="poseHoldOut"></output><input type="range" id="poseHold" min="500" max="2000" step="100"></label>
+      <label class="row"><span>인식 속도<small>초당 확인 횟수. 높을수록 손을 내린 걸 빨리 알아채지만 배터리와 발열이 늘어요</small></span><select id="poseFps"><option value="8">절전 8</option><option value="12">기본 12</option><option value="20">빠르게 20</option><option value="30">최대 30</option></select></label>
     </fieldset>
     <p class="hint small" id="ruleNote">규칙은 동호회 연습용 기본값(21점·2점 차·30점 상한)입니다. 첫 서브는 첫 득점 전까지만 바꿀 수 있습니다.</p>
     <p class="hint small" id="wakeNote"></p>

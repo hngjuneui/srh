@@ -33,7 +33,7 @@ const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, 
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
-  pose: {enabled: false, team: /** @type {Team|null} */ (null), holdMs: DEFAULT_POSE.holdMs, refScale: /** @type {number|null} */ (null)}};
+  pose: {enabled: false, team: /** @type {Team|null} */ (null), holdMs: DEFAULT_POSE.holdMs, fps: 12, refScale: /** @type {number|null} */ (null)}};
 const savedPrefs = store.get(KEY.prefs) ?? {};
 // The default used to be the blue × orange set; devices still on it move to the new dark default once.
 if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete savedPrefs.colors;
@@ -799,6 +799,7 @@ let poseMode = /** @type {'off'|'test'|'live'} */ ('off');
 
 async function startCamera() {
   if (!camera) { const {PoseCamera} = await import('./pose-camera.js'); camera = new PoseCamera(poseVideo, onPeople); }
+  applyPoseRate();
   await camera.start();
 }
 function stopCamera() { camera?.stop(); poseMode = 'off'; clearPoseTint(); renderPoseToggle(); }
@@ -982,7 +983,15 @@ $('#poseSkip').addEventListener('click', () => {
   toast(`AI 포즈 스코어링 켜짐 · 카메라 쪽 팀: ${name(/** @type {Team} */ (prefs.pose.team))}`);
 });
 
+/** How often the AI looks. The rings and tint glide between looks either way, so this only changes reaction time and heat. */
+function applyPoseRate() {
+  const ms = 1000 / prefs.pose.fps;
+  if (camera) camera.frameMs = ms;
+  document.documentElement.style.setProperty('--pose-dt', `${Math.round(ms)}ms`);
+}
+applyPoseRate();
 function renderPoseSettings() {
+  /** @type {HTMLSelectElement} */ ($('#poseFps')).value = String(prefs.pose.fps);
   const on = prefs.pose.enabled;
   $('#poseState').textContent = on ? `켜짐 · 카메라 쪽 팀: ${name(/** @type {Team} */ (prefs.pose.team ?? prefs.ourTeam))}` : '꺼짐';
   $('#poseTestBtn').textContent = on ? '다시 테스트' : '켜고 테스트';
@@ -992,6 +1001,7 @@ function renderPoseSettings() {
 }
 $('#poseTestBtn').addEventListener('click', () => { /** @type {HTMLDialogElement} */ ($('#settingsSheet')).close(); openPoseTest(); });
 $('#poseOffBtn').addEventListener('click', () => { stopCamera(); prefs.pose.enabled = false; savePrefs(); renderPoseSettings(); toast('AI 포즈 스코어링을 껐습니다. 카메라가 꺼졌어요.'); });
+$('#poseFps').addEventListener('change', e => { prefs.pose.fps = Number(/** @type {HTMLSelectElement} */ (e.target).value); savePrefs(); applyPoseRate(); });
 $('#poseHold').addEventListener('input', e => { prefs.pose.holdMs = hold.opts.holdMs = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderPoseSettings(); });
 
 applyTheme();

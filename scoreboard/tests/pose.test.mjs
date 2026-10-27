@@ -57,6 +57,11 @@ test('hold: let go, cooldown, do it again = second point', () => {
   assert.equal(fired.length, 2);
 });
 
+test('hold: dropping the pose just before the end never fires', () => {
+  const h = new GestureHold({holdMs: 1000, cooldownMs: 2500});
+  assert.deepEqual(run(h, 0, 2000, t => (t < 950 ? ['circle'] : [null])), []);
+});
+
 test('hold: either of two players counts', () => {
   const h = new GestureHold({holdMs: 1000, cooldownMs: 2500});
   const fired = run(h, 0, 1500, () => [null, 'circle']);

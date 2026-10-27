@@ -123,6 +123,9 @@ export class GestureHold {
     const cur = this.current;
     if (!cur || this.fired === cur || now - this.firedAt < this.opts.cooldownMs) return {gesture: cur, progress: 0, fire: null};
     const progress = Math.min(1, (now - this.since) / this.opts.holdMs);
+    // A missed frame keeps the hold going, but only a frame that still shows the pose can finish it:
+    // dropping the arms just before the end must never score.
+    if (!seen.includes(cur)) return {gesture: cur, progress: Math.min(progress, 0.99), fire: null};
     if (progress < 1) return {gesture: cur, progress, fire: null};
     this.fired = cur; this.firedAt = now;
     return {gesture: cur, progress: 1, fire: cur};
