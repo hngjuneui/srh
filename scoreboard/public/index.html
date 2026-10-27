@@ -20,6 +20,7 @@
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="8" r="2"/><path d="M12 14v3"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
   <symbol id="i-new" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
@@ -37,7 +38,7 @@
 </main>
 
 <div class="hud glass" id="hud">
-  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span><span class="dot-sep"></span><span id="saveState" class="save">기기에 저장됨</span><span id="poseBadge" class="pose-badge" hidden><span class="dot-sep"></span><i></i>AI 포즈</span>
+  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span><span class="dot-sep"></span><span id="saveState" class="save">기기에 저장됨</span>
 </div>
 
 <div class="banner glass" id="banner" hidden>
@@ -48,14 +49,21 @@
   </div>
 </div>
 
+<!-- Top corners, set in from the edges: 새 경기 (hold to start) on the left, AI pose on/off on the right. -->
+<button class="corner-btn glass hold-btn" data-act="new" id="newMatchBar" aria-label="새 경기 (길게 누르기)"><i class="hold-fill"></i><svg><use href="#i-new"/></svg><span>새 경기</span></button>
+<button class="corner-btn glass" id="poseToggle" aria-pressed="false"><i class="pose-led"></i><span id="poseToggleText">AI 포즈 꺼짐</span></button>
+
 <nav class="toolbar glass" id="toolbar" aria-label="경기 조작">
   <button class="glass-btn" data-act="undo"><svg><use href="#i-undo"/></svg><span>되돌리기</span></button>
   <button class="glass-btn" data-act="swap"><svg><use href="#i-swap"/></svg><span>코트 교대</span></button>
-  <button class="glass-btn" data-act="timeline"><svg><use href="#i-list"/></svg><span>기록</span></button>
-  <button class="glass-btn" data-act="remote"><svg><use href="#i-remote"/></svg><span>리모컨</span><i class="remote-dot" id="remoteDot"></i></button>
-  <button class="glass-btn hold-btn" data-act="new" id="newMatchBar" aria-label="새 경기 (길게 누르기)"><i class="hold-fill"></i><svg><use href="#i-new"/></svg><span>새 경기</span></button>
-  <button class="glass-btn" data-act="settings"><svg><use href="#i-gear"/></svg><span>설정</span></button>
-  <button class="glass-btn icon-only" data-act="fullscreen" aria-label="전체 화면"><svg><use href="#i-full"/></svg></button>
+  <button class="glass-btn icon-only more-btn" data-act="more" id="moreBtn" aria-expanded="false" aria-controls="toolbarMore" aria-label="메뉴 더 보기"><svg><use href="#i-chev"/></svg><i class="remote-dot" id="remoteDot"></i></button>
+  <!-- Opens to the right of the chevron; closes by itself after a few idle seconds or once a sheet opens. -->
+  <div class="toolbar-more" id="toolbarMore" inert>
+    <button class="glass-btn" data-act="timeline"><svg><use href="#i-list"/></svg><span>기록</span></button>
+    <button class="glass-btn" data-act="remote"><svg><use href="#i-remote"/></svg><span>리모컨</span></button>
+    <button class="glass-btn" data-act="settings"><svg><use href="#i-gear"/></svg><span>설정</span></button>
+    <button class="glass-btn icon-only" data-act="fullscreen" aria-label="전체 화면"><svg><use href="#i-full"/></svg></button>
+  </div>
 </nav>
 
 <div class="toast glass" id="toast" role="status" hidden></div>

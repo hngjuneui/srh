@@ -55,7 +55,7 @@ try {
   assert.equal(await score(), '3-0', 'score restored after reload');
   await page.click('#toolbar [data-act=undo]'); await page.waitForTimeout(200);
   assert.equal(await score(), '2-0', 'undo removes the latest point');
-  // 새 경기 on the toolbar only fires on a full hold.
+  // 새 경기 (top left) only fires on a full hold.
   const bar = await page.$eval('#newMatchBar', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
   await page.mouse.move(...bar); await page.mouse.down(); await page.waitForTimeout(300); await page.mouse.up(); await page.waitForTimeout(200);
   assert.equal(await score(), '2-0', 'a short tap on 새 경기 does nothing');

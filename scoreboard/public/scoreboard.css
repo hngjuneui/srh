@@ -101,7 +101,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   transition: opacity .6s ease;
 }
 .glass:not(.sheet) { background: linear-gradient(160deg, color-mix(in srgb, var(--glass-shine) 35%, transparent), transparent 40%), var(--glass); }
-body.idle .hud, body.idle .toolbar { opacity: .32; }
+body.idle .hud, body.idle .toolbar, body.idle .corner-btn { opacity: .32; }
 .glass-btn {
   position: relative; display: inline-flex; align-items: center; gap: 8px; justify-content: center;
   min-height: 52px; padding: 0 18px; border-radius: 16px; border: 1px solid transparent;
@@ -252,7 +252,7 @@ body.colored .serve-dot { background: var(--ink); }
 body.colored .side.flash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(255, 255, 255, .5), transparent 70%); }
 body.colored .side.unflash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(0, 0, 0, .35), transparent 70%); }
 /* Dark glass stays readable on any background colour, pastel or neon. */
-body.colored .hud, body.colored .toolbar, body.colored .banner, body.colored .toast {
+body.colored .hud, body.colored .toolbar, body.colored .corner-btn, body.colored .banner, body.colored .toast {
   background: linear-gradient(160deg, rgba(255, 255, 255, .12), transparent 40%), rgba(8, 10, 14, .32);
   border-color: rgba(255, 255, 255, .3); color: #fff;
 }
@@ -372,3 +372,35 @@ body.colored .name-edit { color: var(--ink); }
 .pose-badge i { width: 7px; height: 7px; border-radius: 50%; background: #ff3b3b; margin-right: -6px; }
 .pose-help b { color: var(--text); }
 .pose-btns { display: flex; gap: 6px; }
+
+/* ---------- top corners: 새 경기 (left) and AI pose on/off (right), level with the HUD ---------- */
+.corner-btn {
+  position: fixed; top: max(14px, env(safe-area-inset-top)); z-index: 3; height: 42px; padding: 0 16px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 650; white-space: nowrap; color: var(--text);
+  touch-action: manipulation; transition: opacity .6s ease, transform .12s;
+}
+.corner-btn:active { transform: scale(.95); }
+.corner-btn svg { width: 20px; height: 20px; }
+#newMatchBar { left: max(5vw, calc(env(safe-area-inset-left) + 16px)); }
+#poseToggle { right: max(5vw, calc(env(safe-area-inset-right) + 16px)); }
+.pose-led { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--text) 35%, transparent); }
+#poseToggle.on .pose-led { background: #ff3b3b; box-shadow: 0 0 8px #ff3b3b; }
+#poseToggle:not(.on) { color: var(--muted); }
+/* Narrow screens: the HUD needs the whole top row, so the corner buttons drop to a row just below it. */
+@media (max-width: 700px) {
+  .corner-btn { top: calc(max(14px, env(safe-area-inset-top)) + 50px); height: 38px; padding: 0 13px; font-size: 14px; }
+  #newMatchBar { left: max(16px, env(safe-area-inset-left)); }
+  #poseToggle { right: max(16px, env(safe-area-inset-right)); }
+  /* the hold pill fits between the two buttons */
+  .pose-pill { top: calc(max(14px, env(safe-area-inset-top)) + 50px); padding: 6px 12px 6px 8px; font-size: 14px; }
+  .pose-ring { width: 20px; height: 20px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .side:first-child .side-head { margin-top: 108px; }
+}
+
+/* ---------- bottom toolbar: the extra buttons slide out to the right of the chevron ---------- */
+.toolbar-more { display: flex; gap: 2px; max-width: 0; opacity: 0; overflow: hidden; transition: max-width .32s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
+.toolbar.open .toolbar-more { max-width: 640px; opacity: 1; }
+.more-btn svg { transition: transform .32s cubic-bezier(.2, .8, .2, 1); }
+.toolbar.open .more-btn svg { transform: rotate(180deg); }

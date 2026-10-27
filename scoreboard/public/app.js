@@ -257,7 +257,21 @@ document.addEventListener('click', e => {
   else if (act === 'remote') openSheet('#remoteSheet');
   else if (act === 'settings') openSheet('#settingsSheet');
   else if (act === 'fullscreen') toggleFullscreen();
+  if (act === 'more') setToolbarOpen(!toolbar.classList.contains('open'));
+  else if (btn.closest('#toolbarMore')) setToolbarOpen(false);
 });
+
+// ---------- toolbar: 되돌리기 · 코트 교대 always; the rest behind the chevron ----------
+const toolbar = $('#toolbar');
+let toolbarTimer = 0;
+function setToolbarOpen(/** @type {boolean} */ open) {
+  toolbar.classList.toggle('open', open);
+  $('#moreBtn').setAttribute('aria-expanded', String(open));
+  $('#toolbarMore').inert = !open;
+  clearTimeout(toolbarTimer);
+  if (open) toolbarTimer = window.setTimeout(() => setToolbarOpen(false), 5000);
+}
+toolbar.addEventListener('pointerdown', () => { if (toolbar.classList.contains('open')) setToolbarOpen(true); }); // any touch restarts the timer
 // ---------- 새 경기 on the toolbar: hold ~1 s so a stray tap never wipes the board ----------
 const NEW_HOLD_MS = 1000;
 let newHoldTimer = 0, newHoldDone = false;
@@ -601,7 +615,7 @@ async function startCamera() {
   if (!camera) { const {PoseCamera} = await import('./pose-camera.js'); camera = new PoseCamera(poseVideo, onPeople); }
   await camera.start();
 }
-function stopCamera() { camera?.stop(); poseMode = 'off'; $('#posePill').hidden = true; $('#poseBadge').hidden = true; }
+function stopCamera() { camera?.stop(); poseMode = 'off'; $('#posePill').hidden = true; renderPoseToggle(); }
 /** A video taken out of the page pauses, so it is moved between the test stage and its unseen spot and played again. */
 function placeVideo(/** @type {boolean} */ onStage) {
   if (onStage) $('#poseStage').prepend(poseVideo); else document.body.append(poseVideo);
@@ -618,7 +632,7 @@ function onPeople(/** @type {any[][]} */ people, /** @type {number} */ now) {
   pill.hidden = !gesture || (!progress && !fire);
   if (!pill.hidden) {
     pill.style.setProperty('--p', String(progress));
-    $('#posePillText').textContent = `${gesture === 'circle' ? 'O' : 'X'} 동작 인식 중`;
+    $('#posePillText').textContent = `${gesture === 'circle' ? 'O' : 'X'} 인식 중`;
   }
   if (!fire || document.querySelector('dialog[open]') || editingName || !$('#intro').hidden) return;
   const facing = prefs.pose.team ?? prefs.ourTeam;
@@ -676,7 +690,22 @@ function openPoseTest() {
     .catch(e => { $('#poseStatus').textContent = e.message; });
 }
 function closePoseTest() { $('#poseTest').hidden = true; placeVideo(false); poseCanvas.getContext('2d')?.clearRect(0, 0, poseCanvas.width, poseCanvas.height); }
-function goLive() { poseMode = 'live'; hold.reset(); $('#poseBadge').hidden = false; }
+function goLive() { poseMode = 'live'; hold.reset(); renderPoseToggle(); }
+
+// Top-right switch: off → run the test (which turns it on); on → camera off.
+const poseToggle = $('#poseToggle');
+function renderPoseToggle() {
+  const on = poseMode === 'live';
+  poseToggle.classList.toggle('on', on);
+  poseToggle.setAttribute('aria-pressed', String(on));
+  $('#poseToggleText').textContent = on ? 'AI 포즈 켜짐' : 'AI 포즈 꺼짐';
+}
+poseToggle.addEventListener('click', () => {
+  poseToggle.blur();
+  if (poseMode !== 'live') { openPoseTest(); return; }
+  stopCamera(); prefs.pose.enabled = false; savePrefs();
+  toast('AI 포즈 스코어링을 껐습니다. 다시 누르면 테스트 후 켜집니다.');
+});
 
 let poseDoneTimer = 0;
 function finishPoseTest(/** @type {Team} */ team) {
