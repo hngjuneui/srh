@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#06080b">
+  <meta name="description" content="태블릿용 배드민턴 점수판. 탭·스와이프·블루투스 리모컨으로 점수를 올리고 모든 득점을 자동 기록합니다.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="scoreboard.css">
+  <title>코트 스코어보드</title>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="8" r="2"/><path d="M12 14v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+</svg>
+
+<main class="court" id="court">
+  <section class="side" data-side="left" aria-live="polite">
+    <header class="side-head"><span class="team-name"></span><span class="games" aria-label="게임 승수"></span></header>
+    <div class="score" aria-label="점수">0</div>
+    <div class="serve"><i></i><span></span></div>
+  </section>
+  <section class="side" data-side="right" aria-live="polite">
+    <header class="side-head"><span class="team-name"></span><span class="games" aria-label="게임 승수"></span></header>
+    <div class="score" aria-label="점수">0</div>
+    <div class="serve"><i></i><span></span></div>
+  </section>
+</main>
+
+<div class="hud glass" id="hud">
+  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span><span class="dot-sep"></span><span id="saveState" class="save">기기에 저장됨</span>
+</div>
+
+<div class="banner glass" id="banner" hidden>
+  <strong id="bannerTitle"></strong><span id="bannerText"></span>
+  <div class="banner-actions">
+    <button class="glass-btn" data-act="undo"><svg><use href="#i-undo"/></svg>되돌리기</button>
+    <button class="glass-btn primary" id="bannerNext">다음 게임</button>
+  </div>
+</div>
+
+<nav class="toolbar glass" id="toolbar" aria-label="경기 조작">
+  <button class="glass-btn" data-act="undo"><svg><use href="#i-undo"/></svg><span>되돌리기</span></button>
+  <button class="glass-btn" data-act="swap"><svg><use href="#i-swap"/></svg><span>코트 교대</span></button>
+  <button class="glass-btn" data-act="timeline"><svg><use href="#i-list"/></svg><span>기록</span></button>
+  <button class="glass-btn" data-act="remote"><svg><use href="#i-remote"/></svg><span>리모컨</span><i class="remote-dot" id="remoteDot"></i></button>
+  <button class="glass-btn" data-act="settings"><svg><use href="#i-gear"/></svg><span>설정</span></button>
+  <button class="glass-btn icon-only" data-act="fullscreen" aria-label="전체 화면"><svg><use href="#i-full"/></svg></button>
+</nav>
+
+<div class="toast glass" id="toast" role="status" hidden></div>
+
+<dialog class="sheet glass" id="timelineSheet">
+  <header class="sheet-head"><h2>경기 기록</h2><select id="matchPicker" aria-label="경기 선택"></select><button class="glass-btn icon-only" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></header>
+  <div class="summary" id="summary"></div>
+  <ol class="timeline" id="timeline"></ol>
+  <footer class="sheet-foot"><span class="hint">득점·취소가 입력 즉시 이 기기에 시간순으로 저장됩니다.</span><button class="glass-btn" id="exportCsv">CSV 내보내기</button><button class="glass-btn" id="exportJson">JSON 내보내기</button></footer>
+</dialog>
+
+<dialog class="sheet glass" id="remoteSheet">
+  <header class="sheet-head"><h2>리모컨 설정·진단</h2><button class="glass-btn icon-only" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></header>
+  <p class="hint">이 창이 열려 있는 동안에는 리모컨을 눌러도 점수가 바뀌지 않습니다. 버튼을 짧게, 길게 눌러 아래 판정이 맞는지 확인하세요.</p>
+  <div class="remote-grid">
+    <div class="field-group">
+      <div class="key-row"><span>주 버튼<small>짧게 = 우리 팀, 길게 = 상대 팀</small></span><code data-key="primary">등록 안 됨</code><button class="glass-btn" data-learn="primary">등록</button></div>
+      <div class="key-row"><span>상대 팀 버튼<small>선택. 다른 키가 있는 리모컨용</small></span><code data-key="opponent">없음</code><button class="glass-btn" data-learn="opponent">등록</button></div>
+      <div class="key-row"><span>되돌리기 버튼<small>선택</small></span><code data-key="cancel">없음</code><button class="glass-btn" data-learn="cancel">등록</button></div>
+      <button class="text-btn" id="clearKeys">등록 모두 지우기</button>
+    </div>
+    <div class="field-group">
+      <label class="row">우리 팀<select id="ourTeam"><option value="A"></option><option value="B"></option></select></label>
+      <label class="row">길게 누르기 사용<input type="checkbox" id="useLong"></label>
+      <label class="row">길게 판정 <output id="longMsOut"></output><input type="range" id="longMs" min="400" max="1500" step="50"></label>
+      <label class="row">떼기 확인 시간 <output id="graceOut"></output><input type="range" id="releaseGrace" min="0" max="400" step="10"></label>
+      <p class="hint small">떼기 확인 시간: 길게 누르는 동안 누름·뗌이 번갈아 오는 리모컨도 한 번의 누름으로 묶습니다. 짧게 누를 때 이 시간만큼 늦게 반영됩니다.</p>
+    </div>
+  </div>
+  <div class="verdict" id="verdict">버튼을 눌러 보세요.</div>
+  <table class="keylog"><thead><tr><th>이벤트</th><th>key</th><th>code</th><th>repeat</th><th>간격</th></tr></thead><tbody id="keylog"></tbody></table>
+  <p class="hint small">볼륨 버튼은 안드로이드·크롬이 직접 처리해 웹페이지에 전달되지 않을 수 있습니다. 기록에 아무것도 안 나오는 버튼은 사용할 수 없습니다.</p>
+</dialog>
+
+<dialog class="sheet glass" id="settingsSheet">
+  <header class="sheet-head"><h2>설정</h2><button class="glass-btn icon-only" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></header>
+  <form id="settingsForm" class="settings">
+    <fieldset class="field-group"><legend>팀</legend>
+      <label class="row">A팀 이름<input name="nameA" maxlength="16" autocomplete="off"></label>
+      <label class="row">B팀 이름<input name="nameB" maxlength="16" autocomplete="off"></label>
+      <label class="row">첫 서브<select name="firstServer"><option value="A">A팀</option><option value="B">B팀</option></select></label>
+    </fieldset>
+    <fieldset class="field-group"><legend>경기 규칙</legend>
+      <label class="row">목표 점수<input name="target" type="number" min="5" max="50" inputmode="numeric"></label>
+      <label class="row">필요한 점수 차<input name="winBy" type="number" min="1" max="5" inputmode="numeric"></label>
+      <label class="row">상한 점수<input name="cap" type="number" min="5" max="60" inputmode="numeric"></label>
+      <label class="row">승리에 필요한 게임<select name="gamesToWin"><option value="1">1게임 (단판)</option><option value="2">2게임 (3판 2선승)</option><option value="3">3게임 (5판 3선승)</option></select></label>
+    </fieldset>
+    <fieldset class="field-group"><legend>화면·조작</legend>
+      <label class="row">게임이 끝나면 좌우 자동 교대<input type="checkbox" name="autoSwap"></label>
+      <label class="row">스와이프 방향 반대로<input type="checkbox" name="reverseSwipe"></label>
+      <label class="row">득점 효과음<input type="checkbox" name="sound"></label>
+      <label class="row">가만히 있으면 조작부 흐리게<input type="checkbox" name="idleDim"></label>
+      <label class="row">밝은 테마<input type="checkbox" name="light"></label>
+    </fieldset>
+    <p class="hint small" id="ruleNote">규칙은 동호회 연습용 기본값(21점·2점 차·30점 상한)입니다. 첫 서브는 첫 득점 전까지만 바꿀 수 있습니다.</p>
+    <p class="hint small" id="wakeNote"></p>
+    <footer class="sheet-foot"><button type="button" class="glass-btn danger" id="newMatch">새 경기 시작</button><button type="submit" class="glass-btn primary">저장</button></footer>
+  </form>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
