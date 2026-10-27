@@ -1,0 +1,2 @@
+MediaPipe Tasks Vision 0.10.35 (npm @mediapipe/tasks-vision), Apache License 2.0.
+Pose model: pose_landmarker_lite float16 v1 from storage.googleapis.com/mediapipe-models, Apache License 2.0.

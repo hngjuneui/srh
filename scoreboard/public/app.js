@@ -2,6 +2,7 @@
 import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides,
   isDecidingInterval, gameWinner, longestRuns, toCsv, other} from './core.js';
 import {RemoteInput, DEFAULT_REMOTE, keyId} from './remote.js';
+import {classify, torsoX, GestureHold, DEFAULT_POSE, UPPER_BODY} from './pose.js';
 
 /** @typedef {'A'|'B'} Team */
 const $ = (/** @type {string} */ s) => /** @type {HTMLElement} */ (document.querySelector(s));
@@ -25,11 +26,14 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   pastel2: {label: '파스텔 · 라벤더 × 레몬', A: '#c3b5ff', B: '#ffe98a'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true, idleDim: true, light: false, autoSwap: true, intro: true,
-  colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE}};
+  colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
+  // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
+  pose: {enabled: false, team: /** @type {Team|null} */ (null), holdMs: DEFAULT_POSE.holdMs}};
 const savedPrefs = store.get(KEY.prefs) ?? {};
 // The default used to be the blue × orange set; devices still on it move to the new dark default once.
 if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete savedPrefs.colors;
-const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors}};
+const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
+  pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
 
 /** @type {any} */
@@ -313,7 +317,7 @@ const remote = new RemoteInput(prefs.remote, (action, info) => {
     return;
   }
   hideIntro();
-  if (document.querySelector('dialog[open]') || editingName) return;
+  if (document.querySelector('dialog[open]') || editingName || !$('#poseTest').hidden) return;
   if (action === 'single') point(ours, 'remote-single');
   else if (action === 'double') point(theirs, 'remote-double');
   else if (action === 'opponent') point(theirs, 'remote-key');
@@ -384,7 +388,7 @@ $('#doubleMs').addEventListener('input', e => { prefs.remote.doubleMs = Number(/
 $('#remoteSheet').addEventListener('close', () => { learning = null; remote.reset(); });
 
 // ---------- timeline ----------
-const SOURCE = {'tap': '탭', 'swipe-down': '쓸기(득점)', 'swipe-up': '쓸기(취소)', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
+const SOURCE = {'tap': '탭', 'pose-o': 'AI 포즈 O', 'pose-x': 'AI 포즈 X', 'swipe-down': '쓸기(득점)', 'swipe-up': '쓸기(취소)', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
   'remote-short': '리모컨 짧게', 'remote-long': '리모컨 길게',
   'remote-key': '리모컨', 'remote': '리모컨', 'button': '버튼', 'app': ''};
 const esc = (/** @type {any} */ s) => String(s).replace(/[&<>"']/g, c => /** @type {any} */ ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
@@ -449,6 +453,7 @@ function fillSettings() {
   field('target').value = rules.target; field('winBy').value = rules.winBy; field('cap').value = rules.cap;
   field('gamesToWin').value = String(rules.gamesToWin);
   for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap', 'intro']) field(k).checked = /** @type {any} */ (prefs)[k];
+  renderPoseSettings();
   $('#colorNameA').textContent = names.A; $('#colorNameB').textContent = names.B;
   fillColors();
   $('#wakeNote').textContent = 'wakeLock' in navigator ? `화면 켜짐 유지: ${wakeLock ? '사용 중' : '화면을 한 번 터치하면 켜집니다'}` : '이 브라우저는 화면 켜짐 유지를 지원하지 않습니다. 태블릿의 화면 꺼짐 시간을 길게 설정하세요.';
@@ -558,9 +563,141 @@ function hideIntro() {
 $('#intro').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); hideIntro(); });
 $('#showIntro').addEventListener('click', () => { /** @type {HTMLDialogElement} */ ($('#settingsSheet')).close(); showIntro(); });
 
+// ---------- AI pose scoring: the front camera faces one team; O = that team +1, X = the other team +1 ----------
+// 'test' shows the camera and skeleton until an O is held; 'live' keeps the camera unseen and only shows pop-ups.
+const poseVideo = /** @type {HTMLVideoElement} */ ($('#poseVideo'));
+const poseCanvas = /** @type {HTMLCanvasElement} */ ($('#poseCanvas'));
+const hold = new GestureHold({holdMs: prefs.pose.holdMs, cooldownMs: DEFAULT_POSE.cooldownMs});
+/** @type {any} */ let camera = null;
+let poseMode = /** @type {'off'|'test'|'live'} */ ('off');
+
+async function startCamera() {
+  if (!camera) { const {PoseCamera} = await import('./pose-camera.js'); camera = new PoseCamera(poseVideo, onPeople); }
+  await camera.start();
+}
+function stopCamera() { camera?.stop(); poseMode = 'off'; $('#posePill').hidden = true; $('#poseBadge').hidden = true; }
+/** A video taken out of the page pauses, so it is moved between the test stage and its unseen spot and played again. */
+function placeVideo(/** @type {boolean} */ onStage) {
+  if (onStage) $('#poseStage').prepend(poseVideo); else document.body.append(poseVideo);
+  poseVideo.className = onStage ? 'pose-video' : 'pose-video-hidden';
+  poseVideo.play().catch(() => {});
+}
+
+function onPeople(/** @type {any[][]} */ people, /** @type {number} */ now) {
+  const gestures = people.map(classify);
+  const {gesture, progress, fire} = hold.update(gestures, now);
+  if (poseMode === 'test') { drawPose(people, gestures); testStep(people, gestures, gesture, progress, fire); return; }
+  if (poseMode !== 'live') return;
+  const pill = $('#posePill');
+  pill.hidden = !gesture || (!progress && !fire);
+  if (!pill.hidden) {
+    pill.style.setProperty('--p', String(progress));
+    $('#posePillText').textContent = `${gesture === 'circle' ? 'O' : 'X'} 동작 인식 중`;
+  }
+  if (!fire || document.querySelector('dialog[open]') || editingName || !$('#intro').hidden) return;
+  const facing = prefs.pose.team ?? prefs.ourTeam;
+  const team = fire === 'circle' ? facing : other(facing);
+  if (derive(match).gameOver) { point(team, 'pose'); return; } // point() explains why nothing was added
+  point(team, fire === 'circle' ? 'pose-o' : 'pose-x');
+  pill.hidden = true;
+  toast(`AI 포즈 · ${fire === 'circle' ? 'O' : 'X'} 인식 → ${name(team)} +1`, 2600);
+}
+
+function drawPose(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ gestures) {
+  const c = poseCanvas, ctx = c.getContext('2d');
+  if (!ctx || !poseVideo.videoWidth) return;
+  if (c.width !== poseVideo.videoWidth) { c.width = poseVideo.videoWidth; c.height = poseVideo.videoHeight; }
+  ctx.clearRect(0, 0, c.width, c.height);
+  const vis = (/** @type {any} */ p) => p && (p.visibility ?? 1) > 0.4;
+  people.forEach((lm, i) => {
+    const color = gestures[i] === 'circle' ? '#36e0a2' : gestures[i] === 'cross' ? '#ff8f5a' : '#ffffff';
+    ctx.strokeStyle = ctx.fillStyle = color;
+    ctx.lineWidth = Math.max(4, c.width / 110); ctx.lineCap = 'round';
+    for (const [a, b] of UPPER_BODY) {
+      if (!vis(lm[a]) || !vis(lm[b])) continue;
+      ctx.beginPath(); ctx.moveTo(lm[a].x * c.width, lm[a].y * c.height); ctx.lineTo(lm[b].x * c.width, lm[b].y * c.height); ctx.stroke();
+    }
+    for (const k of [11, 12, 13, 14, 15, 16]) if (vis(lm[k])) { ctx.beginPath(); ctx.arc(lm[k].x * c.width, lm[k].y * c.height, ctx.lineWidth * 1.3, 0, 7); ctx.fill(); }
+    if (vis(lm[0]) && vis(lm[11]) && vis(lm[12])) {
+      const r = Math.hypot((lm[11].x - lm[12].x) * c.width, (lm[11].y - lm[12].y) * c.height) * 0.38;
+      ctx.beginPath(); ctx.arc(lm[0].x * c.width, lm[0].y * c.height, r, 0, 7); ctx.stroke();
+    }
+  });
+}
+
+function testStep(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ gestures, /** @type {string|null} */ gesture, /** @type {number} */ progress, /** @type {string|null} */ fire) {
+  /** @type {HTMLElement} */ ($('#poseMeter')).style.transform = `scaleX(${gesture === 'circle' ? progress : 0})`;
+  const status = $('#poseStatus');
+  if (fire === 'circle') {
+    const who = people[gestures.indexOf('circle')];
+    // The preview is mirrored, so a player standing on the screen's left shows up on the camera's right.
+    const onLeft = 1 - torsoX(who) < 0.5;
+    finishPoseTest(/** @type {Team} */ (sides[onLeft ? 0 : 1].dataset.team));
+  } else if (gesture === 'cross') status.textContent = 'X 동작이 보여요 — 경기 중엔 상대 팀 +1입니다. 테스트는 머리 위 O로 해 주세요.';
+  else if (gesture === 'circle') status.textContent = 'O 인식 중… 그대로 유지하세요';
+  else if (!people.length) status.textContent = '사람을 찾는 중… 상체와 두 팔이 화면에 다 보이게 서 주세요.';
+  else status.textContent = `${people.length}명 보임 · 머리 위로 크게 O를 만들어 주세요.`;
+}
+
+function openPoseTest() {
+  poseMode = 'test'; hold.reset();
+  $('#poseHoldSec').textContent = String(prefs.pose.holdMs / 1000);
+  $('#poseTest').hidden = false; $('#posePill').hidden = true;
+  $('#poseStatus').textContent = '카메라와 AI 모델을 준비하는 중… 처음에는 몇 초 걸려요.';
+  /** @type {HTMLElement} */ ($('#poseMeter')).style.transform = 'scaleX(0)';
+  placeVideo(true);
+  startCamera().then(() => { if (poseMode === 'test') { placeVideo(true); $('#poseStatus').textContent = '사람을 찾는 중…'; } })
+    .catch(e => { $('#poseStatus').textContent = e.message; });
+}
+function closePoseTest() { $('#poseTest').hidden = true; placeVideo(false); poseCanvas.getContext('2d')?.clearRect(0, 0, poseCanvas.width, poseCanvas.height); }
+function goLive() { poseMode = 'live'; hold.reset(); $('#poseBadge').hidden = false; }
+
+let poseDoneTimer = 0;
+function finishPoseTest(/** @type {Team} */ team) {
+  prefs.pose.enabled = true; savePrefs();
+  closePoseTest(); goLive();
+  setPoseTeam(team);
+  tone(SOUND.end, 0.13);
+}
+/** The tested team is the one the camera faces, and serves first if the match has not started. */
+function setPoseTeam(/** @type {Team} */ team) {
+  prefs.pose.team = team; savePrefs();
+  const fresh = !derive(match).started;
+  if (fresh) { match.settings.firstServer = team; saveMatch(); }
+  render();
+  const side = sideOf(team) === sides[0] ? '왼쪽' : '오른쪽';
+  $('#poseDoneText').textContent = `${side} · ${name(team)} 쪽을 보고 있어요.${fresh ? ` ${name(team)}이(가) 먼저 서브합니다.` : ''} 이제 경기를 시작하세요.`;
+  const done = $('#poseDone');
+  done.hidden = false;
+  clearTimeout(poseDoneTimer);
+  poseDoneTimer = window.setTimeout(() => { done.hidden = true; }, 4500);
+}
+$('#poseFlip').addEventListener('click', e => { /** @type {HTMLElement} */ (e.currentTarget).blur(); setPoseTeam(other(/** @type {Team} */ (prefs.pose.team))); });
+$('#poseCancel').addEventListener('click', () => { closePoseTest(); stopCamera(); prefs.pose.enabled = false; savePrefs(); });
+$('#poseSkip').addEventListener('click', () => {
+  closePoseTest(); prefs.pose.enabled = true; prefs.pose.team ??= prefs.ourTeam; savePrefs(); goLive();
+  toast(`AI 포즈 스코어링 켜짐 · 카메라 쪽 팀: ${name(/** @type {Team} */ (prefs.pose.team))}`);
+});
+
+function renderPoseSettings() {
+  const on = prefs.pose.enabled;
+  $('#poseState').textContent = on ? `켜짐 · 카메라 쪽 팀: ${name(/** @type {Team} */ (prefs.pose.team ?? prefs.ourTeam))}` : '꺼짐';
+  $('#poseTestBtn').textContent = on ? '다시 테스트' : '켜고 테스트';
+  $('#poseOffBtn').hidden = !on;
+  /** @type {HTMLInputElement} */ ($('#poseHold')).value = String(prefs.pose.holdMs);
+  $('#poseHoldOut').textContent = `${(prefs.pose.holdMs / 1000).toFixed(1)}초`;
+}
+$('#poseTestBtn').addEventListener('click', () => { /** @type {HTMLDialogElement} */ ($('#settingsSheet')).close(); openPoseTest(); });
+$('#poseOffBtn').addEventListener('click', () => { stopCamera(); prefs.pose.enabled = false; savePrefs(); renderPoseSettings(); toast('AI 포즈 스코어링을 껐습니다. 카메라가 꺼졌어요.'); });
+$('#poseHold').addEventListener('input', e => { prefs.pose.holdMs = hold.opts.holdMs = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderPoseSettings(); });
+
 applyTheme();
 saveMatch();
 render();
 renderRemote();
 active();
 if (prefs.intro) showIntro();
+if (prefs.pose.enabled) {
+  goLive();
+  startCamera().catch(e => { stopCamera(); toast(`AI 포즈 스코어링을 켜지 못했습니다. ${e.message}`, 4000); });
+}

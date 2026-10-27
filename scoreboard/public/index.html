@@ -36,7 +36,7 @@
 </main>
 
 <div class="hud glass" id="hud">
-  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span><span class="dot-sep"></span><span id="saveState" class="save">기기에 저장됨</span>
+  <span id="gameLabel">1게임</span><span class="dot-sep"></span><span id="clock">00:00</span><span id="hintWrap" hidden><span class="dot-sep"></span><b id="hint"></b></span><span class="dot-sep"></span><span id="saveState" class="save">기기에 저장됨</span><span id="poseBadge" class="pose-badge" hidden><span class="dot-sep"></span><i></i>AI 포즈</span>
 </div>
 
 <div class="banner glass" id="banner" hidden>
@@ -57,6 +57,29 @@
 </nav>
 
 <div class="toast glass" id="toast" role="status" hidden></div>
+<div class="pose-pill glass" id="posePill" hidden><i class="pose-ring" id="poseRing"></i><span id="posePillText">AI 포즈</span></div>
+
+<!-- AI pose: the camera keeps running here, unseen, during play. -->
+<video id="poseVideo" class="pose-video-hidden" muted playsinline aria-hidden="true"></video>
+
+<div class="pose-test" id="poseTest" hidden role="dialog" aria-label="AI 포즈 스코어링 테스트">
+  <div class="pose-stage" id="poseStage"><canvas id="poseCanvas"></canvas><div class="pose-mid" aria-hidden="true"></div></div>
+  <div class="pose-panel glass">
+    <h2>AI 포즈 스코어링 테스트</h2>
+    <p class="pose-step">카메라가 볼 수 있는 곳에서, 머리 위로 크게 <b>O</b>를 만들고 <b id="poseHoldSec">1</b>초 유지하세요.</p>
+    <div class="pose-meter"><i id="poseMeter"></i></div>
+    <p class="pose-status" id="poseStatus">카메라를 켜는 중…</p>
+    <p class="hint small">X(팔 교차)는 상대 팀 +1 동작입니다. 테스트를 한 사람이 서 있는 쪽 팀이 첫 서브를 합니다.</p>
+    <div class="pose-actions"><button type="button" class="glass-btn" id="poseCancel">취소</button><button type="button" class="glass-btn" id="poseSkip">테스트 건너뛰기</button></div>
+  </div>
+</div>
+
+<div class="pose-done glass" id="poseDone" hidden role="status">
+  <div class="pose-check">✓</div>
+  <strong>AI 포즈 스코어링 기능 확인</strong>
+  <span id="poseDoneText"></span>
+  <button type="button" class="text-btn" id="poseFlip">반대쪽 팀이에요</button>
+</div>
 
 <dialog class="sheet glass" id="timelineSheet">
   <header class="sheet-head"><h2>경기 기록</h2><select id="matchPicker" aria-label="경기 선택"></select><button class="glass-btn icon-only" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></header>
@@ -118,6 +141,11 @@
       <label class="row">밝은 테마<input type="checkbox" name="light"></label>
       <label class="row">시작할 때 사용법 보기<input type="checkbox" name="intro"></label>
       <button type="button" class="text-btn" id="showIntro">사용법 지금 보기</button>
+    </fieldset>
+    <fieldset class="field-group"><legend>AI 포즈 스코어링 · 베타</legend>
+      <p class="hint small pose-help">전면 카메라로 한쪽 팀 선수의 동작을 인식합니다. 머리 위로 큰 <b>O</b> = 그 팀 +1, 팔을 교차한 큰 <b>X</b> = 상대 팀 +1. 동작을 잠깐 유지해야 인식됩니다. 영상은 기기 안에서만 처리되고 저장·전송되지 않습니다.</p>
+      <div class="row"><span id="poseState">꺼짐</span><span class="pose-btns"><button type="button" class="glass-btn" id="poseTestBtn">켜고 테스트</button><button type="button" class="glass-btn danger" id="poseOffBtn" hidden>끄기</button></span></div>
+      <label class="row">동작 유지 시간 <output id="poseHoldOut"></output><input type="range" id="poseHold" min="500" max="2000" step="100"></label>
     </fieldset>
     <p class="hint small" id="ruleNote">규칙은 동호회 연습용 기본값(21점·2점 차·30점 상한)입니다. 첫 서브는 첫 득점 전까지만 바꿀 수 있습니다.</p>
     <p class="hint small" id="wakeNote"></p>
