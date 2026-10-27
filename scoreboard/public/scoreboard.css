@@ -80,14 +80,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
 @keyframes shrink { 0% { transform: scale(1); } 40% { transform: scale(.93); opacity: .7; } 100% { transform: scale(1); } }
 @keyframes glow { from { opacity: 1; } to { opacity: 0; } }
-/* Serve: a shuttle next to the serving team's name, and a two-half court with the service half filled
-   (as the server faces the net: right on an even score, left on odd). */
-.serve-mark { display: none; align-items: center; gap: 8px; color: var(--team); }
-.side.serving .serve-mark { display: inline-flex; }
-.serve-mark svg { width: clamp(22px, 2.6vw, 32px); height: clamp(22px, 2.6vw, 32px); transform: rotate(-20deg); }
-.court-glyph { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid currentColor; border-radius: 4px; }
-.court-glyph i { width: clamp(9px, 1vw, 13px); height: clamp(14px, 1.6vw, 20px); border-radius: 1px; }
-.serve-mark[data-court="left"] .court-glyph i:first-child, .serve-mark[data-court="right"] .court-glyph i:last-child { background: currentColor; }
+/* Who serves next: one small dot beside that team's name. Both sides keep the slot so names never shift. */
+.serve-dot { width: clamp(12px, 1.3vw, 18px); height: clamp(12px, 1.3vw, 18px); border-radius: 50%; background: var(--team); visibility: hidden; flex-shrink: 0; }
+.side.serving .serve-dot { visibility: visible; }
 .side.winner .score { color: var(--team); }
 .side.dragging .score { transition: none; }
 
@@ -236,7 +231,7 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
 body.colored .side { background: var(--team); }
 body.colored .side + .side { border: 0; }
 body.colored .score, body.colored .team-name, body.colored .side.winner .score { color: var(--ink); }
-body.colored .serve-mark { color: var(--ink); }
+body.colored .serve-dot { background: var(--ink); }
 body.colored .side.flash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(255, 255, 255, .5), transparent 70%); }
 body.colored .side.unflash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(0, 0, 0, .35), transparent 70%); }
 /* Dark glass stays readable on any background colour, pastel or neon. */

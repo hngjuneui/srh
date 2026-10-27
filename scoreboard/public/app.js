@@ -1,5 +1,5 @@
 // @ts-check
-import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides, serviceCourt,
+import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides,
   isDecidingInterval, gameWinner, longestRuns, toCsv, other} from './core.js';
 import {RemoteInput, DEFAULT_REMOTE, keyId} from './remote.js';
 
@@ -146,9 +146,6 @@ function render() {
     /** @type {HTMLElement} */ (side.querySelector('.score')).textContent = String(state.scores[team]);
     side.classList.toggle('serving', !state.gameOver && state.server === team);
     side.classList.toggle('winner', state.game.winner === team);
-    const mark = /** @type {HTMLElement} */ (side.querySelector('.serve-mark'));
-    mark.dataset.court = serviceCourt(state) === '오른쪽' ? 'right' : 'left';
-    mark.setAttribute('aria-label', `서브 · ${serviceCourt(state)} 코트`);
   });
   $('#gameLabel').textContent = state.matchWinner ? '경기 종료' : `${state.gameNo}게임`;
   const hint = pointHint(state);

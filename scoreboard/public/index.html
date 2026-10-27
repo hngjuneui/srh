@@ -22,16 +22,15 @@
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
-  <symbol id="i-shuttle" viewBox="0 0 24 24"><path d="M9.5 15.5h5L19 3H5l4.5 12.5Z"/><path d="M12 3v12.5M8.4 3l1.9 12.5M15.6 3l-1.9 12.5"/><path d="M9.5 15.5a2.5 2.5 0 0 0 5 0" fill="currentColor"/></symbol>
 </svg>
 
 <main class="court" id="court">
   <section class="side" data-side="left" aria-live="polite">
-    <header class="side-head"><span class="serve-mark" role="img"><svg><use href="#i-shuttle"/></svg><span class="court-glyph"><i></i><i></i></span></span><span class="team-name"></span></header>
+    <header class="side-head"><i class="serve-dot" role="img" aria-label="서브"></i><span class="team-name"></span></header>
     <div class="score" aria-label="점수">0</div>
   </section>
   <section class="side" data-side="right" aria-live="polite">
-    <header class="side-head"><span class="serve-mark" role="img"><svg><use href="#i-shuttle"/></svg><span class="court-glyph"><i></i><i></i></span></span><span class="team-name"></span></header>
+    <header class="side-head"><i class="serve-dot" role="img" aria-label="서브"></i><span class="team-name"></span></header>
     <div class="score" aria-label="점수">0</div>
   </section>
 </main>
