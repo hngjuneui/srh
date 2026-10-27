@@ -12,10 +12,10 @@
   --muted: rgba(238, 242, 246, .62);
   --team-a: #36e0a2;
   --team-b: #ff8f5a;
-  --glass: rgba(255, 255, 255, .085);
+  --glass: rgba(255, 255, 255, .05);
   --glass-strong: rgba(255, 255, 255, .16);
   --glass-edge: rgba(255, 255, 255, .22);
-  --glass-shine: rgba(255, 255, 255, .28);
+  --glass-shine: rgba(255, 255, 255, .2);
   --glass-shadow: 0 10px 40px rgba(0, 0, 0, .45);
   --danger: #ff6b6b;
   --tint: .16;
@@ -31,7 +31,7 @@
   --muted: rgba(17, 22, 27, .6);
   --team-a: #008a5e;
   --team-b: #d4541c;
-  --glass: rgba(255, 255, 255, .5);
+  --glass: rgba(255, 255, 255, .34);
   --glass-strong: rgba(255, 255, 255, .78);
   --glass-edge: rgba(255, 255, 255, .9);
   --glass-shine: rgba(255, 255, 255, .9);
@@ -98,7 +98,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-shine), inset 0 -1px 0 rgba(255, 255, 255, .05);
   transition: opacity .6s ease;
 }
-.glass:not(.sheet) { background: linear-gradient(160deg, color-mix(in srgb, var(--glass-shine) 45%, transparent), transparent 45%), var(--glass); }
+.glass:not(.sheet) { background: linear-gradient(160deg, color-mix(in srgb, var(--glass-shine) 35%, transparent), transparent 40%), var(--glass); }
 body.idle .hud, body.idle .toolbar { opacity: .32; }
 .glass-btn {
   position: relative; display: inline-flex; align-items: center; gap: 8px; justify-content: center;
@@ -126,8 +126,9 @@ body.idle .hud, body.idle .toolbar { opacity: .32; }
 .save.error { color: var(--danger); }
 .toolbar {
   position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 3;
-  display: flex; gap: 4px; padding: 6px; border-radius: 24px;
+  display: flex; gap: 2px; padding: 4px; border-radius: 22px;
 }
+.toolbar .glass-btn { min-height: 46px; }
 .remote-dot { position: absolute; top: 10px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: transparent; }
 .remote-dot.on { background: var(--team-a); box-shadow: 0 0 8px var(--team-a); }
 .remote-dot.hit { background: #fff; }
@@ -222,8 +223,11 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .side-head { margin-top: 52px; }
-  .side { padding-bottom: 76px; }
+  .score { font-size: min(62vh, 44vw); }
+  .side { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .glass-btn { min-height: 44px; }
+  .toolbar { bottom: max(8px, env(safe-area-inset-bottom)); }
+  .toolbar .glass-btn { min-height: 38px; font-size: 15px; padding: 0 14px; }
 }
 /* The how-to demos keep moving: the motion is the instruction. Everything else goes still. */
 @media (prefers-reduced-motion: reduce) { *:not(.demo *, .remote-demo *) { animation: none !important; transition: none !important; } }
@@ -237,7 +241,7 @@ body.colored .side.flash::after { background: radial-gradient(70% 60% at 50% 55%
 body.colored .side.unflash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(0, 0, 0, .35), transparent 70%); }
 /* Dark glass stays readable on any background colour, pastel or neon. */
 body.colored .hud, body.colored .toolbar, body.colored .banner, body.colored .toast {
-  background: linear-gradient(160deg, rgba(255, 255, 255, .18), transparent 45%), rgba(8, 10, 14, .5);
+  background: linear-gradient(160deg, rgba(255, 255, 255, .12), transparent 40%), rgba(8, 10, 14, .32);
   border-color: rgba(255, 255, 255, .3); color: #fff;
 }
 body.colored .hud .save, body.colored .dot-sep { color: rgba(255, 255, 255, .75); }
