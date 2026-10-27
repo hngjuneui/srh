@@ -15,6 +15,7 @@ const store = {
 };
 // Side background colours. Each pair is chosen for the strongest difference between the two teams.
 const PALETTES = /** @type {Record<string, {label: string, A: string, B: string, dark?: boolean}>} */ ({
+  dark: {label: '다크 · 검은 배경에 은은한 색', A: '#36e0a2', B: '#ff8f5a', dark: true},
   contrast: {label: '고대비 · 블루 × 오렌지', A: '#1450ff', B: '#ff7a00'},
   primary: {label: '원색 · 레드 × 블루', A: '#e3001b', B: '#0057ff'},
   primary2: {label: '원색 · 그린 × 레드', A: '#00a651', B: '#e3001b'},
@@ -22,12 +23,13 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon2: {label: '형광 · 옐로 × 바이올렛', A: '#eaff00', B: '#8a2bff'},
   pastel: {label: '파스텔 · 민트 × 피치', A: '#9ee6c9', B: '#ffb5a7'},
   pastel2: {label: '파스텔 · 라벤더 × 레몬', A: '#c3b5ff', B: '#ffe98a'},
-  dark: {label: '다크 · 검은 배경에 은은한 색', A: '#36e0a2', B: '#ff8f5a', dark: true},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true, idleDim: true, light: false, autoSwap: true, intro: true,
-  colors: {preset: 'contrast', A: PALETTES.contrast.A, B: PALETTES.contrast.B}, remote: {...DEFAULT_REMOTE}};
+  colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE}};
 const savedPrefs = store.get(KEY.prefs) ?? {};
-const prefs = {...DEFAULT_PREFS, ...savedPrefs, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors}};
+// The default used to be the blue × orange set; devices still on it move to the new dark default once.
+if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete savedPrefs.colors;
+const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
 
 /** @type {any} */
