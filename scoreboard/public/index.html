@@ -70,17 +70,18 @@
   <p class="hint">이 창이 열려 있는 동안에는 리모컨을 눌러도 점수가 바뀌지 않습니다. 버튼을 짧게, 길게 눌러 아래 판정이 맞는지 확인하세요.</p>
   <div class="remote-grid">
     <div class="field-group">
-      <div class="key-row"><span>주 버튼<small>짧게 = 우리 팀, 길게 = 상대 팀</small></span><code data-key="primary">등록 안 됨</code><button class="glass-btn" data-learn="primary">등록</button></div>
+      <div class="key-row"><span>주 버튼<small>한 번 = 우리 팀 · 두 번 = 상대 팀 · 길게 = 되돌리기</small></span><code data-key="primary">등록 안 됨</code><button class="glass-btn" data-learn="primary">등록</button></div>
       <div class="key-row"><span>상대 팀 버튼<small>선택. 다른 키가 있는 리모컨용</small></span><code data-key="opponent">없음</code><button class="glass-btn" data-learn="opponent">등록</button></div>
       <div class="key-row"><span>되돌리기 버튼<small>선택</small></span><code data-key="cancel">없음</code><button class="glass-btn" data-learn="cancel">등록</button></div>
       <button class="text-btn" id="clearKeys">등록 모두 지우기</button>
     </div>
     <div class="field-group">
       <label class="row">우리 팀<select id="ourTeam"><option value="A"></option><option value="B"></option></select></label>
-      <label class="row">길게 누르기 사용<input type="checkbox" id="useLong"></label>
+      <label class="row">길게 눌러 되돌리기<input type="checkbox" id="useLong"></label>
       <label class="row">길게 판정 <output id="longMsOut"></output><input type="range" id="longMs" min="400" max="1500" step="50"></label>
+      <label class="row">두 번 누르기 간격 <output id="doubleOut"></output><input type="range" id="doubleMs" min="200" max="700" step="25"></label>
       <label class="row">떼기 확인 시간 <output id="graceOut"></output><input type="range" id="releaseGrace" min="0" max="400" step="10"></label>
-      <p class="hint small">떼기 확인 시간: 길게 누르는 동안 누름·뗌이 번갈아 오는 리모컨도 한 번의 누름으로 묶습니다. 짧게 누를 때 이 시간만큼 늦게 반영됩니다.</p>
+      <p class="hint small">한 번 누르기는 두 번째 누름이 오는지 ‘두 번 누르기 간격’만큼 기다린 뒤 반영됩니다. 떼기 확인 시간은 누르는 동안 누름·뗌이 번갈아 오는 리모컨을 한 번의 누름으로 묶습니다.</p>
     </div>
   </div>
   <div class="verdict" id="verdict">버튼을 눌러 보세요.</div>
@@ -92,9 +93,16 @@
   <header class="sheet-head"><h2>설정</h2><button class="glass-btn icon-only" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></header>
   <form id="settingsForm" class="settings">
     <fieldset class="field-group"><legend>팀</legend>
-      <label class="row">A팀 이름<input name="nameA" maxlength="16" autocomplete="off"></label>
-      <label class="row">B팀 이름<input name="nameB" maxlength="16" autocomplete="off"></label>
-      <label class="row">첫 서브<select name="firstServer"><option value="A">A팀</option><option value="B">B팀</option></select></label>
+      <label class="row">첫 번째 팀 이름<input name="nameA" maxlength="16" autocomplete="off"></label>
+      <label class="row">두 번째 팀 이름<input name="nameB" maxlength="16" autocomplete="off"></label>
+      <label class="row">첫 서브<select name="firstServer"><option value="A">첫 번째 팀</option><option value="B">두 번째 팀</option></select></label>
+      <p class="hint small">경기 화면에서 팀 이름을 터치해도 바로 바꿀 수 있어요.</p>
+    </fieldset>
+    <fieldset class="field-group"><legend>팀 배경색</legend>
+      <div class="swatches" role="group" aria-label="색상 세트"></div>
+      <label class="row">색상 세트<select id="palette"></select></label>
+      <label class="row"><span id="colorNameA"></span><input type="color" name="colorA"></label>
+      <label class="row"><span id="colorNameB"></span><input type="color" name="colorB"></label>
     </fieldset>
     <fieldset class="field-group"><legend>경기 규칙</legend>
       <label class="row">목표 점수<input name="target" type="number" min="5" max="50" inputmode="numeric"></label>
@@ -104,16 +112,37 @@
     </fieldset>
     <fieldset class="field-group"><legend>화면·조작</legend>
       <label class="row">게임이 끝나면 좌우 자동 교대<input type="checkbox" name="autoSwap"></label>
-      <label class="row">스와이프 방향 반대로<input type="checkbox" name="reverseSwipe"></label>
+      <label class="row"><span>쓸기 방향 바꾸기<small>켜면 위로 쓸기 = +1, 아래로 쓸기 = 1점 취소</small></span><input type="checkbox" name="reverseSwipe"></label>
       <label class="row">득점 효과음<input type="checkbox" name="sound"></label>
       <label class="row">가만히 있으면 조작부 흐리게<input type="checkbox" name="idleDim"></label>
       <label class="row">밝은 테마<input type="checkbox" name="light"></label>
+      <label class="row">시작할 때 사용법 보기<input type="checkbox" name="intro"></label>
+      <button type="button" class="text-btn" id="showIntro">사용법 지금 보기</button>
     </fieldset>
     <p class="hint small" id="ruleNote">규칙은 동호회 연습용 기본값(21점·2점 차·30점 상한)입니다. 첫 서브는 첫 득점 전까지만 바꿀 수 있습니다.</p>
     <p class="hint small" id="wakeNote"></p>
     <footer class="sheet-foot"><button type="button" class="glass-btn danger" id="newMatch">새 경기 시작</button><button type="submit" class="glass-btn primary">저장</button></footer>
   </form>
 </dialog>
+
+<div class="intro" id="intro" hidden role="dialog" aria-label="사용법">
+  <div class="intro-card glass">
+    <h2>이렇게 점수를 올려요</h2>
+    <div class="demos">
+      <figure class="demo tap"><div class="pad"><i class="finger"></i><b class="tag">+1</b></div><figcaption><b>탭</b><span>+1</span></figcaption></figure>
+      <figure class="demo down"><div class="pad"><i class="trail"></i><i class="finger"></i><b class="tag" id="introDownTag">+1</b></div><figcaption><b>아래로 쓸기</b><span id="introDown">+1</span></figcaption></figure>
+      <figure class="demo up"><div class="pad"><i class="trail"></i><i class="finger"></i><b class="tag" id="introUpTag">−1</b></div><figcaption><b>위로 쓸기</b><span id="introUp">1점 취소</span></figcaption></figure>
+    </div>
+    <div class="remote-demo">
+      <span class="rd-title">리모컨</span>
+      <span><i class="press one"></i><b>한 번</b><em id="introOurs"></em> +1</span>
+      <span><i class="press two"></i><b>두 번</b><em id="introTheirs"></em> +1</span>
+      <span><i class="press hold"></i><b>길게</b>되돌리기</span>
+    </div>
+    <p class="intro-foot">점수를 올리고 싶은 팀 쪽 화면을 조작하세요 · 팀 이름을 누르면 이름 변경</p>
+    <div class="intro-timer"><i></i></div>
+  </div>
+</div>
 
 <script type="module" src="app.js"></script>
 </body>

@@ -13,7 +13,7 @@ export function newMatch(options = {}, now = Date.now()) {
   return {
     id: uid(), version: 1, createdAt: now,
     settings: {
-      names: {A: 'A팀', B: 'B팀', ...options.names},
+      names: {A: '우리 팀', B: '상대 팀', ...options.names},
       rules: {...DEFAULT_RULES, ...options.rules},
       firstServer: options.firstServer ?? 'A',
     },

@@ -1,15 +1,16 @@
 // @ts-check
-// Turns raw key events from a Bluetooth remote into at most one action per press.
+// Turns raw key events from a Bluetooth remote into at most one action per gesture:
+// one press, two quick presses, or a long hold.
 // Handles both remotes that repeat keydown while held and remotes that send
 // keydown/keyup pairs over and over: a release only counts after `releaseGrace` ms
 // of silence, so a burst of pairs is treated as one long hold.
 
 /**
- * @typedef {{primary: string|null, opponent: string|null, cancel: string|null, longMs: number, releaseGrace: number, useLong: boolean}} RemoteConfig
- * @typedef {'short'|'long'|'opponent'|'cancel'} RemoteAction
+ * @typedef {{primary: string|null, opponent: string|null, cancel: string|null, longMs: number, releaseGrace: number, doubleMs: number, useLong: boolean}} RemoteConfig
+ * @typedef {'single'|'double'|'long'|'opponent'|'cancel'} RemoteAction
  */
 
-export const DEFAULT_REMOTE = /** @type {RemoteConfig} */ ({primary: null, opponent: null, cancel: null, longMs: 700, releaseGrace: 150, useLong: true});
+export const DEFAULT_REMOTE = /** @type {RemoteConfig} */ ({primary: null, opponent: null, cancel: null, longMs: 700, releaseGrace: 120, doubleMs: 350, useLong: true});
 
 const IGNORED = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Unidentified', 'Process']);
 
@@ -28,6 +29,8 @@ export class RemoteInput {
     this.timers = timers;
     /** @type {null | {id: string, downAt: number, longDone: boolean, longTimer: any, releaseTimer: any, staleTimer: any}} */
     this.press = null;
+    /** A finished short press waiting to see whether a second one follows. @type {null | {id: string, heldMs: number, timer: any}} */
+    this.pendingTap = null;
   }
 
   /** Which configured role a key plays, or null to ignore it. @param {string} id */
@@ -59,16 +62,16 @@ export class RemoteInput {
     this.watch(press);
     if (role === 'opponent' || role === 'cancel') {
       // Dedicated buttons act immediately; the rest of the press is swallowed.
+      this.flushTap();
       press.longDone = true;
       this.onAction(role, {id, heldMs: 0});
     } else if (this.config.useLong) {
       press.longTimer = this.timers.set(() => {
+        // A tap just before a hold still counts as its own single press.
+        this.flushTap();
         press.longDone = true;
         this.onAction('long', {id, heldMs: this.timers.now() - press.downAt});
       }, this.config.longMs);
-    } else {
-      press.longDone = true;
-      this.onAction('short', {id, heldMs: 0});
     }
     return true;
   }
@@ -97,10 +100,31 @@ export class RemoteInput {
     this.timers.clear(press.releaseTimer);
     this.timers.clear(press.staleTimer);
     this.press = null;
-    if (!press.longDone) this.onAction('short', {id: press.id, heldMs: releasedAt - press.downAt});
+    if (press.longDone) return;
+    const heldMs = releasedAt - press.downAt;
+    if (this.pendingTap && this.pendingTap.id === press.id) {
+      this.timers.clear(this.pendingTap.timer);
+      this.pendingTap = null;
+      this.onAction('double', {id: press.id, heldMs});
+      return;
+    }
+    this.flushTap();
+    const tap = {id: press.id, heldMs, timer: /** @type {any} */ (null)};
+    tap.timer = this.timers.set(() => { if (this.pendingTap === tap) { this.pendingTap = null; this.onAction('single', tap); } }, this.config.doubleMs);
+    this.pendingTap = tap;
+  }
+
+  /** Emits a waiting single press right away. */
+  flushTap() {
+    const tap = this.pendingTap;
+    if (!tap) return;
+    this.timers.clear(tap.timer);
+    this.pendingTap = null;
+    this.onAction('single', {id: tap.id, heldMs: tap.heldMs});
   }
 
   reset() {
+    if (this.pendingTap) { this.timers.clear(this.pendingTap.timer); this.pendingTap = null; }
     if (!this.press) return;
     this.timers.clear(this.press.longTimer);
     this.timers.clear(this.press.releaseTimer);

@@ -221,3 +221,96 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
   .glass-btn { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------- solid team backgrounds (colour sets) ---------- */
+body.colored .side { background: var(--team); }
+body.colored .side + .side { border: 0; }
+body.colored .score, body.colored .team-name, body.colored .side.winner .score { color: var(--ink); }
+body.colored .games i { border-color: var(--ink); }
+body.colored .games i.won { background: var(--ink); }
+body.colored .serve { color: var(--ink); opacity: .78; }
+body.colored .serve i { background: var(--ink); box-shadow: none; }
+body.colored .side.flash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(255, 255, 255, .5), transparent 70%); }
+body.colored .side.unflash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(0, 0, 0, .35), transparent 70%); }
+/* Dark glass stays readable on any background colour, pastel or neon. */
+body.colored .hud, body.colored .toolbar, body.colored .banner, body.colored .toast {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .18), transparent 45%), rgba(8, 10, 14, .5);
+  border-color: rgba(255, 255, 255, .3); color: #fff;
+}
+body.colored .hud .save, body.colored .dot-sep { color: rgba(255, 255, 255, .75); }
+body.colored .dot-sep { background: rgba(255, 255, 255, .6); }
+body.colored .side.winner::before { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 10px var(--ink); opacity: .25; pointer-events: none; }
+
+/* ---------- tap-to-rename team names ---------- */
+.team-name { cursor: text; padding: 4px 10px; margin: -4px -10px; border-radius: 12px; touch-action: manipulation; }
+.team-name::after { content: "✎"; font-size: .5em; margin-left: .35em; opacity: .45; vertical-align: middle; }
+body.idle .team-name::after { opacity: 0; }
+.name-edit {
+  font-size: clamp(20px, 3.4vw, 40px); font-weight: 800; width: min(36vw, 12em); text-align: center;
+  border: 2px solid currentColor; border-radius: 14px; padding: 2px 10px; background: rgba(0, 0, 0, .25); color: inherit;
+  -webkit-user-select: text; user-select: text;
+}
+body.colored .name-edit { color: var(--ink); }
+.row small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+
+/* ---------- colour sets in settings ---------- */
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0 4px; }
+.swatches button {
+  display: flex; width: 64px; height: 40px; padding: 4px; gap: 3px; border-radius: 12px; cursor: pointer;
+  border: 2px solid transparent; background: var(--bg, transparent);
+}
+.swatches button i { flex: 1; border-radius: 8px; }
+.swatches button i:first-child { background: var(--a); }
+.swatches button i:last-child { background: var(--b); }
+.swatches button.on { border-color: var(--text); }
+.row input[type="color"] { width: 64px; height: 40px; border: 0; padding: 0; background: none; border-radius: 10px; cursor: pointer; }
+#showIntro { margin-left: 2px; }
+
+/* ---------- how-to popup ---------- */
+.intro { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(0, 0, 0, .45); padding: 16px; animation: fade .25s ease-out; touch-action: none; }
+.intro.leaving { animation: fadeout .25s ease-in forwards; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes fadeout { to { opacity: 0; } }
+.intro-card { position: relative; overflow: hidden; border-radius: 30px; padding: 26px 30px 22px; width: min(720px, 100%); color: #fff;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .2), transparent 45%), rgba(12, 14, 18, .72); }
+.intro-card h2 { margin: 0 0 18px; font-size: 24px; font-weight: 850; text-align: center; }
+.demos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.demo { margin: 0; display: grid; justify-items: center; gap: 10px; }
+.pad { position: relative; width: 100%; max-width: 150px; aspect-ratio: 4 / 5; border-radius: 20px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .18); overflow: hidden; }
+.finger { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px rgba(255, 255, 255, .25), 0 0 22px rgba(255, 255, 255, .7); }
+.trail { position: absolute; left: 50%; width: 6px; margin-left: -3px; border-radius: 3px; background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, .55)); }
+.tag { position: absolute; right: 12px; top: 10px; font-size: 22px; font-weight: 900; opacity: 0; }
+.demo figcaption { display: grid; justify-items: center; gap: 2px; font-size: 16px; }
+.demo figcaption span { color: rgba(255, 255, 255, .7); font-size: 14px; }
+.tap .finger { animation: tapf 1.8s ease-in-out infinite; }
+.tap .tag { animation: tagp 1.8s ease-out infinite; animation-delay: .25s; }
+@keyframes tapf { 0%, 100% { transform: scale(1); } 12% { transform: scale(.7); } 24% { transform: scale(1.05); } 32% { transform: scale(1); } }
+.down .finger { animation: downf 1.8s cubic-bezier(.5, 0, .3, 1) infinite; }
+.down .trail { animation: downt 1.8s cubic-bezier(.5, 0, .3, 1) infinite; }
+.down .tag, .up .tag { animation: tagp 1.8s ease-out infinite; animation-delay: .7s; }
+@keyframes downf { 0% { top: 18%; opacity: 0; } 10% { opacity: 1; } 55% { top: 80%; opacity: 1; } 70%, 100% { top: 80%; opacity: 0; } }
+@keyframes downt { 0% { top: 18%; height: 0; opacity: 0; } 10% { opacity: 1; } 55% { top: 18%; height: 62%; opacity: 1; } 75%, 100% { top: 18%; height: 62%; opacity: 0; } }
+.up .finger { animation: upf 1.8s cubic-bezier(.5, 0, .3, 1) infinite; }
+.up .trail { animation: upt 1.8s cubic-bezier(.5, 0, .3, 1) infinite; background: linear-gradient(to top, transparent, rgba(255, 255, 255, .55)); }
+@keyframes upf { 0% { top: 80%; opacity: 0; } 10% { opacity: 1; } 55% { top: 18%; opacity: 1; } 70%, 100% { top: 18%; opacity: 0; } }
+@keyframes upt { 0% { top: 80%; height: 0; opacity: 0; } 10% { opacity: 1; } 55% { top: 18%; height: 62%; opacity: 1; } 75%, 100% { top: 18%; height: 62%; opacity: 0; } }
+@keyframes tagp { 0%, 20% { opacity: 0; transform: translateY(6px); } 35%, 60% { opacity: 1; transform: none; } 80%, 100% { opacity: 0; } }
+.remote-demo { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 22px; margin-top: 20px; padding: 12px 16px; border-radius: 18px; background: rgba(255, 255, 255, .07); font-size: 15px; }
+.remote-demo span { display: inline-flex; align-items: center; gap: 7px; }
+.remote-demo em { font-style: normal; color: rgba(255, 255, 255, .75); }
+.rd-title { font-weight: 800; color: rgba(255, 255, 255, .7); }
+.press { position: relative; display: inline-block; width: 26px; height: 14px; }
+.press::before, .press::after { content: ""; position: absolute; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+.press.one::before { left: 8px; animation: blink 1.6s infinite; }
+.press.one::after { display: none; }
+.press.two::before { left: 1px; animation: blink 1.6s infinite; }
+.press.two::after { left: 14px; animation: blink 1.6s infinite .25s; }
+.press.hold::before { left: 0; width: 26px; border-radius: 6px; animation: hold 1.6s infinite; transform-origin: left; }
+.press.hold::after { display: none; }
+@keyframes blink { 0%, 30%, 100% { opacity: .25; } 10%, 20% { opacity: 1; } }
+@keyframes hold { 0% { transform: scaleX(.15); opacity: .4; } 60%, 80% { transform: scaleX(1); opacity: 1; } 100% { opacity: .25; } }
+.intro-foot { margin: 14px 0 0; text-align: center; color: rgba(255, 255, 255, .65); font-size: 14px; }
+.intro-timer { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .1); }
+.intro-timer i { display: block; height: 100%; background: rgba(255, 255, 255, .7); transform-origin: left; animation: countdown 8s linear forwards; }
+@keyframes countdown { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (max-width: 560px) { .demos { gap: 8px; } .intro-card { padding: 20px 14px 18px; } .demo figcaption { font-size: 14px; } }

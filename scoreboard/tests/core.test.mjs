@@ -108,11 +108,29 @@ function fakeTimers() {
 }
 const K = {key: 'Enter', code: 'Enter'};
 
-test('remote: short press = one short action after release', () => {
+const tap = (r, t, gap = 80) => { r.keydown(K); t.advance(gap); r.keyup(K); };
+
+test('remote: one press = single, after the double-press window', () => {
   const t = fakeTimers(), got = [];
   const r = new RemoteInput({...DEFAULT_REMOTE}, a => got.push(a), t);
-  r.keydown(K); t.advance(120); r.keyup(K); t.advance(400);
-  assert.deepEqual(got, ['short']);
+  tap(r, t); t.advance(300);
+  assert.deepEqual(got, [], 'waits to see whether a second press follows');
+  t.advance(400);
+  assert.deepEqual(got, ['single']);
+});
+
+test('remote: two quick presses = one double', () => {
+  const t = fakeTimers(), got = [];
+  const r = new RemoteInput({...DEFAULT_REMOTE}, a => got.push(a), t);
+  tap(r, t); t.advance(250); tap(r, t); t.advance(1000);
+  assert.deepEqual(got, ['double']);
+});
+
+test('remote: two presses far apart = two singles', () => {
+  const t = fakeTimers(), got = [];
+  const r = new RemoteInput({...DEFAULT_REMOTE}, a => got.push(a), t);
+  tap(r, t); t.advance(800); tap(r, t); t.advance(800);
+  assert.deepEqual(got, ['single', 'single']);
 });
 
 test('remote: held with auto-repeat = exactly one long action', () => {
@@ -132,12 +150,12 @@ test('remote: held as repeated down/up pairs = exactly one long action', () => {
   assert.deepEqual(got, ['long']);
 });
 
-test('remote: two separate quick presses = two short actions', () => {
+test('remote: a press then a hold = single, then long', () => {
   const t = fakeTimers(), got = [];
   const r = new RemoteInput({...DEFAULT_REMOTE}, a => got.push(a), t);
-  r.keydown(K); t.advance(80); r.keyup(K); t.advance(500);
-  r.keydown(K); t.advance(80); r.keyup(K); t.advance(500);
-  assert.deepEqual(got, ['short', 'short']);
+  tap(r, t); t.advance(200);
+  r.keydown(K); t.advance(900); r.keyup(K); t.advance(1000);
+  assert.deepEqual(got, ['single', 'long']);
 });
 
 test('remote: registered key only, dedicated buttons act once', () => {
@@ -152,5 +170,5 @@ test('remote: a remote that never sends key-up does not lock input', () => {
   const t = fakeTimers(), got = [];
   const r = new RemoteInput({...DEFAULT_REMOTE, useLong: false}, a => got.push(a), t);
   r.keydown(K); t.advance(3000); r.keydown(K); t.advance(3000);
-  assert.deepEqual(got, ['short', 'short']);
+  assert.deepEqual(got, ['single', 'single']);
 });

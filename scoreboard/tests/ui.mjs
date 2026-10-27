@@ -18,8 +18,15 @@ const swipe = async (x, y0, y1) => {
   for (let i = 1; i <= 8; i++) await page.mouse.move(x, y0 + (y1 - y0) * i / 8);
   await page.mouse.up(); await page.waitForTimeout(300);
 };
+const press = async (ms = 80) => { await page.keyboard.down('Enter'); await page.waitForTimeout(ms); await page.keyboard.up('Enter'); };
 try {
   await page.goto(url);
+  assert.equal(await page.isVisible('#intro'), true, 'how-to popup shows on arrival');
+  await page.screenshot({path: 'test-results/intro.png'});
+  await page.touchscreen.tap(640, 400); await page.waitForTimeout(400);
+  assert.equal(await page.isVisible('#intro'), false, 'a touch closes the popup');
+  assert.equal(await score(), '0-0', 'the closing touch does not score');
+  assert.equal(await page.textContent('.side[data-side=left] .team-name'), '우리 팀');
   await page.touchscreen.tap(320, 400); await page.waitForTimeout(300);
   await page.touchscreen.tap(960, 400); await page.waitForTimeout(300);
   assert.equal(await score(), '1-1', 'tap adds one point per side');
@@ -29,16 +36,25 @@ try {
   assert.equal(await score(), '2-0', 'swipe up cancels that team');
   await page.mouse.move(320, 400); await page.mouse.down(); await page.waitForTimeout(1200); await page.mouse.up();
   assert.equal(await score(), '2-0', 'a long touch is ignored');
-  await page.keyboard.down('Enter'); await page.waitForTimeout(100); await page.keyboard.up('Enter'); await page.waitForTimeout(400);
-  assert.equal(await score(), '3-0', 'remote short press = our team');
+  await press(); await page.waitForTimeout(700);
+  assert.equal(await score(), '3-0', 'remote one press = our team');
+  await press(); await page.waitForTimeout(150); await press(); await page.waitForTimeout(700);
+  assert.equal(await score(), '3-1', 'remote two presses = opponent');
   await page.keyboard.down('Enter');
   for (let i = 0; i < 20; i++) { await page.waitForTimeout(50); await page.keyboard.down('Enter'); }
-  await page.keyboard.up('Enter'); await page.waitForTimeout(400);
-  assert.equal(await score(), '3-1', 'remote long press with auto-repeat = one opponent point');
+  await page.keyboard.up('Enter'); await page.waitForTimeout(600);
+  assert.equal(await score(), '3-0', 'remote long hold = undo once');
+  // Rename by tapping the team name.
+  await page.touchscreen.tap(...await page.$eval('.side[data-side=left] .team-name', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+  await page.waitForTimeout(200);
+  await page.keyboard.press('Control+A'); await page.keyboard.type('청팀'); await page.keyboard.press('Enter'); await page.waitForTimeout(200);
+  assert.equal(await page.textContent('.side[data-side=left] .team-name'), '청팀', 'tap on name renames');
+  assert.equal(await score(), '3-0', 'renaming does not score');
   await page.reload(); await page.waitForTimeout(500);
-  assert.equal(await score(), '3-1', 'score restored after reload');
+  await page.touchscreen.tap(640, 400); await page.waitForTimeout(400);
+  assert.equal(await score(), '3-0', 'score restored after reload');
   await page.click('#toolbar [data-act=undo]'); await page.waitForTimeout(200);
-  assert.equal(await score(), '3-0', 'undo removes the latest point');
+  assert.equal(await score(), '2-0', 'undo removes the latest point');
   await page.screenshot({path: 'test-results/scoreboard.png'});
   assert.deepEqual(errors, []);
   console.log('scoreboard UI checks passed');

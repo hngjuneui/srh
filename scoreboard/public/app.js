@@ -13,15 +13,29 @@ const store = {
   get(/** @type {string} */ k) { try { return JSON.parse(localStorage.getItem(k) ?? 'null'); } catch { return null; } },
   set(/** @type {string} */ k, /** @type {any} */ v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
 };
-const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true, idleDim: true, light: false, autoSwap: true, remote: {...DEFAULT_REMOTE}};
+// Side background colours. Each pair is chosen for the strongest difference between the two teams.
+const PALETTES = /** @type {Record<string, {label: string, A: string, B: string, dark?: boolean}>} */ ({
+  contrast: {label: '고대비 · 블루 × 오렌지', A: '#1450ff', B: '#ff7a00'},
+  primary: {label: '원색 · 레드 × 블루', A: '#e3001b', B: '#0057ff'},
+  primary2: {label: '원색 · 그린 × 레드', A: '#00a651', B: '#e3001b'},
+  neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
+  neon2: {label: '형광 · 옐로 × 바이올렛', A: '#eaff00', B: '#8a2bff'},
+  pastel: {label: '파스텔 · 민트 × 피치', A: '#9ee6c9', B: '#ffb5a7'},
+  pastel2: {label: '파스텔 · 라벤더 × 레몬', A: '#c3b5ff', B: '#ffe98a'},
+  dark: {label: '다크 · 검은 배경에 은은한 색', A: '#36e0a2', B: '#ff8f5a', dark: true},
+});
+const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true, idleDim: true, light: false, autoSwap: true, intro: true,
+  colors: {preset: 'contrast', A: PALETTES.contrast.A, B: PALETTES.contrast.B}, remote: {...DEFAULT_REMOTE}};
 const savedPrefs = store.get(KEY.prefs) ?? {};
-const prefs = {...DEFAULT_PREFS, ...savedPrefs, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}};
+const prefs = {...DEFAULT_PREFS, ...savedPrefs, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
 
 /** @type {any} */
 let match = (() => {
   const id = store.get(KEY.current);
   const saved = id && store.get(KEY.match(id));
+  // Matches from the first version used placeholder names.
+  if (saved?.settings?.names?.A === 'A팀' && saved.settings.names.B === 'B팀') saved.settings.names = {A: '우리 팀', B: '상대 팀'};
   if (saved?.events?.length) { setTimeout(() => saved.events.length > 1 && toast('이전 경기 기록을 불러와 이어서 진행합니다.'), 300); return saved; }
   return newMatch();
 })();
@@ -57,6 +71,7 @@ function tone(/** @type {number[]} */ freqs, gap = 0.11) {
   } catch {}
 }
 const SOUND = {A: [988], B: [740, 740], cancel: [520, 392], end: [784, 988, 1319]};
+const teamSound = (/** @type {Team} */ t) => (t === prefs.ourTeam ? SOUND.A : SOUND.B);
 
 let toastTimer = 0;
 function toast(/** @type {string} */ text, ms = 2200) {
@@ -86,7 +101,7 @@ function point(/** @type {Team} */ team, /** @type {string} */ source) {
   const state = derive(match);
   render();
   flash(team);
-  if (state.gameOver) tone(SOUND.end, 0.13); else tone(SOUND[team]);
+  if (state.gameOver) tone(SOUND.end, 0.13); else tone(teamSound(team));
   if (isDecidingInterval(state)) toast(`${Math.max(state.scores.A, state.scores.B)}점 · 마지막 게임 코트 교대 시점입니다`, 3500);
 }
 function cancelTeam(/** @type {Team} */ team, /** @type {string} */ source) {
@@ -124,6 +139,7 @@ function render() {
   sides.forEach((side, i) => {
     const team = /** @type {Team} */ (i === 0 ? left : other(left));
     side.dataset.team = team;
+    paintSide(side, team);
     /** @type {HTMLElement} */ (side.querySelector('.team-name')).textContent = name(team);
     /** @type {HTMLElement} */ (side.querySelector('.score')).textContent = String(state.scores[team]);
     /** @type {HTMLElement} */ (side.querySelector('.games')).innerHTML =
@@ -146,6 +162,25 @@ function render() {
   }
   tick();
   if ($('#timelineSheet').hasAttribute('open')) renderTimeline();
+}
+
+/** Black or white digits, whichever stands out more on the background. @param {string} hex */
+function inkFor(hex) {
+  const lum = (/** @type {number} */ c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const n = parseInt(hex.slice(1), 16);
+  const L = 0.2126 * lum(n >> 16 & 255) + 0.7152 * lum(n >> 8 & 255) + 0.0722 * lum(n & 255);
+  return (L + 0.05) / 0.05 > 1.05 / (L + 0.05) ? '#0b0d10' : '#ffffff';
+}
+function paintSide(/** @type {HTMLElement} */ side, /** @type {Team} */ team) {
+  const dark = PALETTES[prefs.colors.preset]?.dark;
+  if (dark && prefs.light) { side.style.removeProperty('--team'); side.style.removeProperty('--ink'); return; }
+  const color = prefs.colors[team];
+  side.style.setProperty('--team', color);
+  side.style.setProperty('--ink', inkFor(color));
+}
+function applyColors() {
+  document.body.classList.toggle('colored', !PALETTES[prefs.colors.preset]?.dark);
+  sides.forEach(side => { if (side.dataset.team) paintSide(side, /** @type {Team} */ (side.dataset.team)); });
 }
 
 function pointHint(/** @type {any} */ state) {
@@ -178,6 +213,7 @@ const court = $('#court');
 court.addEventListener('pointerdown', e => {
   const side = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('.side'));
   if (!side || !e.isPrimary && pointers.size) return; // ignore a second finger or palm while one is down
+  if (/** @type {HTMLElement} */ (e.target).closest('.team-name, .name-edit')) return; // renaming, not scoring
   pointers.set(e.pointerId, {x: e.clientX, y: e.clientY, t: performance.now(), team: /** @type {Team} */ (side.dataset.team)});
   try { side.setPointerCapture(e.pointerId); } catch {}
 });
@@ -271,17 +307,18 @@ const remote = new RemoteInput(prefs.remote, (action, info) => {
   dot.classList.add('hit'); setTimeout(() => dot.classList.remove('hit'), 180);
   const ours = prefs.ourTeam, theirs = other(prefs.ourTeam);
   if (isOpen('#remoteSheet')) {
-    const label = {short: `짧게 (${Math.round(info.heldMs)}ms) → ${name(ours)} +1`, long: `길게 → ${name(theirs)} +1`,
-      opponent: `상대 팀 버튼 → ${name(theirs)} +1`, cancel: '되돌리기 버튼 → 마지막 득점 취소'}[action];
+    const label = {single: `한 번 → ${name(ours)} +1`, double: `두 번 → ${name(theirs)} +1`, long: '길게 → 방금 입력 되돌리기',
+      opponent: `상대 팀 버튼 → ${name(theirs)} +1`, cancel: '되돌리기 버튼 → 방금 입력 되돌리기'}[action];
     $('#verdict').textContent = `판정: ${label}  (테스트 중이라 점수는 그대로)`;
-    tone(action === 'cancel' ? SOUND.cancel : action === 'short' ? SOUND.A : SOUND.B);
+    tone(action === 'cancel' || action === 'long' ? SOUND.cancel : action === 'single' ? SOUND.A : SOUND.B);
     return;
   }
-  if (document.querySelector('dialog[open]')) return;
-  if (action === 'short') point(ours, 'remote-short');
-  else if (action === 'long') point(theirs, 'remote-long');
+  hideIntro();
+  if (document.querySelector('dialog[open]') || editingName) return;
+  if (action === 'single') point(ours, 'remote-single');
+  else if (action === 'double') point(theirs, 'remote-double');
   else if (action === 'opponent') point(theirs, 'remote-key');
-  else undo('remote');
+  else undo(action === 'long' ? 'remote-long' : 'remote');
 });
 
 function logKey(/** @type {KeyboardEvent} */ e) {
@@ -327,6 +364,8 @@ function renderRemote() {
   /** @type {HTMLInputElement} */ ($('#useLong')).checked = prefs.remote.useLong;
   /** @type {HTMLInputElement} */ ($('#longMs')).value = String(prefs.remote.longMs);
   /** @type {HTMLInputElement} */ ($('#releaseGrace')).value = String(prefs.remote.releaseGrace);
+  /** @type {HTMLInputElement} */ ($('#doubleMs')).value = String(prefs.remote.doubleMs);
+  $('#doubleOut').textContent = `${(prefs.remote.doubleMs / 1000).toFixed(2)}초`;
   $('#longMsOut').textContent = `${(prefs.remote.longMs / 1000).toFixed(2)}초`;
   $('#graceOut').textContent = `${prefs.remote.releaseGrace}ms`;
   renderKeylog();
@@ -342,10 +381,12 @@ $('#ourTeam').addEventListener('change', e => { prefs.ourTeam = /** @type {Team}
 $('#useLong').addEventListener('change', e => { prefs.remote.useLong = /** @type {HTMLInputElement} */ (e.target).checked; savePrefs(); renderRemote(); });
 $('#longMs').addEventListener('input', e => { prefs.remote.longMs = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderRemote(); });
 $('#releaseGrace').addEventListener('input', e => { prefs.remote.releaseGrace = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderRemote(); });
+$('#doubleMs').addEventListener('input', e => { prefs.remote.doubleMs = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderRemote(); });
 $('#remoteSheet').addEventListener('close', () => { learning = null; remote.reset(); });
 
 // ---------- timeline ----------
-const SOURCE = {'tap': '탭', 'swipe-down': '쓸어내리기', 'swipe-up': '쓸어올리기', 'remote-short': '리모컨 짧게', 'remote-long': '리모컨 길게',
+const SOURCE = {'tap': '탭', 'swipe-down': '쓸기(득점)', 'swipe-up': '쓸기(취소)', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
+  'remote-short': '리모컨 짧게', 'remote-long': '리모컨 길게',
   'remote-key': '리모컨', 'remote': '리모컨', 'button': '버튼', 'app': ''};
 const esc = (/** @type {any} */ s) => String(s).replace(/[&<>"']/g, c => /** @type {any} */ ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
 let viewId = '';
@@ -408,7 +449,9 @@ function fillSettings() {
   field('firstServer').disabled = derive(match).started;
   field('target').value = rules.target; field('winBy').value = rules.winBy; field('cap').value = rules.cap;
   field('gamesToWin').value = String(rules.gamesToWin);
-  for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap']) field(k).checked = /** @type {any} */ (prefs)[k];
+  for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap', 'intro']) field(k).checked = /** @type {any} */ (prefs)[k];
+  $('#colorNameA').textContent = names.A; $('#colorNameB').textContent = names.B;
+  fillColors();
   $('#wakeNote').textContent = 'wakeLock' in navigator ? `화면 켜짐 유지: ${wakeLock ? '사용 중' : '화면을 한 번 터치하면 켜집니다'}` : '이 브라우저는 화면 켜짐 유지를 지원하지 않습니다. 태블릿의 화면 꺼짐 시간을 길게 설정하세요.';
   resetArm();
 }
@@ -417,10 +460,11 @@ form.addEventListener('submit', e => {
   const num = (/** @type {string} */ n, /** @type {number} */ lo, /** @type {number} */ hi, /** @type {number} */ d) => { const v = Math.round(Number(field(n).value)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
   const target = num('target', 5, 50, 21);
   const rules = {target, winBy: num('winBy', 1, 5, 2), cap: Math.max(target, num('cap', 5, 60, 30)), gamesToWin: num('gamesToWin', 1, 3, 2)};
-  match.settings.names = {A: field('nameA').value.trim() || 'A팀', B: field('nameB').value.trim() || 'B팀'};
+  match.settings.names = {A: field('nameA').value.trim() || '우리 팀', B: field('nameB').value.trim() || '상대 팀'};
   match.settings.rules = rules;
   if (!derive(match).started) match.settings.firstServer = /** @type {Team} */ (field('firstServer').value);
-  for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap']) /** @type {any} */ (prefs)[k] = field(k).checked;
+  for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap', 'intro']) /** @type {any} */ (prefs)[k] = field(k).checked;
+  savedColors = {...prefs.colors};
   savePrefs(); saveMatch(); applyTheme(); render(); active();
   /** @type {HTMLDialogElement} */ ($('#settingsSheet')).close();
 });
@@ -441,10 +485,83 @@ $('#newMatch').addEventListener('click', e => {
 function applyTheme() {
   document.documentElement.dataset.theme = prefs.light ? 'light' : 'dark';
   /** @type {HTMLMetaElement} */ ($('meta[name=theme-color]')).content = prefs.light ? '#eef0ec' : '#06080b';
+  applyColors();
 }
+
+// ---------- team colours: previewed live, kept only when settings are saved ----------
+let savedColors = {...prefs.colors};
+const palettePicker = /** @type {HTMLSelectElement} */ ($('#palette'));
+palettePicker.innerHTML = Object.entries(PALETTES).map(([k, p]) => `<option value="${k}">${p.label}</option>`).join('') + '<option value="custom">직접 고르기</option>';
+function fillColors() {
+  palettePicker.value = prefs.colors.preset;
+  field('colorA').value = prefs.colors.A; field('colorB').value = prefs.colors.B;
+  $$('.swatches button').forEach(b => b.classList.toggle('on', b.dataset.preset === prefs.colors.preset));
+}
+$('.swatches').innerHTML = Object.entries(PALETTES).map(([k, p]) =>
+  `<button type="button" data-preset="${k}" title="${p.label}" style="--a:${p.A};--b:${p.B}${p.dark ? ';--bg:#06080b' : ''}"><i></i><i></i></button>`).join('');
+function choosePreset(/** @type {string} */ key) {
+  const p = PALETTES[key];
+  if (p) prefs.colors = {preset: key, A: p.A, B: p.B};
+  else prefs.colors.preset = 'custom';
+  fillColors(); applyColors();
+}
+palettePicker.addEventListener('change', () => choosePreset(palettePicker.value));
+$('.swatches').addEventListener('click', e => { const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-preset]')); if (b) choosePreset(/** @type {string} */ (b.dataset.preset)); });
+for (const t of /** @type {Team[]} */ (['A', 'B'])) field(`color${t}`).addEventListener('input', e => {
+  prefs.colors = {...prefs.colors, preset: 'custom', [t]: /** @type {HTMLInputElement} */ (e.target).value};
+  fillColors(); applyColors();
+});
+$('#settingsSheet').addEventListener('close', () => {
+  // Closing without saving drops the colour preview.
+  if (JSON.stringify(prefs.colors) !== JSON.stringify(savedColors)) { prefs.colors = {...savedColors}; applyColors(); }
+});
+
+// ---------- tap a team name to rename it in place ----------
+let editingName = false;
+$$('.team-name').forEach(el => el.addEventListener('click', () => {
+  const side = /** @type {HTMLElement} */ (el.closest('.side'));
+  const team = /** @type {Team} */ (side.dataset.team);
+  const input = document.createElement('input');
+  input.className = 'name-edit'; input.maxLength = 16; input.value = name(team); input.setAttribute('aria-label', '팀 이름');
+  el.hidden = true; el.after(input); editingName = true;
+  input.focus(); input.select();
+  let done = false;
+  const finish = (/** @type {boolean} */ keep) => {
+    if (done) return; done = true;
+    const v = input.value.trim();
+    if (keep && v && v !== name(team)) { match.settings.names[team] = v; saveMatch(); }
+    input.remove(); el.hidden = false; editingName = false; render();
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); e.stopPropagation(); });
+  input.addEventListener('blur', () => finish(true));
+}));
+
+// ---------- how-to popup on arrival: gone on the first touch or after a few seconds ----------
+let introTimer = 0;
+function showIntro() {
+  const el = $('#intro');
+  const [down, up] = prefs.reverseSwipe ? ['1점 취소', '+1'] : ['+1', '1점 취소'];
+  $('#introDown').textContent = down; $('#introUp').textContent = up;
+  $('#introDownTag').textContent = prefs.reverseSwipe ? '−1' : '+1';
+  $('#introUpTag').textContent = prefs.reverseSwipe ? '+1' : '−1';
+  $('#introOurs').textContent = name(prefs.ourTeam); $('#introTheirs').textContent = name(other(prefs.ourTeam));
+  el.hidden = false; el.classList.remove('leaving');
+  clearTimeout(introTimer);
+  introTimer = window.setTimeout(hideIntro, 8000);
+}
+function hideIntro() {
+  const el = $('#intro');
+  if (el.hidden || el.classList.contains('leaving')) return;
+  clearTimeout(introTimer);
+  el.classList.add('leaving');
+  setTimeout(() => { el.hidden = true; el.classList.remove('leaving'); }, 250);
+}
+$('#intro').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); hideIntro(); });
+$('#showIntro').addEventListener('click', () => { /** @type {HTMLDialogElement} */ ($('#settingsSheet')).close(); showIntro(); });
 
 applyTheme();
 saveMatch();
 render();
 renderRemote();
 active();
+if (prefs.intro) showIntro();
