@@ -144,8 +144,6 @@ function render() {
     paintSide(side, team);
     /** @type {HTMLElement} */ (side.querySelector('.team-name')).textContent = name(team);
     /** @type {HTMLElement} */ (side.querySelector('.score')).textContent = String(state.scores[team]);
-    /** @type {HTMLElement} */ (side.querySelector('.games')).innerHTML =
-      Array.from({length: state.rules.gamesToWin}, (_, k) => `<i class="${k < state.gamesWon[team] ? 'won' : ''}"></i>`).join('');
     side.classList.toggle('serving', !state.gameOver && state.server === team);
     side.classList.toggle('winner', state.game.winner === team);
     const mark = /** @type {HTMLElement} */ (side.querySelector('.serve-mark'));

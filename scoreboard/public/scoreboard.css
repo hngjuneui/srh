@@ -64,9 +64,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .side + .side { border-left: 1px solid color-mix(in srgb, var(--text) 9%, transparent); }
 .side-head { display: flex; align-items: center; gap: 14px; margin-top: 64px; margin-bottom: clamp(6px, 1.6vh, 16px); min-height: 40px; }
 .team-name { font-size: clamp(20px, 3.4vw, 40px); font-weight: 700; letter-spacing: -.02em; color: var(--team); max-width: 36vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.games { display: flex; gap: 7px; }
-.games i { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--team); }
-.games i.won { background: var(--team); }
 /* Condensed digits leave room to make two-digit scores bigger; a little tracking keeps "11" from merging. */
 .score {
   font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
@@ -238,8 +235,6 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
 body.colored .side { background: var(--team); }
 body.colored .side + .side { border: 0; }
 body.colored .score, body.colored .team-name, body.colored .side.winner .score { color: var(--ink); }
-body.colored .games i { border-color: var(--ink); }
-body.colored .games i.won { background: var(--ink); }
 body.colored .serve-mark { color: var(--ink); }
 body.colored .side.flash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(255, 255, 255, .5), transparent 70%); }
 body.colored .side.unflash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(0, 0, 0, .35), transparent 70%); }
