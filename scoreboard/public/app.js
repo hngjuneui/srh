@@ -28,7 +28,8 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   primary: {label: '비비드 · 레드 × 블루', A: '#e3001b', B: '#0057ff'},
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
-const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true, idleDim: true, light: false, autoSwap: true, intro: true,
+const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
+  volume: 0.5, idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -67,23 +68,42 @@ function saveMatch() {
 }
 
 // ---------- feedback ----------
+// Short synthesised sounds, soft enough to hear every rally without getting on anyone's nerves:
+//   ours   — bright rising two-note chime        theirs — lower, mellow "tok-tok" (not an error buzz)
+//   cancel — small downward swoop (undo)         end    — rising three-note arpeggio
 /** @type {AudioContext|null} */ let audio = null;
-function tone(/** @type {number[]} */ freqs, gap = 0.11) {
-  if (!prefs.sound) return;
-  try {
-    audio ??= new AudioContext();
-    if (audio.state === 'suspended') audio.resume();
-    freqs.forEach((f, i) => {
-      const ctx = /** @type {AudioContext} */ (audio), t = ctx.currentTime + i * gap;
-      const osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.frequency.value = f; osc.type = 'sine';
-      gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(0.35, t + 0.01); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      osc.connect(gain).connect(ctx.destination); osc.start(t); osc.stop(t + 0.14);
-    });
-  } catch {}
+function audioCtx() {
+  try { audio ??= new AudioContext(); if (audio.state === 'suspended') audio.resume(); } catch { return null; }
+  return audio;
 }
-const SOUND = {A: [988], B: [740, 740], cancel: [520, 392], end: [784, 988, 1319]};
-const teamSound = (/** @type {Team} */ t) => (t === prefs.ourTeam ? SOUND.A : SOUND.B);
+/** One note: a quick attack and a smooth decay, through a gentle low-pass so nothing sounds harsh.
+ *  @param {AudioContext} ctx @param {{f: number, to?: number, at: number, len: number, type?: OscillatorType, level?: number}} n */
+function note(ctx, {f, to, at, len, type = 'sine', level = 1}) {
+  const t = ctx.currentTime + at, vol = 0.32 * level * prefs.volume;
+  const osc = ctx.createOscillator(), gain = ctx.createGain(), soft = ctx.createBiquadFilter();
+  osc.type = type; osc.frequency.setValueAtTime(f, t);
+  if (to) osc.frequency.exponentialRampToValueAtTime(to, t + len);
+  soft.type = 'lowpass'; soft.frequency.value = 3200;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(Math.max(vol, 0.0002), t + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  osc.connect(soft).connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t + len + 0.02);
+}
+const SOUND = /** @type {Record<string, Parameters<typeof note>[1][]>} */ ({
+  ours: [{f: 784, at: 0, len: 0.22, type: 'triangle'}, {f: 1175, at: 0.09, len: 0.38, type: 'triangle'}],
+  theirs: [{f: 523, at: 0, len: 0.16, level: 0.9}, {f: 392, at: 0.12, len: 0.3, level: 0.9}],
+  cancel: [{f: 660, to: 330, at: 0, len: 0.22, type: 'triangle', level: 0.7}],
+  end: [{f: 784, at: 0, len: 0.3, type: 'triangle'}, {f: 988, at: 0.12, len: 0.3, type: 'triangle'}, {f: 1319, at: 0.24, len: 0.6, type: 'triangle'}],
+});
+function tone(/** @type {keyof typeof SOUND} */ name, force = false) {
+  if (!prefs.sound && !force) return;
+  const ctx = audioCtx();
+  if (ctx) try { SOUND[name].forEach(n => note(ctx, n)); } catch {}
+}
+const teamSound = (/** @type {Team} */ t) => (t === prefs.ourTeam ? 'ours' : 'theirs');
+// iPhone/iPad only let a page make sound after a touch, so the first touch or key unlocks it.
+for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => { if (prefs.sound) audioCtx(); }, {once: true, capture: true});
 
 let toastTimer = 0;
 function toast(/** @type {string} */ text, ms = 2200) {
@@ -113,18 +133,18 @@ function point(/** @type {Team} */ team, /** @type {string} */ source) {
   const state = derive(match);
   render();
   flash(team);
-  if (state.gameOver) tone(SOUND.end, 0.13); else tone(teamSound(team));
+  if (state.gameOver) tone('end'); else tone(teamSound(team));
   if (isDecidingInterval(state)) toast(`${Math.max(state.scores.A, state.scores.B)}점 · 마지막 게임 코트 교대 시점입니다`, 3500);
 }
 function cancelTeam(/** @type {Team} */ team, /** @type {string} */ source) {
   if (!cancelTeamPoint(match, team, source)) { toast(`${name(team)}: 이번 게임에서 취소할 득점이 없습니다.`); return; }
-  saveMatch(); render(); flash(team, 'unflash'); tone(SOUND.cancel);
+  saveMatch(); render(); flash(team, 'unflash'); tone('cancel');
   toast(`${name(team)} 1점 취소`);
 }
 function undo(/** @type {string} */ source) {
   const ev = undoLast(match, source);
   if (!ev) { toast('되돌릴 입력이 없습니다.'); return; }
-  saveMatch(); render(); tone(SOUND.cancel);
+  saveMatch(); render(); tone('cancel');
   if (ev.team) { flash(ev.team, 'unflash'); toast(`되돌리기: ${name(ev.team)} 득점 취소`); }
   else toast('되돌리기: 이전 게임 종료 상태로 돌아갑니다.');
 }
@@ -443,7 +463,7 @@ const remote = new RemoteInput(prefs.remote, (action, info) => {
     const label = {single: `한 번 → ${name(ours)} +1`, double: `두 번 → ${name(theirs)} +1`, long: '길게 → 방금 입력 되돌리기',
       opponent: `상대 팀 버튼 → ${name(theirs)} +1`, cancel: '되돌리기 버튼 → 방금 입력 되돌리기'}[action];
     $('#verdict').textContent = `판정: ${label}  (테스트 중이라 점수는 그대로)`;
-    tone(action === 'cancel' || action === 'long' ? SOUND.cancel : action === 'single' ? SOUND.A : SOUND.B);
+    tone(action === 'cancel' || action === 'long' ? 'cancel' : action === 'single' ? 'ours' : 'theirs');
     return;
   }
   hideIntro();
@@ -583,7 +603,7 @@ function fillSettings() {
   field('target').value = rules.target; field('winBy').value = rules.winBy; field('cap').value = rules.cap;
   field('gamesToWin').value = String(rules.gamesToWin);
   for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap', 'intro']) field(k).checked = /** @type {any} */ (prefs)[k];
-  renderPoseSettings();
+  renderPoseSettings(); renderVolume();
   $('#colorNameA').textContent = names.A; $('#colorNameB').textContent = names.B;
   fillColors();
   $('#wakeNote').textContent = 'wakeLock' in navigator ? `화면 켜짐 유지: ${wakeLock ? '사용 중' : '화면을 한 번 터치하면 켜집니다'}` : '이 브라우저는 화면 켜짐 유지를 지원하지 않습니다. 태블릿의 화면 꺼짐 시간을 길게 설정하세요.';
@@ -621,6 +641,14 @@ function applyTheme() {
   /** @type {HTMLMetaElement} */ ($('meta[name=theme-color]')).content = prefs.light ? '#eef0ec' : '#06080b';
   applyColors();
 }
+
+// ---------- sound: volume and preview act at once (the on/off switch is saved with the form) ----------
+function renderVolume() {
+  /** @type {HTMLInputElement} */ ($('#volume')).value = String(prefs.volume);
+  $('#volumeOut').textContent = `${Math.round(prefs.volume * 100)}%`;
+}
+$('#volume').addEventListener('input', e => { prefs.volume = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderVolume(); });
+$$('[data-try]').forEach(b => b.addEventListener('click', () => { b.blur(); tone(/** @type {keyof typeof SOUND} */ (b.dataset.try), true); }));
 
 // ---------- team colours: previewed live, kept only when settings are saved ----------
 let savedColors = {...prefs.colors};
@@ -795,7 +823,7 @@ function testStep(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ 
   if (fire && TEST_POSES.includes(fire) && !passed.has(fire)) {
     const who = people[gestures.indexOf(fire)];
     passed.set(fire, {scale: bodyScale(who), x: torsoX(who)});
-    tone(SOUND.A);
+    tone('ours');
   }
   for (const tile of $$('.pose-tile')) {
     const g = /** @type {string} */ (tile.dataset.g);
@@ -854,7 +882,7 @@ function finishPoseTest(/** @type {Team} */ team) {
   prefs.pose.enabled = true; savePrefs();
   closePoseTest(); goLive();
   setPoseTeam(team);
-  tone(SOUND.end, 0.13);
+  tone('end');
 }
 /** The tested team is the one the camera faces, and serves first if the match has not started. */
 function setPoseTeam(/** @type {Team} */ team) {

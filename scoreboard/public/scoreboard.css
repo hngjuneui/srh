@@ -469,3 +469,5 @@ body.colored .name-edit { color: var(--ink); }
 .pose-pill span { font-size: clamp(20px, 4vmin, 40px); font-weight: 800; color: rgba(255, 255, 255, .85); }
 .pose-pill.fire .pose-ring::before { background: var(--tint-color, #fff); opacity: .9; }
 .pose-pill.fire .pose-ring svg { color: #06080b; }
+.sound-try { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.sound-try .glass-btn { min-height: 40px; padding: 0 12px; background: color-mix(in srgb, var(--text) 8%, transparent); }

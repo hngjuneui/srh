@@ -159,7 +159,9 @@
     <fieldset class="field-group"><legend>화면·조작</legend>
       <label class="row">게임이 끝나면 좌우 자동 교대<input type="checkbox" name="autoSwap"></label>
       <label class="row"><span>쓸기 방향 반대로<small>기본: 위로 쓸기 = +1, 아래로 쓸기 = 1점 취소 · 켜면 반대</small></span><input type="checkbox" name="reverseSwipe"></label>
-      <label class="row">득점 효과음<input type="checkbox" name="sound"></label>
+      <label class="row"><span>효과음<small>우리 팀 +1 · 상대 팀 +1 · 되돌리기마다 다른 소리</small></span><input type="checkbox" name="sound"></label>
+      <label class="row">효과음 크기 <output id="volumeOut"></output><input type="range" id="volume" min="0.1" max="1" step="0.05"></label>
+      <div class="row"><span>들어보기</span><span class="sound-try"><button type="button" class="glass-btn" data-try="ours">우리 팀</button><button type="button" class="glass-btn" data-try="theirs">상대 팀</button><button type="button" class="glass-btn" data-try="cancel">되돌리기</button></span></div>
       <label class="row">가만히 있으면 조작부 흐리게<input type="checkbox" name="idleDim"></label>
       <label class="row">밝은 테마<input type="checkbox" name="light"></label>
       <label class="row">시작할 때 사용법 보기<input type="checkbox" name="intro"></label>
