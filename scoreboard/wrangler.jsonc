@@ -1,0 +1,29 @@
+{
+  "name": "rally-scoreboard",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-15",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "VAULTS",
+        "class_name": "ScoreVault"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "ScoreVault"
+      ]
+    }
+  ]
+}
