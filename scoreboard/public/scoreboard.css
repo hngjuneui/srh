@@ -284,7 +284,7 @@ body.colored .name-edit { color: var(--ink); }
 }
 .name-chip.manual { border-style: dashed; }
 .name-chip.on { background: var(--glass-strong); border-color: var(--text); }
-.name-chip:disabled { opacity: .3; text-decoration: line-through; cursor: default; }
+.name-chip:disabled { opacity: .3; cursor: default; }
 .name-chip:active:not(:disabled) { transform: scale(.95); }
 .name-tip { flex-basis: 100%; text-align: center; font-size: clamp(12px, 2vmin, 15px); color: var(--muted); }
 body.colored .name-chip { background: rgba(0, 0, 0, .28); border-color: rgba(255, 255, 255, .3); color: #fff; }
@@ -519,3 +519,5 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 .pose-pill.fire .pose-ring svg { color: #06080b; }
 .sound-try { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .sound-try .glass-btn { min-height: 40px; padding: 0 12px; background: color-mix(in srgb, var(--text) 8%, transparent); }
+.name-count { flex-basis: 100%; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+body.colored .name-count { color: rgba(255, 255, 255, .8); }

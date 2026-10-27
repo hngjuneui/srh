@@ -721,7 +721,18 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
     if (v && v !== name(team)) { match.settings.names[team] = v; saveMatch(); }
     input?.remove(); picker.remove(); el.hidden = false; editingName = false; closeNamePicker = null; render();
   };
-  closeNamePicker = () => finish(input ? input.value : null);
+  // Doubles: up to two saved players make the team name, "이름1 · 이름2". Picking the second one closes the picker;
+  // with one picked, a tap anywhere else keeps it (singles).
+  const PAIR = ' · ';
+  const playersIn = (/** @type {string} */ n) => n.split(PAIR).filter(p => prefs.players.includes(p));
+  /** @type {string[]} */ const picked = playersIn(name(team));
+  /** @type {Map<string, HTMLButtonElement>} */ const chips = new Map();
+  const count = document.createElement('span');
+  const showPicked = () => {
+    chips.forEach((b, p) => b.classList.toggle('on', picked.includes(p)));
+    count.textContent = `복식 · ${picked.length}/2명`;
+  };
+  closeNamePicker = () => finish(input ? input.value : picked.length ? picked.join(PAIR) : null);
   const chip = (/** @type {string} */ label, /** @type {string} */ cls, /** @type {() => void} */ act) => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = `name-chip ${cls}`; b.textContent = label;
@@ -740,12 +751,21 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
     input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(/** @type {HTMLInputElement} */ (input).value); else if (e.key === 'Escape') finish(null); e.stopPropagation(); });
     input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) finish(input?.value ?? null); }));
   });
-  const otherName = name(other(team));
+  const usedByOther = name(other(team)).split(PAIR);
   for (const p of sortedPlayers()) {
-    const b = chip(p, p === name(team) ? 'on' : '', () => finish(p));
-    if (p === otherName) { b.disabled = true; b.title = '다른 팀이 쓰는 이름'; }
+    const b = chip(p, '', () => {
+      const at = picked.indexOf(p);
+      if (at >= 0) picked.splice(at, 1);
+      else if (picked.length < 2) picked.push(p);
+      else picked[1] = p; // a third pick swaps out the second
+      showPicked();
+      if (picked.length === 2) setTimeout(() => finish(picked.join(PAIR)), 180); // let the second chip light up first
+    });
+    chips.set(p, b);
+    if (usedByOther.includes(p)) { b.disabled = true; b.title = '다른 팀이 쓰는 이름'; }
   }
-  if (!prefs.players.length) {
+  if (prefs.players.length) { count.className = 'name-count'; picker.prepend(count); showPicked(); }
+  else {
     const tip = document.createElement('span');
     tip.className = 'name-tip'; tip.textContent = '설정 → 선수에서 자주 치는 사람을 등록하면 여기서 바로 고를 수 있어요';
     picker.append(tip);
