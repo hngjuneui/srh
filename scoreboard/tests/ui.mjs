@@ -30,10 +30,10 @@ try {
   await page.touchscreen.tap(320, 400); await page.waitForTimeout(300);
   await page.touchscreen.tap(960, 400); await page.waitForTimeout(300);
   assert.equal(await score(), '1-1', 'tap adds one point per side');
-  await swipe(320, 250, 550);
-  assert.equal(await score(), '2-1', 'swipe down adds exactly one point');
-  await swipe(960, 550, 250);
-  assert.equal(await score(), '2-0', 'swipe up cancels that team');
+  await swipe(320, 550, 250);
+  assert.equal(await score(), '2-1', 'swipe up adds exactly one point');
+  await swipe(960, 250, 550);
+  assert.equal(await score(), '2-0', 'swipe down cancels that team');
   await page.mouse.move(320, 400); await page.mouse.down(); await page.waitForTimeout(1200); await page.mouse.up();
   assert.equal(await score(), '2-0', 'a long touch is ignored');
   await press(); await page.waitForTimeout(700);

@@ -147,7 +147,7 @@
     </fieldset>
     <fieldset class="field-group"><legend>화면·조작</legend>
       <label class="row">게임이 끝나면 좌우 자동 교대<input type="checkbox" name="autoSwap"></label>
-      <label class="row"><span>쓸기 방향 바꾸기<small>켜면 위로 쓸기 = +1, 아래로 쓸기 = 1점 취소</small></span><input type="checkbox" name="reverseSwipe"></label>
+      <label class="row"><span>쓸기 방향 반대로<small>기본: 위로 쓸기 = +1, 아래로 쓸기 = 1점 취소 · 켜면 반대</small></span><input type="checkbox" name="reverseSwipe"></label>
       <label class="row">득점 효과음<input type="checkbox" name="sound"></label>
       <label class="row">가만히 있으면 조작부 흐리게<input type="checkbox" name="idleDim"></label>
       <label class="row">밝은 테마<input type="checkbox" name="light"></label>
@@ -170,8 +170,8 @@
     <h2>이렇게 점수를 올려요</h2>
     <div class="demos">
       <figure class="demo tap"><div class="pad"><i class="finger"></i><b class="tag">+1</b></div><figcaption><b>탭</b><span>+1</span></figcaption></figure>
-      <figure class="demo down"><div class="pad"><i class="trail"></i><i class="finger"></i><b class="tag" id="introDownTag">+1</b></div><figcaption><b>아래로 쓸기</b><span id="introDown">+1</span></figcaption></figure>
-      <figure class="demo up"><div class="pad"><i class="trail"></i><i class="finger"></i><b class="tag" id="introUpTag">−1</b></div><figcaption><b>위로 쓸기</b><span id="introUp">1점 취소</span></figcaption></figure>
+      <figure class="demo up"><div class="pad"><i class="trail"></i><i class="finger"></i><b class="tag" id="introUpTag">+1</b></div><figcaption><b>위로 쓸기</b><span id="introUp">+1</span></figcaption></figure>
+      <figure class="demo down"><div class="pad"><i class="trail"></i><i class="finger"></i><b class="tag" id="introDownTag">−1</b></div><figcaption><b>아래로 쓸기</b><span id="introDown">1점 취소</span></figcaption></figure>
     </div>
     <div class="remote-demo">
       <span class="rd-title">리모컨</span>

@@ -32,7 +32,9 @@ const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, 
 const savedPrefs = store.get(KEY.prefs) ?? {};
 // The default used to be the blue × orange set; devices still on it move to the new dark default once.
 if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete savedPrefs.colors;
-const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
+// Swipe up became +1 by default; "reverse" used to mean exactly that, so every device starts on the new default once.
+if (!savedPrefs.swipeV) delete savedPrefs.reverseSwipe;
+const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
   pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
 
@@ -240,12 +242,12 @@ court.addEventListener('pointerup', e => {
   const dx = e.clientX - start.x, dy = e.clientY - start.y, dt = performance.now() - start.t;
   const swipeMin = Math.max(48, Math.min(innerHeight, innerWidth) * 0.08);
   const vertical = Math.abs(dy) >= swipeMin && Math.abs(dy) > Math.abs(dx) * 1.3;
-  const down = prefs.reverseSwipe ? dy < 0 : dy > 0;
+  const scores = prefs.reverseSwipe ? dy > 0 : dy < 0; // default: swipe up = +1, swipe down = cancel
   let kind = '';
-  if (vertical) kind = down ? 'swipe-down' : 'swipe-up';
+  if (vertical) kind = dy < 0 ? 'swipe-up' : 'swipe-down';
   else if (Math.hypot(dx, dy) < 22 && dt < 650) kind = 'tap';
   if (!kind) return; // long press or ambiguous drag: do nothing rather than guess
-  if (kind === 'swipe-up') { cancelTeam(start.team, 'swipe-up'); return; }
+  if (vertical && !scores) { cancelTeam(start.team, kind); return; }
   const now = performance.now();
   if (now - lastTouchPoint[start.team] < 260) return; // one gesture can never become two points
   lastTouchPoint[start.team] = now;
@@ -441,7 +443,7 @@ $('#doubleMs').addEventListener('input', e => { prefs.remote.doubleMs = Number(/
 $('#remoteSheet').addEventListener('close', () => { learning = null; remote.reset(); });
 
 // ---------- timeline ----------
-const SOURCE = {'tap': '탭', 'pose-o': 'AI 포즈 O', 'pose-x': 'AI 포즈 X', 'swipe-down': '쓸기(득점)', 'swipe-up': '쓸기(취소)', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
+const SOURCE = {'tap': '탭', 'pose-o': 'AI 포즈 O', 'pose-x': 'AI 포즈 X', 'swipe-down': '아래로 쓸기', 'swipe-up': '위로 쓸기', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
   'remote-short': '리모컨 짧게', 'remote-long': '리모컨 길게',
   'remote-key': '리모컨', 'remote': '리모컨', 'button': '버튼', 'app': ''};
 const esc = (/** @type {any} */ s) => String(s).replace(/[&<>"']/g, c => /** @type {any} */ ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
@@ -597,10 +599,11 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
 let introTimer = 0;
 function showIntro() {
   const el = $('#intro');
-  const [down, up] = prefs.reverseSwipe ? ['1점 취소', '+1'] : ['+1', '1점 취소'];
-  $('#introDown').textContent = down; $('#introUp').textContent = up;
-  $('#introDownTag').textContent = prefs.reverseSwipe ? '−1' : '+1';
-  $('#introUpTag').textContent = prefs.reverseSwipe ? '+1' : '−1';
+  const upScores = !prefs.reverseSwipe;
+  $('#introUp').textContent = upScores ? '+1' : '1점 취소'; $('#introDown').textContent = upScores ? '1점 취소' : '+1';
+  $('#introUpTag').textContent = upScores ? '+1' : '−1'; $('#introDownTag').textContent = upScores ? '−1' : '+1';
+  // Read left to right: tap +1, the +1 swipe, then the cancelling swipe.
+  $('.demos').append(/** @type {HTMLElement} */ ($(upScores ? '.demo.down' : '.demo.up')));
   $('#introOurs').textContent = name(prefs.ourTeam); $('#introTheirs').textContent = name(other(prefs.ourTeam));
   el.hidden = false; el.classList.remove('leaving');
   clearTimeout(introTimer);
