@@ -1,5 +1,10 @@
 /* Scores are opaque and high-contrast for reading across the court.
    Only the controls use the translucent "liquid glass" treatment. */
+/* Self-hosted so the digits work offline; Barlow Condensed is SIL OFL (fonts/OFL-barlow-condensed.txt). */
+@font-face {
+  font-family: "Barlow Condensed"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("fonts/barlow-condensed-latin-700-normal.woff2") format("woff2");
+}
 :root {
   --bg: #06080b;
   --digit: #ffffff;
@@ -16,7 +21,7 @@
   --tint: .16;
   --radius: 22px;
   color-scheme: dark;
-  font-family: "Roboto Flex", Roboto, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", Roboto, system-ui, sans-serif;
   font-synthesis: none;
 }
 :root[data-theme="light"] {
@@ -48,7 +53,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .court { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr 1fr; touch-action: none; }
 .side {
   --team: var(--team-a);
-  position: relative; display: grid; grid-template-rows: auto 1fr auto; align-items: center; justify-items: center;
+  position: relative; display: grid; grid-template-rows: auto 1fr; align-items: center; justify-items: center;
   padding: max(18px, env(safe-area-inset-top)) 3vw calc(96px + env(safe-area-inset-bottom));
   background:
     radial-gradient(120% 90% at 50% 55%, color-mix(in srgb, var(--team) calc(var(--tint) * 100%), transparent), transparent 72%),
@@ -57,15 +62,17 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .side[data-team="B"] { --team: var(--team-b); }
 .side + .side { border-left: 1px solid color-mix(in srgb, var(--text) 9%, transparent); }
-.side-head { display: flex; align-items: center; gap: 14px; margin-top: 64px; min-height: 40px; }
-.team-name { font-size: clamp(20px, 3.4vw, 40px); font-weight: 800; letter-spacing: -.01em; color: var(--team); max-width: 36vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-head { display: flex; align-items: center; gap: 14px; margin-top: 64px; margin-bottom: clamp(6px, 1.6vh, 16px); min-height: 40px; }
+.team-name { font-size: clamp(20px, 3.4vw, 40px); font-weight: 700; letter-spacing: -.02em; color: var(--team); max-width: 36vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .games { display: flex; gap: 7px; }
 .games i { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--team); }
 .games i.won { background: var(--team); }
+/* Condensed digits leave room to make two-digit scores bigger; a little tracking keeps "11" from merging. */
 .score {
-  font-size: min(64vh, 34vw); line-height: .82; font-weight: 900; letter-spacing: -.055em;
+  font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: min(72vh, 44vw); line-height: .78; font-weight: 700; letter-spacing: .01em;
   font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; color: var(--digit);
-  text-align: center; min-width: 1.15em; padding-right: .04em;
+  text-align: center; min-width: 1em;
   transition: transform .18s cubic-bezier(.2, .9, .3, 1.4);
 }
 .side.flash .score { animation: pop .42s cubic-bezier(.2, .9, .3, 1.2); }
@@ -76,9 +83,14 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
 @keyframes shrink { 0% { transform: scale(1); } 40% { transform: scale(.93); opacity: .7; } 100% { transform: scale(1); } }
 @keyframes glow { from { opacity: 1; } to { opacity: 0; } }
-.serve { display: flex; align-items: center; gap: 10px; height: 40px; font-size: clamp(15px, 1.9vw, 22px); font-weight: 700; color: var(--muted); visibility: hidden; }
-.serve i { width: 18px; height: 18px; border-radius: 50%; background: var(--team); box-shadow: 0 0 18px var(--team); }
-.side.serving .serve { visibility: visible; }
+/* Serve: a shuttle next to the serving team's name, and a two-half court with the service half filled
+   (as the server faces the net: right on an even score, left on odd). */
+.serve-mark { display: none; align-items: center; gap: 8px; color: var(--team); }
+.side.serving .serve-mark { display: inline-flex; }
+.serve-mark svg { width: clamp(22px, 2.6vw, 32px); height: clamp(22px, 2.6vw, 32px); transform: rotate(-20deg); }
+.court-glyph { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid currentColor; border-radius: 4px; }
+.court-glyph i { width: clamp(9px, 1vw, 13px); height: clamp(14px, 1.6vw, 20px); border-radius: 1px; }
+.serve-mark[data-court="left"] .court-glyph i:first-child, .serve-mark[data-court="right"] .court-glyph i:last-child { background: currentColor; }
 .side.winner .score { color: var(--team); }
 .side.dragging .score { transition: none; }
 
@@ -212,7 +224,7 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
   .side + .side { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--text) 9%, transparent); padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
   .side:first-child .side-head { margin-top: 62px; }
   .side + .side .side-head { margin-top: 0; }
-  .score { font-size: min(30vh, 62vw); }
+  .score { font-size: min(33vh, 80vw); }
   .team-name { max-width: 70vw; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
@@ -228,8 +240,7 @@ body.colored .side + .side { border: 0; }
 body.colored .score, body.colored .team-name, body.colored .side.winner .score { color: var(--ink); }
 body.colored .games i { border-color: var(--ink); }
 body.colored .games i.won { background: var(--ink); }
-body.colored .serve { color: var(--ink); opacity: .78; }
-body.colored .serve i { background: var(--ink); box-shadow: none; }
+body.colored .serve-mark { color: var(--ink); }
 body.colored .side.flash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(255, 255, 255, .5), transparent 70%); }
 body.colored .side.unflash::after { background: radial-gradient(70% 60% at 50% 55%, rgba(0, 0, 0, .35), transparent 70%); }
 /* Dark glass stays readable on any background colour, pastel or neon. */

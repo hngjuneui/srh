@@ -146,7 +146,9 @@ function render() {
       Array.from({length: state.rules.gamesToWin}, (_, k) => `<i class="${k < state.gamesWon[team] ? 'won' : ''}"></i>`).join('');
     side.classList.toggle('serving', !state.gameOver && state.server === team);
     side.classList.toggle('winner', state.game.winner === team);
-    /** @type {HTMLElement} */ (side.querySelector('.serve span')).textContent = `서브 · ${serviceCourt(state)}`;
+    const mark = /** @type {HTMLElement} */ (side.querySelector('.serve-mark'));
+    mark.dataset.court = serviceCourt(state) === '오른쪽' ? 'right' : 'left';
+    mark.setAttribute('aria-label', `서브 · ${serviceCourt(state)} 코트`);
   });
   $('#gameLabel').textContent = state.matchWinner ? '경기 종료' : `${state.gameNo}게임`;
   const hint = pointHint(state);
