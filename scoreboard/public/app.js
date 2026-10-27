@@ -2,7 +2,7 @@
 import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides,
   isDecidingInterval, gameWinner, longestRuns, toCsv, other} from './core.js';
 import {RemoteInput, DEFAULT_REMOTE, keyId} from './remote.js';
-import {classify, torsoX, GestureHold, DEFAULT_POSE, UPPER_BODY} from './pose.js';
+import {classify, torsoX, bodyScale, nearPeople, GestureHold, DEFAULT_POSE, UPPER_BODY} from './pose.js';
 
 /** @typedef {'A'|'B'} Team */
 const $ = (/** @type {string} */ s) => /** @type {HTMLElement} */ (document.querySelector(s));
@@ -14,21 +14,25 @@ const store = {
   get(/** @type {string} */ k) { try { return JSON.parse(localStorage.getItem(k) ?? 'null'); } catch { return null; } },
   set(/** @type {string} */ k, /** @type {any} */ v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
 };
-// Side background colours. Each pair is chosen for the strongest difference between the two teams.
+// Side background colours, in swipe order. Muted pairs that sit well in a dim hall (one cool, one warm,
+// so the halves never look alike), then a few loud ones. Text colour is picked per colour by inkFor().
 const PALETTES = /** @type {Record<string, {label: string, A: string, B: string, dark?: boolean}>} */ ({
-  dark: {label: '다크 · 검은 배경에 은은한 색', A: '#36e0a2', B: '#ff8f5a', dark: true},
-  contrast: {label: '고대비 · 블루 × 오렌지', A: '#1450ff', B: '#ff7a00'},
-  primary: {label: '원색 · 레드 × 블루', A: '#e3001b', B: '#0057ff'},
-  primary2: {label: '원색 · 그린 × 레드', A: '#00a651', B: '#e3001b'},
+  dark: {label: '다크', A: '#36e0a2', B: '#ff8f5a', dark: true},
+  slate: {label: '슬레이트 × 애프리콧', A: '#3e5378', B: '#b97a55'},
+  sage: {label: '세이지 × 클레이', A: '#5b7a62', B: '#a5614c'},
+  mauve: {label: '모브 × 틸', A: '#7a5a80', B: '#2f6e6a'},
+  navy: {label: '네이비 × 로즈', A: '#23304f', B: '#9b4c63'},
+  forest: {label: '포레스트 × 샌드', A: '#2c4a3d', B: '#a88d62'},
+  dusk: {label: '라벤더 × 피치', A: '#9e92cc', B: '#e3a98c'},
+  contrast: {label: '비비드 · 블루 × 오렌지', A: '#1450ff', B: '#ff7a00'},
+  primary: {label: '비비드 · 레드 × 블루', A: '#e3001b', B: '#0057ff'},
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
-  neon2: {label: '형광 · 옐로 × 바이올렛', A: '#eaff00', B: '#8a2bff'},
-  pastel: {label: '파스텔 · 민트 × 피치', A: '#9ee6c9', B: '#ffb5a7'},
-  pastel2: {label: '파스텔 · 라벤더 × 레몬', A: '#c3b5ff', B: '#ffe98a'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true, idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
-  pose: {enabled: false, team: /** @type {Team|null} */ (null), holdMs: DEFAULT_POSE.holdMs}};
+  // refScale: the tester's body size in the frame; people much smaller are on another court.
+  pose: {enabled: false, team: /** @type {Team|null} */ (null), holdMs: DEFAULT_POSE.holdMs, refScale: /** @type {number|null} */ (null)}};
 const savedPrefs = store.get(KEY.prefs) ?? {};
 // The default used to be the blue × orange set; devices still on it move to the new dark default once.
 if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete savedPrefs.colors;
@@ -235,11 +239,20 @@ court.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, {x: e.clientX, y: e.clientY, t: performance.now(), team: /** @type {Team} */ (side.dataset.team)});
   try { side.setPointerCapture(e.pointerId); } catch {}
 });
+court.addEventListener('pointermove', e => {
+  const start = pointers.get(e.pointerId);
+  if (!start) return;
+  const dx = e.clientX - start.x, dy = e.clientY - start.y;
+  // A clearly sideways drag becomes a colour-set swipe and can no longer score.
+  if (!start.bg && Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 1.5) start.bg = true;
+  if (start.bg) dragBackground(dx);
+});
 court.addEventListener('pointerup', e => {
   const start = pointers.get(e.pointerId);
   pointers.delete(e.pointerId);
   if (!start) return;
   const dx = e.clientX - start.x, dy = e.clientY - start.y, dt = performance.now() - start.t;
+  if (start.bg) { releaseBackground(dx, dt); return; }
   const swipeMin = Math.max(48, Math.min(innerHeight, innerWidth) * 0.08);
   const vertical = Math.abs(dy) >= swipeMin && Math.abs(dy) > Math.abs(dx) * 1.3;
   const scores = prefs.reverseSwipe ? dy > 0 : dy < 0; // default: swipe up = +1, swipe down = cancel
@@ -253,7 +266,69 @@ court.addEventListener('pointerup', e => {
   lastTouchPoint[start.team] = now;
   point(start.team, kind);
 });
-court.addEventListener('pointercancel', e => pointers.delete(e.pointerId));
+court.addEventListener('pointercancel', e => { if (pointers.get(e.pointerId)?.bg) releaseBackground(0, 0); pointers.delete(e.pointerId); });
+
+// ---------- swipe left/right: flick through colour sets like photo filters ----------
+// Swiping left brings in the next set from the right edge, swiping right the previous one from the left.
+const PRESET_KEYS = Object.keys(PALETTES);
+/** @type {{key: string, from: 'right'|'left'} | null} */ let bgDrag = null;
+function neighbourPreset(/** @type {number} */ step) {
+  const i = Math.max(0, PRESET_KEYS.indexOf(prefs.colors.preset));
+  return PRESET_KEYS[(i + step + PRESET_KEYS.length) % PRESET_KEYS.length];
+}
+/** The background a side would have under colour set `key`. */
+function backgroundFor(/** @type {string} */ key, /** @type {Team} */ team) {
+  const p = PALETTES[key];
+  if (!p.dark) return p[team];
+  if (prefs.light) return 'var(--bg)';
+  return `radial-gradient(120% 90% at 50% 55%, color-mix(in srgb, ${p[team]} calc(var(--tint) * 100%), transparent), transparent 72%), var(--bg)`;
+}
+/** Shows the incoming set up to screen x = `edge`, coming from the right or the left. */
+function revealBackground(/** @type {'right'|'left'} */ from, /** @type {number} */ edge) {
+  for (const side of sides) {
+    const r = side.getBoundingClientRect();
+    const clip = from === 'right'
+      ? `inset(0 0 0 ${Math.min(r.width, Math.max(0, edge - r.left))}px)`
+      : `inset(0 ${Math.min(r.width, Math.max(0, r.right - edge))}px 0 0)`;
+    side.style.setProperty('--next-clip', clip);
+  }
+}
+let presetNameTimer = 0;
+function flashPresetName(/** @type {string} */ key, /** @type {number} */ ms = 900) {
+  const el = $('#presetName');
+  el.textContent = PALETTES[key].label; el.classList.add('show');
+  clearTimeout(presetNameTimer);
+  presetNameTimer = window.setTimeout(() => el.classList.remove('show'), ms);
+}
+function dragBackground(/** @type {number} */ dx) {
+  const from = dx < 0 ? 'right' : 'left';
+  if (bgDrag?.from !== from) {
+    bgDrag = {key: neighbourPreset(from === 'right' ? 1 : -1), from};
+    for (const side of sides) {
+      side.classList.remove('bg-anim');
+      side.style.setProperty('--next-bg', backgroundFor(bgDrag.key, /** @type {Team} */ (side.dataset.team)));
+    }
+    flashPresetName(bgDrag.key, 1500);
+  }
+  revealBackground(from, from === 'right' ? innerWidth + dx : dx);
+}
+function releaseBackground(/** @type {number} */ dx, /** @type {number} */ dt) {
+  const drag = bgDrag;
+  bgDrag = null;
+  if (!drag) return;
+  // Past a quarter of the screen, or a quick flick, keeps the new set; otherwise it slides back out.
+  const keep = Math.abs(dx) > innerWidth * 0.25 || (Math.abs(dx) > 60 && Math.abs(dx) / Math.max(dt, 1) > 0.5);
+  sides.forEach(s => s.classList.add('bg-anim'));
+  revealBackground(drag.from, keep === (drag.from === 'right') ? 0 : innerWidth);
+  setTimeout(() => {
+    if (keep) {
+      prefs.colors = {preset: drag.key, A: PALETTES[drag.key].A, B: PALETTES[drag.key].B};
+      savedColors = {...prefs.colors}; savePrefs(); applyColors();
+      flashPresetName(drag.key);
+    }
+    sides.forEach(s => { s.classList.remove('bg-anim'); s.style.removeProperty('--next-clip'); s.style.removeProperty('--next-bg'); });
+  }, 280);
+}
 // No long-press menus, magnifier or pinch/double-tap zoom anywhere but text fields.
 document.addEventListener('contextmenu', e => { if (!(/** @type {HTMLElement} */ (e.target).closest('input, textarea'))) e.preventDefault(); });
 document.addEventListener('dblclick', e => e.preventDefault(), {passive: false});
@@ -443,7 +518,7 @@ $('#doubleMs').addEventListener('input', e => { prefs.remote.doubleMs = Number(/
 $('#remoteSheet').addEventListener('close', () => { learning = null; remote.reset(); });
 
 // ---------- timeline ----------
-const SOURCE = {'tap': '탭', 'pose-o': 'AI 포즈 O', 'pose-x': 'AI 포즈 X', 'swipe-down': '아래로 쓸기', 'swipe-up': '위로 쓸기', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
+const SOURCE = {'tap': '탭', 'pose-o': 'AI 포즈 O', 'pose-x': 'AI 포즈 X', 'pose-circle': 'AI 포즈 O', 'pose-head': 'AI 포즈 머리 위 손', 'pose-cross': 'AI 포즈 X', 'pose-tee': 'AI 포즈 T(되돌리기)', 'swipe-down': '아래로 쓸기', 'swipe-up': '위로 쓸기', 'remote-single': '리모컨 한 번', 'remote-double': '리모컨 두 번',
   'remote-short': '리모컨 짧게', 'remote-long': '리모컨 길게',
   'remote-key': '리모컨', 'remote': '리모컨', 'button': '버튼', 'app': ''};
 const esc = (/** @type {any} */ s) => String(s).replace(/[&<>"']/g, c => /** @type {any} */ ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
@@ -639,30 +714,36 @@ function placeVideo(/** @type {boolean} */ onStage) {
   poseVideo.play().catch(() => {});
 }
 
-function onPeople(/** @type {any[][]} */ people, /** @type {number} */ now) {
+const GESTURE_NAME = /** @type {Record<string, string>} */ ({circle: 'O', head: '머리 위 손', cross: 'X', tee: 'T · 되돌리기'});
+function onPeople(/** @type {any[][]} */ seenPeople, /** @type {number} */ now) {
+  // During play only people about as close as the tester count; the test itself just prefers the biggest.
+  const people = nearPeople(seenPeople, poseMode === 'live' ? prefs.pose.refScale : null);
   const gestures = people.map(classify);
   const {gesture, progress, fire} = hold.update(gestures, now);
-  if (poseMode === 'test') { drawPose(people, gestures); testStep(people, gestures, gesture, progress, fire); return; }
+  if (poseMode === 'test') { drawPose(seenPeople, seenPeople.map(p => (people.includes(p) ? classify(p) : 'far'))); testStep(people, gestures, gesture, progress, fire); return; }
   if (poseMode !== 'live') return;
   const facing = prefs.pose.team ?? prefs.ourTeam;
-  const teamFor = (/** @type {string} */ g) => /** @type {Team} */ (g === 'circle' ? facing : other(facing));
+  // O = the camera's team; hand on head ("아쉬움") or X = the other team; T ("Time!") = undo, no team.
+  const teamFor = (/** @type {string} */ g) => /** @type {Team|null} */ (g === 'tee' ? null : g === 'circle' ? facing : other(facing));
   const blocked = Boolean(document.querySelector('dialog[open]')) || editingName || !$('#intro').hidden;
   if (fire && !blocked) {
     const team = teamFor(fire);
+    if (!team) { undo('pose-tee'); showPoseTint(null, 1, 'T · 되돌리기', true); return; }
     if (derive(match).gameOver) { clearPoseTint(); point(team, 'pose'); return; } // point() explains why nothing was added
-    point(team, fire === 'circle' ? 'pose-o' : 'pose-x');
-    showPoseTint(team, 1, `${fire === 'circle' ? 'O' : 'X'} · ${name(team)} +1`, true);
+    point(team, `pose-${fire}`);
+    showPoseTint(team, 1, `${GESTURE_NAME[fire]} · ${name(team)} +1`, true);
   } else if (gesture && progress > 0 && !blocked) {
-    showPoseTint(teamFor(gesture), progress, `${gesture === 'circle' ? 'O' : 'X'} 인식 중`, false);
+    showPoseTint(teamFor(gesture), progress, `${GESTURE_NAME[gesture]} 인식 중`, false);
   } else if (!fireShowing) clearPoseTint();
 }
 
-// The whole board takes the scoring team's colour, deepening as the pose is held, then flashes on +1.
+// The whole board takes the scoring team's colour (white for undo), deepening as the pose is held, then flashes.
 let fireShowing = false, fireTimer = 0;
-function showPoseTint(/** @type {Team} */ team, /** @type {number} */ p, /** @type {string} */ label, /** @type {boolean} */ fired) {
+function showPoseTint(/** @type {Team|null} */ team, /** @type {number} */ p, /** @type {string} */ label, /** @type {boolean} */ fired) {
   if (fireShowing && !fired) return;
   const tint = $('#poseTint'), pill = $('#posePill');
-  for (const el of [tint, pill]) { el.style.setProperty('--tint-color', `var(--team-${team.toLowerCase()})`); el.style.setProperty('--p', String(p)); }
+  const color = team ? `var(--team-${team.toLowerCase()})` : '#ffffff';
+  for (const el of [tint, pill]) { el.style.setProperty('--tint-color', color); el.style.setProperty('--p', String(p)); }
   $('#posePillText').textContent = label;
   pill.hidden = false;
   tint.classList.toggle('holding', !fired);
@@ -685,7 +766,8 @@ function drawPose(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ 
   ctx.clearRect(0, 0, c.width, c.height);
   const vis = (/** @type {any} */ p) => p && (p.visibility ?? 1) > 0.4;
   people.forEach((lm, i) => {
-    const color = gestures[i] === 'circle' ? '#36e0a2' : gestures[i] === 'cross' ? '#ff8f5a' : '#ffffff';
+    // green O, orange hand-on-head/X, blue T (undo), grey = too far away (another court), white = nothing yet
+    const color = ({circle: '#36e0a2', head: '#ff8f5a', cross: '#ff8f5a', tee: '#7cc4ff', far: 'rgba(255,255,255,.3)'})[/** @type {string} */ (gestures[i])] ?? '#ffffff';
     ctx.strokeStyle = ctx.fillStyle = color;
     ctx.lineWidth = Math.max(4, c.width / 110); ctx.lineCap = 'round';
     for (const [a, b] of UPPER_BODY) {
@@ -707,8 +789,10 @@ function testStep(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ 
     const who = people[gestures.indexOf('circle')];
     // The preview is mirrored, so a player standing on the screen's left shows up on the camera's right.
     const onLeft = 1 - torsoX(who) < 0.5;
+    prefs.pose.refScale = bodyScale(who); // how big a player on our court looks from here
     finishPoseTest(/** @type {Team} */ (sides[onLeft ? 0 : 1].dataset.team));
-  } else if (gesture === 'cross') status.textContent = 'X 동작이 보여요 — 경기 중엔 상대 팀 +1입니다. 테스트는 머리 위 O로 해 주세요.';
+  } else if (gesture === 'head' || gesture === 'cross') status.textContent = `${GESTURE_NAME[gesture]} 동작이 보여요 — 경기 중엔 상대 팀 +1입니다. 테스트는 머리 위 O로 해 주세요.`;
+  else if (gesture === 'tee') status.textContent = 'T 동작(되돌리기)이 보여요. 테스트는 머리 위 O로 해 주세요.';
   else if (gesture === 'circle') status.textContent = 'O 인식 중… 그대로 유지하세요';
   else if (!people.length) status.textContent = '사람을 찾는 중… 상체와 두 팔이 화면에 다 보이게 서 주세요.';
   else status.textContent = `${people.length}명 보임 · 머리 위로 크게 O를 만들어 주세요.`;

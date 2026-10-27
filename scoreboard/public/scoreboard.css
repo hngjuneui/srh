@@ -424,3 +424,16 @@ body.colored .name-edit { color: var(--ink); }
   -webkit-mask: radial-gradient(farthest-side, transparent 64%, #000 66%); mask: radial-gradient(farthest-side, transparent 64%, #000 66%);
 }
 .pose-pill.fire .pose-ring { background: var(--tint-color, #fff); }
+
+/* ---------- swipe left/right: the next colour set slides in behind the digits, like picking a photo filter ---------- */
+/* --next-bg is the incoming background, --next-clip how much of it shows; names, digits and controls stay put. */
+.bg-next { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: var(--next-bg, transparent); clip-path: var(--next-clip, inset(0 0 0 100%)); }
+.side.bg-anim .bg-next { transition: clip-path .26s cubic-bezier(.2, .8, .2, 1); }
+.score-box { position: relative; z-index: 1; }
+.preset-name {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none;
+  padding: 12px 22px; border-radius: 18px; font-size: clamp(18px, 2.6vw, 26px); font-weight: 800; color: #fff;
+  background: rgba(8, 10, 14, .45); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  opacity: 0; transition: opacity .25s ease;
+}
+.preset-name.show { opacity: 1; }

@@ -28,10 +28,12 @@
 
 <main class="court" id="court">
   <section class="side" data-side="left" aria-live="polite">
+    <i class="bg-next" aria-hidden="true"></i>
     <header class="side-head"><i class="serve-dot" role="img" aria-label="서브"></i><span class="team-name"></span></header>
     <div class="score-box"><div class="score" aria-label="점수">0</div></div>
   </section>
   <section class="side" data-side="right" aria-live="polite">
+    <i class="bg-next" aria-hidden="true"></i>
     <header class="side-head"><i class="serve-dot" role="img" aria-label="서브"></i><span class="team-name"></span></header>
     <div class="score-box"><div class="score" aria-label="점수">0</div></div>
   </section>
@@ -69,6 +71,7 @@
 <div class="toast glass" id="toast" role="status" hidden></div>
 <!-- AI pose: the whole board takes on the colour of the team about to score while a pose is held. -->
 <div class="pose-tint" id="poseTint" aria-hidden="true"></div>
+<div class="preset-name" id="presetName" aria-live="polite"></div>
 <div class="pose-pill" id="posePill" hidden><i class="pose-ring" id="poseRing"></i><span id="posePillText">AI 포즈</span></div>
 
 <!-- AI pose: the camera keeps running here, unseen, during play. -->
@@ -81,7 +84,7 @@
     <p class="pose-step">카메라가 볼 수 있는 곳에서, 머리 위로 크게 <b>O</b>를 만들고 <b id="poseHoldSec">1</b>초 유지하세요.</p>
     <div class="pose-meter"><i id="poseMeter"></i></div>
     <p class="pose-status" id="poseStatus">카메라를 켜는 중…</p>
-    <p class="hint small">X(팔 교차)는 상대 팀 +1 동작입니다. 테스트를 한 사람이 서 있는 쪽 팀이 첫 서브를 합니다.</p>
+    <p class="hint small">경기 중 동작: <b>O</b> = 카메라 쪽 팀 +1 · <b>한 손 머리 위 + 한 손 아래</b>(아쉬움) 또는 <b>X</b>(팔 교차) = 상대 팀 +1 · <b>T</b>(두 팔 옆으로, Time!) = 되돌리기. 테스트를 한 사람이 서 있는 쪽 팀이 첫 서브를 하고, 그 사람보다 훨씬 작게(멀리) 보이는 사람은 무시합니다.</p>
     <div class="pose-actions"><button type="button" class="glass-btn" id="poseCancel">취소</button><button type="button" class="glass-btn" id="poseSkip">테스트 건너뛰기</button></div>
   </div>
 </div>
@@ -155,7 +158,7 @@
       <button type="button" class="text-btn" id="showIntro">사용법 지금 보기</button>
     </fieldset>
     <fieldset class="field-group"><legend>AI 포즈 스코어링 · 베타</legend>
-      <p class="hint small pose-help">전면 카메라로 한쪽 팀 선수의 동작을 인식합니다. 머리 위로 큰 <b>O</b> = 그 팀 +1, 팔을 교차한 큰 <b>X</b> = 상대 팀 +1. 동작을 잠깐 유지해야 인식됩니다. 영상은 기기 안에서만 처리되고 저장·전송되지 않습니다.</p>
+      <p class="hint small pose-help">전면 카메라로 한쪽 팀 선수의 동작을 인식합니다. 머리 위로 큰 <b>O</b> = 그 팀 +1, <b>한 손은 머리 위·한 손은 아래</b>(아쉬움) 또는 팔을 교차한 <b>X</b> = 상대 팀 +1, 두 팔을 옆으로 뻗은 <b>T</b>(Time!) = 되돌리기. 동작을 잠깐 유지해야 인식되고, 옆 코트처럼 멀리 있는 사람은 무시합니다. 영상은 기기 안에서만 처리되고 저장·전송되지 않습니다.</p>
       <div class="row"><span id="poseState">꺼짐</span><span class="pose-btns"><button type="button" class="glass-btn" id="poseTestBtn">켜고 테스트</button><button type="button" class="glass-btn danger" id="poseOffBtn" hidden>끄기</button></span></div>
       <label class="row">동작 유지 시간 <output id="poseHoldOut"></output><input type="range" id="poseHold" min="500" max="2000" step="100"></label>
     </fieldset>
