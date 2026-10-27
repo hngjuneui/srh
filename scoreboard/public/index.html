@@ -2,7 +2,7 @@
 <html lang="ko" data-theme="dark">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#06080b">
   <meta name="description" content="태블릿용 배드민턴 점수판. 탭·스와이프·블루투스 리모컨으로 점수를 올리고 모든 득점을 자동 기록합니다.">
   <meta name="mobile-web-app-capable" content="yes">
@@ -21,6 +21,7 @@
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="8" r="2"/><path d="M12 14v3"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-new" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 </svg>
 
@@ -52,6 +53,7 @@
   <button class="glass-btn" data-act="swap"><svg><use href="#i-swap"/></svg><span>코트 교대</span></button>
   <button class="glass-btn" data-act="timeline"><svg><use href="#i-list"/></svg><span>기록</span></button>
   <button class="glass-btn" data-act="remote"><svg><use href="#i-remote"/></svg><span>리모컨</span><i class="remote-dot" id="remoteDot"></i></button>
+  <button class="glass-btn hold-btn" data-act="new" id="newMatchBar" aria-label="새 경기 (길게 누르기)"><i class="hold-fill"></i><svg><use href="#i-new"/></svg><span>새 경기</span></button>
   <button class="glass-btn" data-act="settings"><svg><use href="#i-gear"/></svg><span>설정</span></button>
   <button class="glass-btn icon-only" data-act="fullscreen" aria-label="전체 화면"><svg><use href="#i-full"/></svg></button>
 </nav>

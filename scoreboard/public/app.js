@@ -239,7 +239,11 @@ court.addEventListener('pointerup', e => {
   point(start.team, kind);
 });
 court.addEventListener('pointercancel', e => pointers.delete(e.pointerId));
-court.addEventListener('contextmenu', e => e.preventDefault());
+// No long-press menus, magnifier or pinch/double-tap zoom anywhere but text fields.
+document.addEventListener('contextmenu', e => { if (!(/** @type {HTMLElement} */ (e.target).closest('input, textarea'))) e.preventDefault(); });
+document.addEventListener('dblclick', e => e.preventDefault(), {passive: false});
+for (const type of ['gesturestart', 'gesturechange']) document.addEventListener(type, e => e.preventDefault(), {passive: false});
+document.addEventListener('touchmove', e => { if (/** @type {TouchEvent} */ (e).touches.length > 1) e.preventDefault(); }, {passive: false});
 
 // ---------- buttons ----------
 document.addEventListener('click', e => {
@@ -254,6 +258,28 @@ document.addEventListener('click', e => {
   else if (act === 'settings') openSheet('#settingsSheet');
   else if (act === 'fullscreen') toggleFullscreen();
 });
+// ---------- 새 경기 on the toolbar: hold ~1 s so a stray tap never wipes the board ----------
+const NEW_HOLD_MS = 1000;
+let newHoldTimer = 0, newHoldDone = false;
+const newBar = $('#newMatchBar');
+newBar.addEventListener('pointerdown', e => {
+  newHoldDone = false;
+  newBar.setPointerCapture?.(e.pointerId);
+  newBar.classList.add('holding');
+  clearTimeout(newHoldTimer);
+  newHoldTimer = window.setTimeout(() => {
+    newHoldDone = true; newBar.classList.remove('holding');
+    navigator.vibrate?.(40);
+    archiveAndStart();
+  }, NEW_HOLD_MS);
+});
+const endNewHold = () => {
+  if (!newBar.classList.contains('holding')) return;
+  clearTimeout(newHoldTimer); newBar.classList.remove('holding');
+  if (!newHoldDone) toast('새 경기는 버튼을 1초 동안 길게 누르세요');
+};
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) newBar.addEventListener(type, endNewHold);
+
 $('#bannerNext').addEventListener('click', e => { /** @type {HTMLElement} */ (e.currentTarget).blur(); nextGame(); });
 $$('[data-close]').forEach(b => b.addEventListener('click', () => /** @type {HTMLDialogElement} */ (b.closest('dialog')).close()));
 $$('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) /** @type {HTMLDialogElement} */ (d).close(); }));

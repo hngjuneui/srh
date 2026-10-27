@@ -42,7 +42,9 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--text); }
+html { touch-action: manipulation; } /* no double-tap zoom */
 body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 button, input, select { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
@@ -112,6 +114,11 @@ body.idle .hud, body.idle .toolbar { opacity: .32; }
 .glass-btn.primary { background: var(--glass-strong); border-color: var(--glass-edge); }
 .glass-btn.danger { color: var(--danger); }
 .glass-btn.armed { background: color-mix(in srgb, var(--danger) 28%, transparent); color: var(--text); }
+/* 새 경기: fills while held; only a full hold starts a new match. */
+.hold-btn { overflow: hidden; }
+.hold-fill { position: absolute; inset: 0; background: color-mix(in srgb, var(--danger) 40%, transparent); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+.hold-btn.holding .hold-fill { transform: scaleX(1); transition: transform 1s linear; }
+.hold-btn > :not(.hold-fill) { position: relative; }
 .glass-btn:focus-visible { outline: 2px solid var(--glass-edge); outline-offset: 2px; }
 
 .hud {
@@ -149,7 +156,7 @@ body.idle .hud, body.idle .toolbar { opacity: .32; }
 /* ---------- sheets ---------- */
 dialog.sheet {
   color: var(--text); border-radius: 28px; padding: 0; width: min(760px, 94vw); max-height: 88vh;
-  -webkit-user-select: text; user-select: text; overflow: hidden; flex-direction: column;
+  overflow: hidden; flex-direction: column;
   background: color-mix(in srgb, var(--bg) 62%, transparent);
 }
 dialog.sheet[open] { display: flex; animation: rise .22s ease-out; }
@@ -160,7 +167,11 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); -webkit-backdrop-filter: blur
 .sheet-foot { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent); justify-content: flex-end; flex-wrap: wrap; }
 .sheet-foot .hint { flex: 1; margin: 0; min-width: 200px; }
 .sheet > :not(.sheet-head):not(.sheet-foot):not(form) { margin-left: 24px; margin-right: 24px; }
-.settings { overflow: auto; display: flex; flex-direction: column; }
+.settings { overflow: hidden auto; touch-action: pan-y; overscroll-behavior: contain; display: flex; flex-direction: column; }
+/* Nothing in a sheet may be wider than the sheet: fieldsets default to min-content width, and inputs to their own size. */
+.sheet fieldset { min-width: 0; min-inline-size: 0; max-width: 100%; }
+.row > * { min-width: 0; }
+.row input:not([type]), .row select { max-width: 55%; }
 .settings .field-group, .settings > .hint { margin: 0 24px 10px; }
 .hint { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0 0 10px; }
 .hint.small { font-size: 13px; }
@@ -204,7 +215,7 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
 .keylog { width: calc(100% - 48px); border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; display: block; max-height: 22vh; overflow: auto; }
 .keylog th, .keylog td { text-align: left; padding: 5px 12px 5px 0; white-space: nowrap; }
 .keylog th { color: var(--muted); font-weight: 600; position: sticky; top: 0; }
-#remoteSheet { overflow: auto; }
+#remoteSheet { overflow: hidden auto; touch-action: pan-y; overscroll-behavior: contain; }
 
 /* ---------- smaller / portrait screens ---------- */
 @media (max-width: 760px) {
@@ -212,6 +223,7 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
   .toolbar .glass-btn { padding: 0 14px; }
   .remote-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 420px) { .toolbar .glass-btn { padding: 0 11px; } }
 @media (orientation: portrait) {
   .court { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .side { padding-bottom: 20px; }
