@@ -62,7 +62,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .side[data-team="B"] { --team: var(--team-b); }
 .side + .side { border-left: 1px solid color-mix(in srgb, var(--text) 9%, transparent); }
-.side-head { display: flex; align-items: center; gap: 14px; margin-top: 64px; margin-bottom: clamp(6px, 1.6vh, 16px); min-height: 40px; }
+/* Above the score: its tall line box reaches up over the name and would turn a rename tap into a point. */
+.side-head { position: relative; z-index: 2; display: flex; align-items: center; gap: 14px; margin-top: 64px; margin-bottom: clamp(6px, 1.6vh, 16px); min-height: 40px; }
 .team-name { font-size: clamp(20px, 3.4vw, 40px); font-weight: 700; letter-spacing: -.02em; color: var(--team); max-width: 36vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Condensed digits leave room to make two-digit scores bigger; a little tracking keeps "11" from merging. */
 .score {
