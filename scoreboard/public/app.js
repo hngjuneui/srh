@@ -138,6 +138,19 @@ function archiveAndStart() {
   toast('새 경기를 시작합니다. 이전 경기는 기록에 남아 있습니다.');
 }
 
+// ---------- score size: both halves use the size that fits the smaller one, so the teams always match ----------
+// Same limits as the CSS fallback: 1.18 × box height, 1 × box width (two digits are under 0.92 em wide).
+const scoreBoxes = $$('.score-box');
+function fitScores() {
+  const fit = Math.min(...scoreBoxes.map(b => Math.min(b.clientHeight * 1.18, b.clientWidth)));
+  if (fit > 0) document.documentElement.style.setProperty('--score-fs', `${Math.floor(fit)}px`);
+}
+// Browser bars appearing, rotation and font loading all change the boxes; resize/orientation cover pages that are not painting.
+const scoreObserver = new ResizeObserver(fitScores);
+scoreBoxes.forEach(b => scoreObserver.observe(b));
+window.addEventListener('resize', fitScores);
+document.fonts?.ready.then(fitScores);
+
 // ---------- rendering ----------
 function render() {
   const state = derive(match);
@@ -615,7 +628,7 @@ async function startCamera() {
   if (!camera) { const {PoseCamera} = await import('./pose-camera.js'); camera = new PoseCamera(poseVideo, onPeople); }
   await camera.start();
 }
-function stopCamera() { camera?.stop(); poseMode = 'off'; $('#posePill').hidden = true; renderPoseToggle(); }
+function stopCamera() { camera?.stop(); poseMode = 'off'; clearPoseTint(); renderPoseToggle(); }
 /** A video taken out of the page pauses, so it is moved between the test stage and its unseen spot and played again. */
 function placeVideo(/** @type {boolean} */ onStage) {
   if (onStage) $('#poseStage').prepend(poseVideo); else document.body.append(poseVideo);
@@ -628,19 +641,38 @@ function onPeople(/** @type {any[][]} */ people, /** @type {number} */ now) {
   const {gesture, progress, fire} = hold.update(gestures, now);
   if (poseMode === 'test') { drawPose(people, gestures); testStep(people, gestures, gesture, progress, fire); return; }
   if (poseMode !== 'live') return;
-  const pill = $('#posePill');
-  pill.hidden = !gesture || (!progress && !fire);
-  if (!pill.hidden) {
-    pill.style.setProperty('--p', String(progress));
-    $('#posePillText').textContent = `${gesture === 'circle' ? 'O' : 'X'} 인식 중`;
-  }
-  if (!fire || document.querySelector('dialog[open]') || editingName || !$('#intro').hidden) return;
   const facing = prefs.pose.team ?? prefs.ourTeam;
-  const team = fire === 'circle' ? facing : other(facing);
-  if (derive(match).gameOver) { point(team, 'pose'); return; } // point() explains why nothing was added
-  point(team, fire === 'circle' ? 'pose-o' : 'pose-x');
-  pill.hidden = true;
-  toast(`AI 포즈 · ${fire === 'circle' ? 'O' : 'X'} 인식 → ${name(team)} +1`, 2600);
+  const teamFor = (/** @type {string} */ g) => /** @type {Team} */ (g === 'circle' ? facing : other(facing));
+  const blocked = Boolean(document.querySelector('dialog[open]')) || editingName || !$('#intro').hidden;
+  if (fire && !blocked) {
+    const team = teamFor(fire);
+    if (derive(match).gameOver) { clearPoseTint(); point(team, 'pose'); return; } // point() explains why nothing was added
+    point(team, fire === 'circle' ? 'pose-o' : 'pose-x');
+    showPoseTint(team, 1, `${fire === 'circle' ? 'O' : 'X'} · ${name(team)} +1`, true);
+  } else if (gesture && progress > 0 && !blocked) {
+    showPoseTint(teamFor(gesture), progress, `${gesture === 'circle' ? 'O' : 'X'} 인식 중`, false);
+  } else if (!fireShowing) clearPoseTint();
+}
+
+// The whole board takes the scoring team's colour, deepening as the pose is held, then flashes on +1.
+let fireShowing = false, fireTimer = 0;
+function showPoseTint(/** @type {Team} */ team, /** @type {number} */ p, /** @type {string} */ label, /** @type {boolean} */ fired) {
+  if (fireShowing && !fired) return;
+  const tint = $('#poseTint'), pill = $('#posePill');
+  for (const el of [tint, pill]) { el.style.setProperty('--tint-color', `var(--team-${team.toLowerCase()})`); el.style.setProperty('--p', String(p)); }
+  $('#posePillText').textContent = label;
+  pill.hidden = false;
+  tint.classList.toggle('holding', !fired);
+  pill.classList.toggle('fire', fired);
+  if (fired) {
+    tint.classList.remove('fire'); void tint.offsetWidth; tint.classList.add('fire');
+    fireShowing = true; clearTimeout(fireTimer);
+    fireTimer = window.setTimeout(() => { fireShowing = false; clearPoseTint(); }, 1400);
+  }
+}
+function clearPoseTint() {
+  $('#poseTint').classList.remove('holding', 'fire');
+  const pill = $('#posePill'); pill.hidden = true; pill.classList.remove('fire');
 }
 
 function drawPose(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ gestures) {
@@ -682,7 +714,7 @@ function testStep(/** @type {any[][]} */ people, /** @type {(string|null)[]} */ 
 function openPoseTest() {
   poseMode = 'test'; hold.reset();
   $('#poseHoldSec').textContent = String(prefs.pose.holdMs / 1000);
-  $('#poseTest').hidden = false; $('#posePill').hidden = true;
+  $('#poseTest').hidden = false; clearPoseTint();
   $('#poseStatus').textContent = '카메라와 AI 모델을 준비하는 중… 처음에는 몇 초 걸려요.';
   /** @type {HTMLElement} */ ($('#poseMeter')).style.transform = 'scaleX(0)';
   placeVideo(true);
@@ -747,6 +779,7 @@ $('#poseOffBtn').addEventListener('click', () => { stopCamera(); prefs.pose.enab
 $('#poseHold').addEventListener('input', e => { prefs.pose.holdMs = hold.opts.holdMs = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderPoseSettings(); });
 
 applyTheme();
+fitScores();
 saveMatch();
 render();
 renderRemote();

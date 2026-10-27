@@ -29,11 +29,11 @@
 <main class="court" id="court">
   <section class="side" data-side="left" aria-live="polite">
     <header class="side-head"><i class="serve-dot" role="img" aria-label="서브"></i><span class="team-name"></span></header>
-    <div class="score" aria-label="점수">0</div>
+    <div class="score-box"><div class="score" aria-label="점수">0</div></div>
   </section>
   <section class="side" data-side="right" aria-live="polite">
     <header class="side-head"><i class="serve-dot" role="img" aria-label="서브"></i><span class="team-name"></span></header>
-    <div class="score" aria-label="점수">0</div>
+    <div class="score-box"><div class="score" aria-label="점수">0</div></div>
   </section>
 </main>
 
@@ -67,7 +67,9 @@
 </nav>
 
 <div class="toast glass" id="toast" role="status" hidden></div>
-<div class="pose-pill glass" id="posePill" hidden><i class="pose-ring" id="poseRing"></i><span id="posePillText">AI 포즈</span></div>
+<!-- AI pose: the whole board takes on the colour of the team about to score while a pose is held. -->
+<div class="pose-tint" id="poseTint" aria-hidden="true"></div>
+<div class="pose-pill" id="posePill" hidden><i class="pose-ring" id="poseRing"></i><span id="posePillText">AI 포즈</span></div>
 
 <!-- AI pose: the camera keeps running here, unseen, during play. -->
 <video id="poseVideo" class="pose-video-hidden" muted playsinline aria-hidden="true"></video>

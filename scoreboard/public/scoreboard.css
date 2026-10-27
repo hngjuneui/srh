@@ -62,6 +62,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
     var(--bg);
   touch-action: none; overflow: hidden;
 }
+/* The score fills whatever room its half has left (under the name, above the toolbar), on any screen:
+   cqh/cqw are this box's own height and width, so browser bars and odd aspect ratios are handled. */
+.score-box { container-type: size; width: 100%; height: 100%; min-height: 0; display: grid; place-items: center; }
 .side[data-team="B"] { --team: var(--team-b); }
 .side + .side { border-left: 1px solid color-mix(in srgb, var(--text) 9%, transparent); }
 /* Above the score: its tall line box reaches up over the name and would turn a rename tap into a point. */
@@ -70,7 +73,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 /* Condensed digits leave room to make two-digit scores bigger; a little tracking keeps "11" from merging. */
 .score {
   font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
-  font-size: min(72vh, 44vw); line-height: .78; font-weight: 700; letter-spacing: .01em;
+  /* --score-fs (from app.js) keeps both halves the same size; it can never exceed this half's own fit. */
+  font-size: min(var(--score-fs, 100cqw), 118cqh, 100cqw); line-height: .78; font-weight: 700; letter-spacing: .01em;
   font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; color: var(--digit);
   text-align: center; min-width: 1em;
   transition: transform .18s cubic-bezier(.2, .9, .3, 1.4);
@@ -230,12 +234,10 @@ legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: var(--muted);
   .side + .side { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--text) 9%, transparent); padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
   .side:first-child .side-head { margin-top: 62px; }
   .side + .side .side-head { margin-top: 0; }
-  .score { font-size: min(33vh, 80vw); }
   .team-name { max-width: 70vw; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .side-head { margin-top: 52px; }
-  .score { font-size: min(62vh, 44vw); }
   .side { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .glass-btn { min-height: 44px; }
   .toolbar { bottom: max(8px, env(safe-area-inset-bottom)); }
@@ -366,8 +368,6 @@ body.colored .name-edit { color: var(--ink); }
 .pose-check { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 32px; font-weight: 900; color: #06080b; background: #36e0a2; }
 
 /* In play: one small pill while a gesture is being held, with a ring that fills up. */
-.pose-pill { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px; border-radius: 999px; font-weight: 700; pointer-events: none; }
-.pose-ring { --p: 0; width: 24px; height: 24px; border-radius: 50%; background: conic-gradient(var(--text) calc(var(--p) * 360deg), color-mix(in srgb, var(--text) 18%, transparent) 0); }
 .pose-badge { display: inline-flex; align-items: center; gap: 12px; color: var(--muted); font-weight: 600; }
 .pose-badge i { width: 7px; height: 7px; border-radius: 50%; background: #ff3b3b; margin-right: -6px; }
 .pose-help b { color: var(--text); }
@@ -391,9 +391,6 @@ body.colored .name-edit { color: var(--ink); }
   .corner-btn { top: calc(max(14px, env(safe-area-inset-top)) + 50px); height: 38px; padding: 0 13px; font-size: 14px; }
   #newMatchBar { left: max(16px, env(safe-area-inset-left)); }
   #poseToggle { right: max(16px, env(safe-area-inset-right)); }
-  /* the hold pill fits between the two buttons */
-  .pose-pill { top: calc(max(14px, env(safe-area-inset-top)) + 50px); padding: 6px 12px 6px 8px; font-size: 14px; }
-  .pose-ring { width: 20px; height: 20px; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .side:first-child .side-head { margin-top: 108px; }
@@ -404,3 +401,26 @@ body.colored .name-edit { color: var(--ink); }
 .toolbar.open .toolbar-more { max-width: 640px; opacity: 1; }
 .more-btn svg { transition: transform .32s cubic-bezier(.2, .8, .2, 1); }
 .toolbar.open .more-btn svg { transform: rotate(180deg); }
+
+/* ---------- AI pose: a colour filter over the whole board while a pose is held ---------- */
+/* --tint-color is the colour of the team about to score; --p is how far the hold has got (0..1). */
+.pose-tint {
+  --p: 0; position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+  background: radial-gradient(120% 120% at 50% 50%, color-mix(in srgb, var(--tint-color, #fff) 55%, transparent), var(--tint-color, #fff));
+  mix-blend-mode: normal; transition: opacity .15s linear;
+}
+.pose-tint.holding { opacity: calc(.06 + var(--p) * .26); }
+.pose-tint.fire { animation: tint-fire .9s ease-out forwards; }
+@keyframes tint-fire { 0% { opacity: .5; } 100% { opacity: 0; } }
+.pose-pill {
+  --p: 0; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5; pointer-events: none;
+  display: grid; justify-items: center; gap: 12px; padding: 22px 30px; border-radius: 28px; text-align: center;
+  color: #fff; background: rgba(8, 10, 14, .55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  font-size: clamp(20px, 3.4vw, 30px); font-weight: 850; white-space: nowrap;
+}
+.pose-ring {
+  width: clamp(56px, 9vmin, 84px); height: clamp(56px, 9vmin, 84px); border-radius: 50%;
+  background: conic-gradient(var(--tint-color, #fff) calc(var(--p) * 360deg), rgba(255, 255, 255, .18) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent 64%, #000 66%); mask: radial-gradient(farthest-side, transparent 64%, #000 66%);
+}
+.pose-pill.fire .pose-ring { background: var(--tint-color, #fff); }
