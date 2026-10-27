@@ -1,7 +1,10 @@
 import {createMatch,score,addEvent,undoPoint,validMatch,HoldInput} from './core.js';
 const $=s=>document.querySelector(s),KEY='rally-scoreboard-v1';
-const fresh=()=>({matches:[],current:null,vault:Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join(''),prefs:{sound:false,awake:true,dim:true,remote:true,hold:700,short:0,key:null}});
+const fresh=()=>({matches:[],current:null,vault:Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join(''),prefs:{sound:false,awake:true,dim:true,remote:true,hold:700,double:350,key:'key:Enter'}});
 let state,storageOK=true;try{state=JSON.parse(localStorage.getItem(KEY))||fresh();if(!Array.isArray(state.matches))throw Error();}catch{state=fresh();storageOK=false;}
+state.prefs.double=state.prefs.double||350;
+state.prefs.key=state.prefs.key||'key:Enter';
+if(['code:Enter','code:NumpadEnter'].includes(state.prefs.key))state.prefs.key='key:Enter';
 let syncBusy=false,syncAgain=false,newMode=true,learning=false,idleTimer,toastTimer,wakeLock,logs=[],syncMessage='● 기기에 저장',lastKeyDown=0;
 const current=()=>state.matches.find(m=>m.id===state.current);
 const elapsed=t=>{const sec=Math.max(0,Math.floor(t/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');};
@@ -35,7 +38,7 @@ function render(){
  if(s.gameOver||s.finished){const t=document.createElement('span');t.textContent=s.finished?'경기 종료 · 기록이 저장되었습니다':'게임 종료';notice.append(t);const b=document.createElement('button');b.textContent=s.finished?'새 경기':'다음 게임';b.onclick=()=>{if(s.finished)settings(true);else{addEvent(m,'next');addEvent(m,'swap');changed();}};notice.append(b);}
  else if(s.points[0]>=m.settings.target-1&&s.points[1]>=m.settings.target-1&&m.settings.deuce){notice.textContent=s.points[0]===s.points[1]?'DEUCE · 듀스':'GAME POINT · 게임 포인트';}
  else if(Math.max(...s.points)>=m.settings.target-1)notice.textContent='GAME POINT · 게임 포인트';
- $('#remoteCaption').textContent=state.prefs.key&&state.prefs.remote?'리모컨 · 짧게 '+m.settings.names[state.prefs.short]+' / 길게 '+m.settings.names[1-state.prefs.short]:'탭 또는 아래로 +1 · 위로 쓸어 취소';
+ $('#remoteCaption').textContent=state.prefs.key&&state.prefs.remote?'리모컨 · 1회 '+m.settings.names[0]+' / 2회 '+m.settings.names[1]+' / 길게 취소':'탭 또는 아래로 +1 · 위로 쓸어 취소';
  $('#undo').disabled=!m.events.some(e=>e.type==='point')||!!m.conflict;
  $('#swap').disabled=!!m.conflict;$('#timer').textContent=elapsed((s.finished?(m.events.at(-1)?.at||m.createdAt):Date.now())-m.createdAt);
  if($('#historyDialog').open)renderHistory();if($('#vaultDialog').open)renderVault();
@@ -68,9 +71,9 @@ for(const el of document.querySelectorAll('.team')){
 }
 document.querySelectorAll('.close').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 document.querySelectorAll('dialog').forEach(d=>d.addEventListener('close',()=>{learning=false;$('#learnKey').textContent='리모컨 버튼 등록';hold.reset();active();}));
-document.addEventListener('pointerdown',active,{passive:true});
-const hold=new HoldInput({threshold:state.prefs.hold,onShort:()=>point(state.prefs.short,'remote-short'),onLong:()=>point(1-state.prefs.short,'remote-long'),onProgress:v=>{$('#holdIndicator').hidden=!v;}});
-const keyID=e=>(e.code&&e.code!=='Unidentified')?'code:'+e.code:'key:'+e.key;
+document.addEventListener('pointerdown',()=>{hold.reset();active();},{passive:true});
+const hold=new HoldInput({threshold:state.prefs.hold,doubleWindow:state.prefs.double,onShort:()=>point(0,'remote-single'),onDouble:()=>point(1,'remote-double'),onLong:()=>undo(),onProgress:v=>{$('#holdIndicator').hidden=!v;}});
+const keyID=e=>e.key==='Enter'?'key:Enter':(e.code&&e.code!=='Unidentified')?'code:'+e.code:'key:'+e.key;
 function inputLog(e){
  if(!$('#remoteDialog').open)return;
  logs.unshift(e.type+'  key='+e.key+'  code='+e.code+'  repeat='+e.repeat);logs=logs.slice(0,18);$('#keyLog').textContent=logs.join('\n');
@@ -83,7 +86,7 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();e.stopImmediatePropagation();
   if(e.repeat)return;
   if(['Escape','Tab','Meta','Control','Alt','Shift','Unidentified','AudioVolumeUp','AudioVolumeDown','BrowserHome'].includes(e.key)){toast('이 버튼 대신 일반 키로 인식되는 버튼을 눌러주세요.');return;}
-  state.prefs.key=keyID(e);persist();learning=false;$('#learnKey').textContent='다시 등록';$('#keyLabel').textContent=state.prefs.key;hold.reset();render();toast('등록했습니다. 창을 닫고 짧게·길게 눌러보세요.');return;
+  state.prefs.key=keyID(e);persist();learning=false;$('#learnKey').textContent='다시 등록';$('#keyLabel').textContent=state.prefs.key;hold.reset();render();toast('등록했습니다. 창을 닫고 1회·2회·길게 누르기를 시험하세요.');return;
  }
  if(!state.prefs.remote||keyID(e)!==state.prefs.key)return;
  if(modalOpen())return;
@@ -98,7 +101,7 @@ for(const [id,key] of [['sound','sound'],['keepAwake','awake'],['dimControls','d
  $( '#'+id).checked=state.prefs[key];$('#'+id).onchange=e=>{state.prefs[key]=e.target.checked;persist();hold.reset();render();active();if(key==='awake')requestWake();};
 }
 $('#holdTime').value=state.prefs.hold;$('#holdTime').onchange=e=>{state.prefs.hold=+e.target.value;hold.threshold=state.prefs.hold;persist();hold.reset();};
-$('#shortTeam').value=state.prefs.short;$('#shortTeam').onchange=e=>{state.prefs.short=+e.target.value;persist();render();};
+$('#doubleTime').value=state.prefs.double;$('#doubleTime').onchange=e=>{hold.reset();state.prefs.double=+e.target.value;hold.doubleWindow=state.prefs.double;persist();};
 async function requestWake(){if(!state.prefs.awake){await wakeLock?.release();wakeLock=null;return;}if(!navigator.wakeLock||document.hidden||wakeLock&&!wakeLock.released)return;try{wakeLock=await navigator.wakeLock.request('screen');}catch{}}
 $('#fullScreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();requestWake();}catch{toast('이 브라우저에서는 홈 화면에 추가해 넓게 사용할 수 있습니다.');}};
 function renderHistory(){

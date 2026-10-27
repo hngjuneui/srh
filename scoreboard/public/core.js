@@ -27,10 +27,22 @@ export function undoPoint(match,team) {
  if(!e)return false; addEvent(match,'undo',{target:e.id,team:e.team});return true;
 }
 export class HoldInput {
- constructor({threshold=700,onShort,onLong,onProgress=()=>{}}){Object.assign(this,{threshold,onShort,onLong,onProgress});this.reset();}
- down(repeat=false){if(this.pressed||repeat)return;this.pressed=true;this.long=false;this.started=Date.now();this.onProgress(true);this.timer=setTimeout(()=>{if(this.pressed){this.long=true;this.onLong();this.onProgress(false);}},this.threshold);}
- up(){if(!this.pressed)return;clearTimeout(this.timer);const short=!this.long;this.pressed=false;this.onProgress(false);if(short)this.onShort();}
- reset(){clearTimeout(this.timer);this.pressed=false;this.long=false;this.onProgress?.(false);}
+ constructor({threshold=700,doubleWindow=350,onShort,onDouble,onLong,onProgress=()=>{}}){Object.assign(this,{threshold,doubleWindow,onShort,onDouble,onLong,onProgress});this.reset();}
+ down(repeat=false){
+  if(this.pressed||repeat)return;
+  this.second=!!this.pending;clearTimeout(this.tapTimer);this.pending=false;
+  this.pressed=true;this.long=false;this.onProgress(true);
+  this.timer=setTimeout(()=>{if(this.pressed){this.long=true;this.second=false;this.onLong();this.onProgress(false);}},this.threshold);
+ }
+ up(){
+  if(!this.pressed)return;
+  clearTimeout(this.timer);this.pressed=false;this.onProgress(false);
+  if(this.long)return;
+  if(this.second){this.second=false;this.onDouble();return;}
+  this.pending=true;
+  this.tapTimer=setTimeout(()=>{this.pending=false;this.onShort();},this.doubleWindow);
+ }
+ reset(){clearTimeout(this.timer);clearTimeout(this.tapTimer);this.pending=false;this.second=false;this.pressed=false;this.long=false;this.onProgress?.(false);}
 }
 export function validMatch(m){
  return m&&typeof m.id==='string'&&/^[a-f0-9-]{36}$/.test(m.id)&&Number.isFinite(m.createdAt)&&
