@@ -43,12 +43,16 @@ const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {
   pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
 // Ready-made fun names, kept apart from the players you add: they show after a divider in the name picker, in
-// this order (not sorted in with people). Deletable in 설정 → 선수; "재밌는 이름 다시 넣기" brings them back.
-const STARTER_NAMES = ['우리 팀', '상대 팀', '스매시 장인', '헤어핀 요정', '드롭샷 마법사', '네트 앞 수문장', '셔틀콕 도둑',
+// this order (not sorted in with people). Editable and deletable in 설정 → 선수; "재밌는 이름 다시 넣기" brings them back.
+const STARTER_NAMES = ['드라이브여신', '스매시장인', '헤어핀요정', '전위수문장', '장비빨', '아웃판정단'];
+// The first set, which some devices still have (as fun names, or mixed into their players by the first version).
+const OLD_STARTERS = ['우리 팀', '상대 팀', '스매시 장인', '헤어핀 요정', '드롭샷 마법사', '네트 앞 수문장', '셔틀콕 도둑',
   '라켓 부자', '서브 머신', '클리어 장인', '체력왕', '코트의 지배자', '아웃 판정단', '오늘의 MVP'];
 /** @type {string[]} */ prefs.funNames ??= [...STARTER_NAMES];
-// The first version put these into the player list itself; move them back out.
-if (savedPrefs.startersV === 1) { prefs.players = prefs.players.filter(p => !STARTER_NAMES.includes(p)); prefs.startersV = 2; savePrefs(); }
+if (savedPrefs.startersV === 1) prefs.players = prefs.players.filter(p => !OLD_STARTERS.includes(p));
+// An untouched first set becomes the new one; a list someone already edited is left alone.
+if (JSON.stringify(prefs.funNames) === JSON.stringify(OLD_STARTERS)) prefs.funNames = [...STARTER_NAMES];
+if (prefs.startersV !== 3) { prefs.startersV = 3; savePrefs(); }
 function addStarterNames() { prefs.funNames = [...STARTER_NAMES]; }
 /** Every name the picker offers: your players and the fun names. */
 const knownNames = () => [...prefs.players, ...prefs.funNames];
@@ -168,9 +172,9 @@ function nextGame() {
 }
 function swap() { swapSides(match, 'button'); saveMatch(); render(); toast('코트 교대: 좌우를 바꿨습니다'); }
 function archiveAndStart() {
-  const {names, rules, firstServer} = match.settings;
+  const {rules, firstServer} = match.settings; // names go back to 우리 팀 / 상대 팀
   saveMatch();
-  match = newMatch({names, rules, firstServer});
+  match = newMatch({rules, firstServer});
   saveMatch(); render();
   toast('새 경기를 시작합니다. 이전 경기는 기록에 남아 있습니다.');
 }
@@ -607,19 +611,40 @@ $('#exportJson').addEventListener('click', () => download(JSON.stringify(viewedM
 const form = /** @type {HTMLFormElement} */ ($('#settingsForm'));
 const field = (/** @type {string} */ n) => /** @type {HTMLInputElement} */ (form.elements.namedItem(n));
 function renderPlayers() {
-  // Two lists, each name a tap-to-delete chip: your players (가나다) and the fun names (their own order).
+  // Two lists: your players (가나다, tap to delete) and the fun names (their own order, tap to edit in place;
+  // clearing the text deletes it).
   const fill = (/** @type {string} */ sel, /** @type {string[]} */ names, /** @type {'players'|'funNames'} */ key) => {
     const list = $(sel);
     list.replaceChildren(...names.map(p => {
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'name-chip removable'; b.textContent = p; b.setAttribute('aria-label', `${p} 지우기`);
-      b.addEventListener('click', () => { prefs[key] = prefs[key].filter(x => x !== p); savePrefs(); renderPlayers(); });
+      b.type = 'button'; b.className = `name-chip ${key === 'players' ? 'removable' : 'editable'}`; b.textContent = p;
+      b.setAttribute('aria-label', key === 'players' ? `${p} 지우기` : `${p} 고치기`);
+      b.addEventListener('click', () => (key === 'players' ? (prefs.players = prefs.players.filter(x => x !== p), savePrefs(), renderPlayers()) : editFunName(b, p)));
       return b;
     }));
     list.hidden = !names.length;
   };
   fill('#playerList', sortedPlayers(), 'players');
   fill('#funList', prefs.funNames, 'funNames');
+}
+function editFunName(/** @type {HTMLElement} */ chip, /** @type {string} */ old) {
+  const input = document.createElement('input');
+  input.className = 'name-chip-edit'; input.maxLength = 16; input.value = old; input.setAttribute('aria-label', '재밌는 이름 고치기');
+  chip.replaceWith(input); input.focus(); input.select();
+  let done = false;
+  const save = (/** @type {boolean} */ keep) => {
+    if (done) return; done = true;
+    const v = input.value.trim();
+    if (keep && v !== old) {
+      if (!v) prefs.funNames = prefs.funNames.filter(x => x !== old);
+      else if (knownNames().includes(v)) toast(`${v}은(는) 이미 있어요`);
+      else prefs.funNames = prefs.funNames.map(x => (x === old ? v : x));
+      savePrefs();
+    }
+    renderPlayers();
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(true); } else if (e.key === 'Escape') save(false); e.stopPropagation(); });
+  input.addEventListener('blur', () => save(true));
 }
 function addPlayer() {
   const input = /** @type {HTMLInputElement} */ ($('#playerInput'));
@@ -635,7 +660,7 @@ $('#playerInput').addEventListener('keydown', e => { if (/** @type {KeyboardEven
 
 function fillSettings() {
   renderPlayers();
-  const {names, rules, firstServer} = match.settings;
+  const {rules, firstServer} = match.settings; // names go back to 우리 팀 / 상대 팀
   field('nameA').value = names.A; field('nameB').value = names.B;
   field('firstServer').value = firstServer;
   field('firstServer').disabled = derive(match).started;
@@ -789,7 +814,7 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
   }
   if (prefs.funNames.length) {
     const rule = document.createElement('span');
-    rule.className = 'name-divider'; rule.textContent = '재밌는 이름';
+    rule.className = 'name-divider'; rule.setAttribute('aria-hidden', 'true');
     picker.append(rule);
     prefs.funNames.forEach(pickable);
   }
