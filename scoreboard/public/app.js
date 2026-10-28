@@ -30,7 +30,7 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
-  volume: 0.5, voice: {on: false, mode: /** @type {'full'|'short'} */ ('full')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
+  volume: 0.5, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -45,10 +45,15 @@ const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {
 // The default hold went from 1 s to 0.7 s; devices still on the old default move once, a chosen value stays.
 if (!savedPrefs.holdV && prefs.pose.holdMs === 1000) prefs.pose.holdMs = DEFAULT_POSE.holdMs;
 prefs.holdV = 1;
+// Spoken scores default to the short style; devices from before move to it once.
+if (!savedPrefs.voiceV) prefs.voice.mode = 'short';
+prefs.voiceV = 1;
 const savePrefs = () => store.set(KEY.prefs, prefs);
 // Ready-made fun names, kept apart from the players you add: they show after a divider in the name picker, in
 // this order (not sorted in with people). Editable and deletable in 설정 → 선수; "재밌는 이름 다시 넣기" brings them back.
-const STARTER_NAMES = ['드라이브여신', '스매시장인', '헤어핀요정', '전위수문장', '장비빨', '아웃판정단'];
+const STARTER_NAMES = ['드라이브여신', '스매시장인', '헤어핀요정', '전위수문장', '장비빨', '아웃판정단',
+  '서초구안세영', '설계과이용대', '정통과김원호', 'HappyWifeHappyLife'];
+const ADDED_IN_V4 = STARTER_NAMES.slice(6);
 // The first set, which some devices still have (as fun names, or mixed into their players by the first version).
 const OLD_STARTERS = ['우리 팀', '상대 팀', '스매시 장인', '헤어핀 요정', '드롭샷 마법사', '네트 앞 수문장', '셔틀콕 도둑',
   '라켓 부자', '서브 머신', '클리어 장인', '체력왕', '코트의 지배자', '아웃 판정단', '오늘의 MVP'];
@@ -56,7 +61,9 @@ const OLD_STARTERS = ['우리 팀', '상대 팀', '스매시 장인', '헤어핀
 if (savedPrefs.startersV === 1) prefs.players = prefs.players.filter(p => !OLD_STARTERS.includes(p));
 // An untouched first set becomes the new one; a list someone already edited is left alone.
 if (JSON.stringify(prefs.funNames) === JSON.stringify(OLD_STARTERS)) prefs.funNames = [...STARTER_NAMES];
-if (prefs.startersV !== 3) { prefs.startersV = 3; savePrefs(); }
+// Names added to the set later join existing lists once, at the end, without touching anyone's edits.
+if ((savedPrefs.startersV ?? 0) < 4) prefs.funNames = [...prefs.funNames, ...ADDED_IN_V4.filter(n => !prefs.funNames.includes(n))];
+if (prefs.startersV !== 4) { prefs.startersV = 4; savePrefs(); }
 function addStarterNames() { prefs.funNames = [...STARTER_NAMES]; }
 /** Every name the picker offers: your players and the fun names. */
 const knownNames = () => [...prefs.players, ...prefs.funNames];
