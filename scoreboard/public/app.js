@@ -660,7 +660,7 @@ $('#playerInput').addEventListener('keydown', e => { if (/** @type {KeyboardEven
 
 function fillSettings() {
   renderPlayers();
-  const {rules, firstServer} = match.settings; // names go back to 우리 팀 / 상대 팀
+  const {names, rules, firstServer} = match.settings;
   field('nameA').value = names.A; field('nameB').value = names.B;
   field('firstServer').value = firstServer;
   field('firstServer').disabled = derive(match).started;
