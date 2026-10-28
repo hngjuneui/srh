@@ -59,6 +59,7 @@ export function derive(match) {
       game.server = e.team;
       game.points.push(e);
       applied = true;
+      if (e.swap) swapped = !swapped; // a mid-game court change rides on the point that caused it
       const winner = gameWinner(game.scores, rules);
       if (winner) {
         game.winner = winner; game.endT = e.t; gamesWon[winner] += 1;
@@ -82,11 +83,25 @@ export function derive(match) {
     gameOver: Boolean(game.winner), swapped, rows, active, rules, started: games.length > 1 || game.points.length > 0};
 }
 
-/** @param {any} match @param {'A'|'B'} team @param {string} source @param {number} [now] */
-export function scorePoint(match, team, source, now) {
+/** `swap` changes ends with this point; undoing the point changes them back.
+ *  @param {any} match @param {'A'|'B'} team @param {string} source @param {number} [now] @param {{swap?: boolean}} [opts] */
+export function scorePoint(match, team, source, now, opts = {}) {
   const state = derive(match);
   if (state.gameOver || state.matchWinner) return null;
-  return append(match, {type: 'point', team, source}, now);
+  return append(match, {type: 'point', team, source, ...(opts.swap ? {swap: true} : {})}, now);
+}
+
+/** The mid-game court change: due when this point takes `team` to `at` first, once per game.
+ *  @param {any} state from derive() @param {'A'|'B'} team @param {number} at */
+export function courtChangeDue(state, team, at) {
+  if (state.gameOver || state.game.points.some((/** @type {any} */ p) => p.swap)) return false;
+  return state.scores[team] + 1 === at && state.scores[other(team)] < at;
+}
+
+/** True when the next point could end the game, for either side (called "매치포인트"). @param {any} state */
+export function gamePointFor(state) {
+  if (state.gameOver) return false;
+  return TEAMS.some(t => gameWinner({...state.scores, [t]: state.scores[t] + 1}, state.rules) === t);
 }
 
 /** Cancels this team's most recent point in the current game. @param {any} match @param {'A'|'B'} team @param {string} source @param {number} [now] */

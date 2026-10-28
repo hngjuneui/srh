@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides, serviceCourt, isDecidingInterval, toCsv} from '../public/core.js';
+import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides, serviceCourt, isDecidingInterval, toCsv, courtChangeDue, gamePointFor} from '../public/core.js';
 import {RemoteInput, DEFAULT_REMOTE} from '../public/remote.js';
 
 const play = (match, seq) => { for (const t of seq) scorePoint(match, t, 'tap'); };
@@ -171,4 +171,40 @@ test('remote: a remote that never sends key-up does not lock input', () => {
   const r = new RemoteInput({...DEFAULT_REMOTE, useLong: false}, a => got.push(a), t);
   r.keydown(K); t.advance(3000); r.keydown(K); t.advance(3000);
   assert.deepEqual(got, ['single', 'single']);
+});
+
+// The app's rule: score the point with swap when courtChangeDue says so.
+const scoreWithChange = (m, team, at) => scorePoint(m, team, 'tap', undefined, {swap: courtChangeDue(derive(m), team, at)});
+
+test('court change: the first team to reach 11 swaps ends, once per game', () => {
+  const m = newMatch();
+  for (const t of 'AAAAAAAAAABBBBBBBBBB') scoreWithChange(m, t, 11); // 10 : 10
+  assert.equal(derive(m).swapped, false);
+  scoreWithChange(m, 'B', 11); // B reaches 11 first
+  assert.equal(derive(m).swapped, true);
+  scoreWithChange(m, 'A', 11); // A reaches 11 later: no second change
+  for (const t of 'AABB') scoreWithChange(m, t, 11);
+  assert.equal(derive(m).swapped, true);
+});
+
+test('court change: undoing the point that caused it changes ends back, and redoing it changes again', () => {
+  const m = newMatch();
+  for (const t of 'AAAAAAAAAA') scoreWithChange(m, t, 11);
+  scoreWithChange(m, 'A', 11);
+  assert.equal(derive(m).swapped, true);
+  undoLast(m, 'button');
+  assert.equal(derive(m).swapped, false);
+  assert.equal(derive(m).scores.A, 10);
+  scoreWithChange(m, 'A', 11);
+  assert.equal(derive(m).swapped, true);
+});
+
+test('match point: any score where the next point can end the game', () => {
+  const at = (a, b, rules) => { const m = newMatch({rules}); for (let i = 0; i < Math.max(a, b); i++) { if (i < a) scorePoint(m, 'A', 'tap'); if (i < b) scorePoint(m, 'B', 'tap'); } return gamePointFor(derive(m)); };
+  assert.equal(at(20, 15), true);
+  assert.equal(at(15, 10), false);
+  assert.equal(at(20, 20), false, 'deuce: 2 clear needed');
+  assert.equal(at(21, 20), true);
+  assert.equal(at(29, 29), true, 'cap 30');
+  assert.equal(at(10, 3, {target: 11}), true, 'other targets too');
 });

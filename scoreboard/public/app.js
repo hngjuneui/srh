@@ -1,6 +1,6 @@
 // @ts-check
 import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, swapSides,
-  isDecidingInterval, gameWinner, longestRuns, toCsv, other} from './core.js';
+  isDecidingInterval, gameWinner, longestRuns, toCsv, other, courtChangeDue, gamePointFor} from './core.js';
 import {RemoteInput, DEFAULT_REMOTE, keyId} from './remote.js';
 import {classify, torsoX, bodyScale, nearPeople, GestureHold, DEFAULT_POSE, UPPER_BODY} from './pose.js';
 import {scoreCall, speak} from './voice.js';
@@ -30,7 +30,7 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
-  volume: 1, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
+  volume: 1, courtChange: {on: false, at: 0}, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -41,7 +41,8 @@ if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete save
 // Swipe up became +1 by default; "reverse" used to mean exactly that, so every device starts on the new default once.
 if (!savedPrefs.swipeV) delete savedPrefs.reverseSwipe;
 const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
-  pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}, voice: {...DEFAULT_PREFS.voice, ...savedPrefs.voice}};
+  pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}, voice: {...DEFAULT_PREFS.voice, ...savedPrefs.voice},
+  courtChange: {...DEFAULT_PREFS.courtChange, ...savedPrefs.courtChange}};
 // The default hold went from 1 s to 0.7 s; devices still on the old default move once, a chosen value stays.
 if (!savedPrefs.holdV && prefs.pose.holdMs === 1000) prefs.pose.holdMs = DEFAULT_POSE.holdMs;
 prefs.holdV = 1;
@@ -138,14 +139,24 @@ const teamSound = (/** @type {Team} */ t) => (t === prefs.ourTeam ? 'ours' : 'th
 
 // ---------- voice: reads the score after every change, the server's (= last scorer's) score first ----------
 let callTimer = 0;
-function callScore(force = false) {
-  if (!prefs.voice.on && !force) return;
+// "매치포인트" comes first whenever the next point can end the game; "코트 체인지" follows an automatic change
+// (said even with score reading off, since the players have to move).
+function callScore(force = false, courtChange = false) {
+  if (!prefs.voice.on && !force) { if (courtChange) speakSoon('코트 체인지'); return; }
   const state = derive(match);
   const first = /** @type {Team} */ (state.gameOver ? state.game.winner : state.server);
-  const text = scoreCall(state.scores[first], state.scores[other(first)], prefs.voice.mode);
-  clearTimeout(callTimer);
-  callTimer = window.setTimeout(() => speak(state.gameOver ? `게임, ${text}` : text), 250); // after the chime
+  let text = scoreCall(state.scores[first], state.scores[other(first)], prefs.voice.mode);
+  if (state.gameOver) text = `게임, ${text}`;
+  else if (gamePointFor(state)) text = `매치포인트, ${text}`;
+  if (courtChange) text += ', 코트 체인지';
+  speakSoon(text);
 }
+function speakSoon(/** @type {string} */ text) {
+  clearTimeout(callTimer);
+  callTimer = window.setTimeout(() => speak(text), 250); // after the chime
+}
+/** The score that triggers the mid-game court change: the chosen one, or half the target (11 for 21). */
+const courtChangeAt = () => prefs.courtChange.at || Math.ceil(match.settings.rules.target / 2);
 function renderVoice() {
   const btn = $('#voiceToggle');
   btn.classList.toggle('on', prefs.voice.on);
@@ -178,13 +189,15 @@ const name = (/** @type {Team} */ t) => match.settings.names[t];
 function point(/** @type {Team} */ team, /** @type {string} */ source) {
   const before = derive(match);
   if (before.gameOver) { toast(before.matchWinner ? '경기가 끝났습니다. 되돌리기 또는 새 경기를 선택하세요.' : '게임이 끝났습니다. ‘다음 게임’을 누르세요.'); return; }
-  scorePoint(match, team, source);
+  const change = prefs.courtChange.on && courtChangeDue(before, team, courtChangeAt());
+  scorePoint(match, team, source, undefined, {swap: change});
   saveMatch();
   const state = derive(match);
   render();
   flash(team);
   if (state.gameOver) tone('end'); else tone(teamSound(team));
-  callScore();
+  callScore(false, change);
+  if (change) toast(`${courtChangeAt()}점 · 코트 체인지: 좌우를 바꿨습니다`, 3500);
   if (isDecidingInterval(state)) toast(`${Math.max(state.scores.A, state.scores.B)}점 · 마지막 게임 코트 교대 시점입니다`, 3500);
 }
 function cancelTeam(/** @type {Team} */ team, /** @type {string} */ source) {
@@ -620,7 +633,7 @@ function renderTimeline() {
     const e = r.event;
     if (r.game !== game) { game = r.game; items.push(`<li class="game-sep">${r.game}게임</li>`); }
     let what = '';
-    if (e.type === 'point') what = `<span class="tag" style="background:${color[/** @type {Team} */ (e.team)]}"></span>${esc(n[e.team])} 득점`;
+    if (e.type === 'point') what = `<span class="tag" style="background:${color[/** @type {Team} */ (e.team)]}"></span>${esc(n[e.team])} 득점${e.swap ? ' · 코트 체인지' : ''}`;
     else if (e.type === 'cancel') { const t = m.events.find((/** @type {any} */ x) => x.seq === e.target); what = `↩ 취소 · ${t?.type === 'nextGame' ? '다음 게임 시작' : `${esc(n[t?.team] ?? '')} 득점`} (#${e.target})`; }
     else if (e.type === 'nextGame') what = `${r.game}게임 시작${e.swap ? ' · 좌우 교대' : ''}`;
     else if (e.type === 'swap') what = '코트 교대';
@@ -706,6 +719,9 @@ for (const [key, [lo, hi]] of Object.entries(RULE_RANGE)) {
   const unit = key === 'winBy' ? '점 차' : '점';
   field(key).innerHTML = Array.from({length: hi - lo + 1}, (_, i) => `<option value="${lo + i}">${lo + i}${unit}</option>`).join('');
 }
+// Court change score: "auto" follows the target (half of it), or a fixed score.
+field('courtChangeAt').innerHTML = '<option value="0">자동 (목표 점수의 절반 · 21점이면 11점)</option>'
+  + Array.from({length: 26}, (_, i) => `<option value="${i + 5}">${i + 5}점</option>`).join('');
 function fillSettings() {
   renderPlayers();
   const {names, rules, firstServer} = match.settings;
@@ -714,6 +730,7 @@ function fillSettings() {
   field('firstServer').disabled = derive(match).started;
   field('target').value = rules.target; field('winBy').value = rules.winBy; field('cap').value = rules.cap;
   field('gamesToWin').value = String(rules.gamesToWin);
+  field('courtChange').checked = prefs.courtChange.on; field('courtChangeAt').value = String(prefs.courtChange.at);
   for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap', 'intro']) field(k).checked = /** @type {any} */ (prefs)[k];
   renderPoseSettings(); renderVolume();
   $('#colorNameA').textContent = names.A; $('#colorNameB').textContent = names.B;
@@ -730,6 +747,7 @@ form.addEventListener('submit', e => {
   match.settings.rules = rules;
   if (!derive(match).started) match.settings.firstServer = /** @type {Team} */ (field('firstServer').value);
   for (const k of ['reverseSwipe', 'sound', 'idleDim', 'light', 'autoSwap', 'intro']) /** @type {any} */ (prefs)[k] = field(k).checked;
+  prefs.courtChange = {on: field('courtChange').checked, at: num('courtChangeAt', 0, 30, 0)};
   savedColors = {...prefs.colors};
   savePrefs(); saveMatch(); applyTheme(); render(); active();
   /** @type {HTMLDialogElement} */ ($('#settingsSheet')).close();
