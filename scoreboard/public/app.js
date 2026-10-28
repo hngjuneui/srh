@@ -30,7 +30,7 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
-  volume: 0.5, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
+  volume: 1, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -48,6 +48,9 @@ prefs.holdV = 1;
 // Spoken scores default to the short style; devices from before move to it once.
 if (!savedPrefs.voiceV) prefs.voice.mode = 'short';
 prefs.voiceV = 1;
+// Sound effects default to full volume; devices still on the old 50% default move once.
+if (!savedPrefs.volV && prefs.volume === 0.5) prefs.volume = 1;
+prefs.volV = 1;
 const savePrefs = () => store.set(KEY.prefs, prefs);
 // Ready-made fun names, kept apart from the players you add: they show after a divider in the name picker, in
 // this order (not sorted in with people). Editable and deletable in 설정 → 선수; "재밌는 이름 다시 넣기" brings them back.
@@ -693,6 +696,12 @@ $('#playerAdd').addEventListener('click', addPlayer);
 $('#playerStarters').addEventListener('click', () => { addStarterNames(); savePrefs(); renderPlayers(); toast('재밌는 이름을 다시 넣었어요'); });
 $('#playerInput').addEventListener('keydown', e => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') { e.preventDefault(); e.stopPropagation(); addPlayer(); } });
 
+// Game rules are picked from lists (easy to change with a thumb) rather than typed.
+const RULE_RANGE = /** @type {Record<'target'|'winBy'|'cap', [number, number]>} */ ({target: [10, 30], winBy: [1, 5], cap: [11, 35]});
+for (const [key, [lo, hi]] of Object.entries(RULE_RANGE)) {
+  const unit = key === 'winBy' ? '점 차' : '점';
+  field(key).innerHTML = Array.from({length: hi - lo + 1}, (_, i) => `<option value="${lo + i}">${lo + i}${unit}</option>`).join('');
+}
 function fillSettings() {
   renderPlayers();
   const {names, rules, firstServer} = match.settings;
@@ -711,8 +720,8 @@ function fillSettings() {
 form.addEventListener('submit', e => {
   e.preventDefault();
   const num = (/** @type {string} */ n, /** @type {number} */ lo, /** @type {number} */ hi, /** @type {number} */ d) => { const v = Math.round(Number(field(n).value)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
-  const target = num('target', 5, 50, 21);
-  const rules = {target, winBy: num('winBy', 1, 5, 2), cap: Math.max(target, num('cap', 5, 60, 30)), gamesToWin: num('gamesToWin', 1, 3, 2)};
+  const target = num('target', ...RULE_RANGE.target, 21);
+  const rules = {target, winBy: num('winBy', ...RULE_RANGE.winBy, 2), cap: Math.max(target, num('cap', ...RULE_RANGE.cap, 30)), gamesToWin: num('gamesToWin', 1, 3, 2)};
   match.settings.names = {A: field('nameA').value.trim() || '우리 팀', B: field('nameB').value.trim() || '상대 팀'};
   match.settings.rules = rules;
   if (!derive(match).started) match.settings.firstServer = /** @type {Team} */ (field('firstServer').value);

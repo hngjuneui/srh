@@ -179,9 +179,9 @@
       <label class="row"><span id="colorNameB"></span><input type="color" name="colorB"></label>
     </fieldset>
     <fieldset class="field-group"><legend>경기 규칙</legend>
-      <label class="row">목표 점수<input name="target" type="number" min="5" max="50" inputmode="numeric"></label>
-      <label class="row">필요한 점수 차<input name="winBy" type="number" min="1" max="5" inputmode="numeric"></label>
-      <label class="row">상한 점수<input name="cap" type="number" min="5" max="60" inputmode="numeric"></label>
+      <label class="row">목표 점수<select name="target"></select></label>
+      <label class="row">필요한 점수 차 (듀스)<select name="winBy"></select></label>
+      <label class="row">상한 점수<select name="cap"></select></label>
       <label class="row">승리에 필요한 게임<select name="gamesToWin"><option value="1">1게임 (단판)</option><option value="2">2게임 (3판 2선승)</option><option value="3">3게임 (5판 3선승)</option></select></label>
     </fieldset>
     <fieldset class="field-group"><legend>화면·조작</legend>
@@ -203,7 +203,7 @@
       <label class="row">동작 유지 시간 <output id="poseHoldOut"></output><input type="range" id="poseHold" min="500" max="2000" step="100"></label>
       <label class="row"><span>인식 속도<small>초당 확인 횟수. 높을수록 손을 내린 걸 빨리 알아채지만 배터리와 발열이 늘어요</small></span><select id="poseFps"><option value="8">절전 8</option><option value="12">기본 12</option><option value="20">빠르게 20</option><option value="30">최대 30</option></select></label>
     </fieldset>
-    <p class="hint small" id="ruleNote">규칙은 동호회 연습용 기본값(21점·2점 차·30점 상한)입니다. 첫 서브는 첫 득점 전까지만 바꿀 수 있습니다.</p>
+    <p class="hint small" id="ruleNote">규칙은 동호회 연습용 기본값(21점·2점 차·30점 상한)입니다. 상한 점수는 목표 점수보다 낮게 고르면 목표 점수로 맞춰져요. 첫 서브는 첫 득점 전까지만 바꿀 수 있습니다.</p>
     <p class="hint small" id="wakeNote"></p>
     <footer class="sheet-foot"><button type="button" class="glass-btn danger" id="newMatch">새 경기 시작</button><button type="submit" class="glass-btn primary">저장</button></footer>
   </form>
