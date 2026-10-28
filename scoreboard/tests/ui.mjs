@@ -53,19 +53,24 @@ try {
   assert.equal(await page.textContent('.side[data-side=left] .team-name'), '청팀', 'tap on name renames');
   assert.equal(await score(), '3-0', 'renaming does not score');
   // Saved players show up as chips; the other team's name is greyed out.
-  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('sb.v1.prefs')) ?? {}; p.intro = false; p.players = ['준의', '청팀']; localStorage.setItem('sb.v1.prefs', JSON.stringify(p)); });
+  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('sb.v1.prefs')) ?? {}; p.intro = false; p.players = ['준의', '청팀']; p.funNames = ['장비빨']; localStorage.setItem('sb.v1.prefs', JSON.stringify(p)); });
   await page.reload(); await page.waitForTimeout(500);
   await page.touchscreen.tap(...await page.$eval('.side[data-side=right] .team-name', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
   await page.waitForTimeout(200);
-  assert.deepEqual(await page.$$eval('.name-picker .name-chip', e => e.map(x => x.textContent + (x.disabled ? '×' : ''))), ['직접 입력', '준의', '청팀×'], 'player chips, other team disabled');
-  await page.touchscreen.tap(...await page.$eval('.name-picker .name-chip:nth-child(2)', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+  assert.deepEqual(await page.$$eval('.name-picker .name-chip', e => e.map(x => x.textContent + (x.disabled ? '×' : ''))), ['직접 입력', '준의', '청팀×', '장비빨'], 'player chips, other team disabled, then fun names');
+  await page.touchscreen.tap(...await page.$eval('.name-picker .name-chip:not(.manual)', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
   await page.waitForTimeout(200);
-  assert.equal(await page.textContent('.side[data-side=right] .team-name'), '준의', 'a chip sets the name');
+  await page.touchscreen.tap(...await page.$eval('.side[data-side=left] .score', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+  await page.waitForTimeout(200);
+  assert.equal(await page.textContent('.side[data-side=right] .team-name'), '준의', 'one chip plus a tap elsewhere sets the name');
   assert.equal(await score(), '3-0', 'picking a name does not score');
   await page.reload(); await page.waitForTimeout(500);
   assert.equal(await score(), '3-0', 'score restored after reload');
   await page.click('#toolbar [data-act=undo]'); await page.waitForTimeout(200);
   assert.equal(await score(), '2-0', 'undo removes the latest point');
+  await page.click('#toolbar [data-act=settings]'); await page.waitForTimeout(300);
+  assert.ok(await page.$eval('#settingsSheet', d => d.open), 'the settings button opens settings');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   // 새 경기 (top left) only fires on a full hold.
   const bar = await page.$eval('#newMatchBar', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
   await page.mouse.move(...bar); await page.mouse.down(); await page.waitForTimeout(300); await page.mouse.up(); await page.waitForTimeout(200);
