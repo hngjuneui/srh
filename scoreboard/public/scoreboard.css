@@ -521,3 +521,9 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 .sound-try .glass-btn { min-height: 40px; padding: 0 12px; background: color-mix(in srgb, var(--text) 8%, transparent); }
 .name-count { flex-basis: 100%; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); }
 body.colored .name-count { color: rgba(255, 255, 255, .8); }
+/* Name picker: a thin labelled rule between your players and the fun names. */
+.name-divider { flex-basis: 100%; display: flex; align-items: center; gap: 10px; margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--text); text-shadow: 0 1px 6px rgba(0, 0, 0, .9); }
+.name-divider::before, .name-divider::after { content: ""; flex: 1; border-top: 1px solid color-mix(in srgb, var(--text) 22%, transparent); }
+body.colored .name-divider { color: rgba(255, 255, 255, .8); }
+body.colored .name-divider::before, body.colored .name-divider::after { border-color: rgba(255, 255, 255, .35); }
+.fun-head { margin: 8px 0 4px; }

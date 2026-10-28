@@ -42,12 +42,16 @@ if (!savedPrefs.swipeV) delete savedPrefs.reverseSwipe;
 const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
   pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
-// Ready-made names so the name chips are useful before anyone is registered. They join the player list once
-// (sorted with everyone else and deletable like any name); 설정 → 선수 can bring them back.
+// Ready-made fun names, kept apart from the players you add: they show after a divider in the name picker, in
+// this order (not sorted in with people). Deletable in 설정 → 선수; "재밌는 이름 다시 넣기" brings them back.
 const STARTER_NAMES = ['우리 팀', '상대 팀', '스매시 장인', '헤어핀 요정', '드롭샷 마법사', '네트 앞 수문장', '셔틀콕 도둑',
   '라켓 부자', '서브 머신', '클리어 장인', '체력왕', '코트의 지배자', '아웃 판정단', '오늘의 MVP'];
-function addStarterNames() { prefs.players = [...prefs.players, ...STARTER_NAMES.filter(n => !prefs.players.includes(n))]; }
-if (!savedPrefs.startersV) { addStarterNames(); prefs.startersV = 1; savePrefs(); }
+/** @type {string[]} */ prefs.funNames ??= [...STARTER_NAMES];
+// The first version put these into the player list itself; move them back out.
+if (savedPrefs.startersV === 1) { prefs.players = prefs.players.filter(p => !STARTER_NAMES.includes(p)); prefs.startersV = 2; savePrefs(); }
+function addStarterNames() { prefs.funNames = [...STARTER_NAMES]; }
+/** Every name the picker offers: your players and the fun names. */
+const knownNames = () => [...prefs.players, ...prefs.funNames];
 
 /** @type {any} */
 let match = (() => {
@@ -603,25 +607,30 @@ $('#exportJson').addEventListener('click', () => download(JSON.stringify(viewedM
 const form = /** @type {HTMLFormElement} */ ($('#settingsForm'));
 const field = (/** @type {string} */ n) => /** @type {HTMLInputElement} */ (form.elements.namedItem(n));
 function renderPlayers() {
-  const list = $('#playerList');
-  list.replaceChildren(...sortedPlayers().map(p => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'name-chip removable'; b.textContent = p; b.setAttribute('aria-label', `${p} 지우기`);
-    b.addEventListener('click', () => { prefs.players = prefs.players.filter(x => x !== p); savePrefs(); renderPlayers(); });
-    return b;
-  }));
-  list.hidden = !prefs.players.length;
+  // Two lists, each name a tap-to-delete chip: your players (가나다) and the fun names (their own order).
+  const fill = (/** @type {string} */ sel, /** @type {string[]} */ names, /** @type {'players'|'funNames'} */ key) => {
+    const list = $(sel);
+    list.replaceChildren(...names.map(p => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'name-chip removable'; b.textContent = p; b.setAttribute('aria-label', `${p} 지우기`);
+      b.addEventListener('click', () => { prefs[key] = prefs[key].filter(x => x !== p); savePrefs(); renderPlayers(); });
+      return b;
+    }));
+    list.hidden = !names.length;
+  };
+  fill('#playerList', sortedPlayers(), 'players');
+  fill('#funList', prefs.funNames, 'funNames');
 }
 function addPlayer() {
   const input = /** @type {HTMLInputElement} */ ($('#playerInput'));
   const v = input.value.trim();
   input.value = '';
   if (!v) return;
-  if (prefs.players.includes(v)) { toast(`${v}은(는) 이미 있어요`); return; }
+  if (knownNames().includes(v)) { toast(`${v}은(는) 이미 있어요`); return; }
   prefs.players.push(v); savePrefs(); renderPlayers();
 }
 $('#playerAdd').addEventListener('click', addPlayer);
-$('#playerStarters').addEventListener('click', () => { addStarterNames(); savePrefs(); renderPlayers(); toast('기본 이름을 다시 넣었어요'); });
+$('#playerStarters').addEventListener('click', () => { addStarterNames(); savePrefs(); renderPlayers(); toast('재밌는 이름을 다시 넣었어요'); });
 $('#playerInput').addEventListener('keydown', e => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') { e.preventDefault(); e.stopPropagation(); addPlayer(); } });
 
 function fillSettings() {
@@ -731,7 +740,7 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
   // Doubles: up to two saved players make the team name, "이름1 · 이름2". Picking the second one closes the picker;
   // with one picked, a tap anywhere else keeps it (singles).
   const PAIR = ' · ';
-  const playersIn = (/** @type {string} */ n) => n.split(PAIR).filter(p => prefs.players.includes(p));
+  const playersIn = (/** @type {string} */ n) => n.split(PAIR).filter(p => knownNames().includes(p));
   /** @type {string[]} */ const picked = playersIn(name(team));
   /** @type {Map<string, HTMLButtonElement>} */ const chips = new Map();
   const count = document.createElement('span');
@@ -759,7 +768,7 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
     input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) finish(input?.value ?? null); }));
   });
   const usedByOther = name(other(team)).split(PAIR);
-  for (const p of sortedPlayers()) {
+  const pickable = (/** @type {string} */ p) => {
     const b = chip(p, '', () => {
       const at = picked.indexOf(p);
       if (at >= 0) picked.splice(at, 1);
@@ -770,18 +779,27 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
     });
     chips.set(p, b);
     if (usedByOther.includes(p)) { b.disabled = true; b.title = '다른 팀이 쓰는 이름'; }
-  }
-  if (prefs.players.length) { count.className = 'name-count'; picker.prepend(count); showPicked(); }
-  else {
+  };
+  // 직접 입력, then your players (가나다), then a divider and the fun names in their own order.
+  sortedPlayers().forEach(pickable);
+  if (!prefs.players.length) {
     const tip = document.createElement('span');
-    tip.className = 'name-tip'; tip.textContent = '설정 → 선수에서 자주 치는 사람을 등록하면 여기서 바로 고를 수 있어요';
+    tip.className = 'name-tip'; tip.textContent = '설정 → 선수에서 자주 치는 사람을 등록하면 여기 먼저 떠요';
     picker.append(tip);
   }
+  if (prefs.funNames.length) {
+    const rule = document.createElement('span');
+    rule.className = 'name-divider'; rule.textContent = '재밌는 이름';
+    picker.append(rule);
+    prefs.funNames.forEach(pickable);
+  }
+  if (chips.size) { count.className = 'name-count'; picker.prepend(count); showPicked(); }
   // Floats just under the name, over the score, so nothing on the board moves.
   const head = /** @type {HTMLElement} */ (side.querySelector('.side-head'));
   const top = head.offsetTop + head.offsetHeight + 8;
   picker.style.top = `${top}px`;
-  picker.style.maxHeight = `${Math.max(120, side.clientHeight - top - 12)}px`; // scrolls inside its half, never cut off
+  const reserved = parseFloat(getComputedStyle(side).paddingBottom) || 0; // room kept for the toolbar
+  picker.style.maxHeight = `${Math.max(120, side.clientHeight - top - reserved - 8)}px`; // scrolls inside its half, never cut off or under the toolbar
   head.after(picker);
 }));
 // A tap anywhere else closes the picker and does nothing else.
