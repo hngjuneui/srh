@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/core.test.mjs tests/pose.test.mjs",
+    "test": "node --test tests/core.test.mjs tests/pose.test.mjs tests/voice.test.mjs",
     "test:ui": "node tests/ui.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"

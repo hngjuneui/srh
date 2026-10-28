@@ -444,7 +444,11 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 .corner-btn:active { transform: scale(.95); }
 .corner-btn svg { width: 20px; height: 20px; }
 #newMatchBar { left: max(5vw, calc(env(safe-area-inset-left) + 16px)); }
-#poseToggle { right: max(5vw, calc(env(safe-area-inset-right) + 16px)); }
+/* Right group: voice on/off, then AI pose on/off. */
+.corner-right { position: fixed; top: max(14px, env(safe-area-inset-top)); right: max(5vw, calc(env(safe-area-inset-right) + 16px)); z-index: 3; display: flex; gap: 8px; }
+.corner-right .corner-btn { position: static; }
+.corner-btn.icon-btn { width: 42px; padding: 0; justify-content: center; }
+#voiceToggle:not(.on) { color: var(--muted); }
 .pose-led { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--text) 35%, transparent); }
 #poseToggle.on .pose-led { background: #ff3b3b; box-shadow: 0 0 8px #ff3b3b; }
 #poseToggle:not(.on) { color: var(--muted); }
@@ -452,7 +456,8 @@ body.colored .name-tip { color: var(--ink); opacity: .75; }
 @media (max-width: 700px) {
   .corner-btn { top: calc(max(14px, env(safe-area-inset-top)) + 50px); height: 38px; padding: 0 13px; font-size: 14px; }
   #newMatchBar { left: max(16px, env(safe-area-inset-left)); }
-  #poseToggle { right: max(16px, env(safe-area-inset-right)); }
+  .corner-right { top: calc(max(14px, env(safe-area-inset-top)) + 50px); right: max(16px, env(safe-area-inset-right)); gap: 6px; }
+  .corner-btn.icon-btn { width: 38px; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .side:first-child .side-head { margin-top: 108px; }

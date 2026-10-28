@@ -25,6 +25,8 @@
   <symbol id="p-head" viewBox="0 0 64 64"><circle cx="32" cy="18" r="6"/><path d="M32 24v20M32 44l-8 16M32 44l8 16"/><path d="M36 28l11-8-9-9"/><path d="M28 28l-6 18"/></symbol>
   <symbol id="p-x" viewBox="0 0 64 64"><circle cx="32" cy="12" r="6"/><path d="M32 18v26M32 44l-8 16M32 44l8 16"/><path d="M18 18l28 20M46 18L18 38"/></symbol>
   <symbol id="p-t" viewBox="0 0 64 64"><circle cx="32" cy="14" r="6"/><path d="M32 20v24M32 44l-8 16M32 44l8 16"/><path d="M4 26h56"/></symbol>
+  <symbol id="i-voice-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-voice-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
   <symbol id="i-new" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></symbol>
@@ -58,7 +60,10 @@
 
 <!-- Top corners, set in from the edges: 새 경기 (hold to start) on the left, AI pose on/off on the right. -->
 <button class="corner-btn glass hold-btn" data-act="new" id="newMatchBar" aria-label="새 경기 (길게 누르기)"><i class="hold-fill"></i><svg><use href="#i-new"/></svg><span>새 경기</span></button>
-<button class="corner-btn glass" id="poseToggle" aria-pressed="false"><i class="pose-led"></i><span id="poseToggleText">AI 포즈 꺼짐</span></button>
+<div class="corner-right">
+  <button class="corner-btn glass icon-btn" id="voiceToggle" aria-pressed="false" aria-label="음성으로 점수 읽기"><svg><use id="voiceIcon" href="#i-voice-off"/></svg></button>
+  <button class="corner-btn glass" id="poseToggle" aria-pressed="false"><i class="pose-led"></i><span id="poseToggleText">AI 포즈 꺼짐</span></button>
+</div>
 
 <nav class="toolbar glass" id="toolbar" aria-label="경기 조작">
   <button class="glass-btn" data-act="undo"><svg><use href="#i-undo"/></svg><span>되돌리기</span></button>
@@ -185,6 +190,8 @@
       <label class="row"><span>효과음<small>우리 팀 +1 · 상대 팀 +1 · 되돌리기마다 다른 소리</small></span><input type="checkbox" name="sound"></label>
       <label class="row">효과음 크기 <output id="volumeOut"></output><input type="range" id="volume" min="0.1" max="1" step="0.05"></label>
       <div class="row"><span>들어보기</span><span class="sound-try"><button type="button" class="glass-btn" data-try="ours">우리 팀</button><button type="button" class="glass-btn" data-try="theirs">상대 팀</button><button type="button" class="glass-btn" data-try="cancel">되돌리기</button></span></div>
+      <label class="row"><span>음성 점수 읽기<small>메인 화면 오른쪽 위 스피커 버튼으로 켜고 끄기 · 서브권(방금 득점한) 쪽 점수부터</small></span><select id="voiceMode"><option value="full">숫자 그대로 (십일 대 영)</option><option value="short">간략 (11 → 일, 10점대 십 생략)</option></select></label>
+      <div class="row"><span>음성 들어보기</span><button type="button" class="glass-btn" id="voiceTry">11 : 7 읽기</button></div>
       <label class="row">가만히 있으면 조작부 흐리게<input type="checkbox" name="idleDim"></label>
       <label class="row">밝은 테마<input type="checkbox" name="light"></label>
       <label class="row">시작할 때 사용법 보기<input type="checkbox" name="intro"></label>

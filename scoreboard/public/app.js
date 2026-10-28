@@ -3,6 +3,7 @@ import {newMatch, derive, scorePoint, cancelTeamPoint, undoLast, startNextGame, 
   isDecidingInterval, gameWinner, longestRuns, toCsv, other} from './core.js';
 import {RemoteInput, DEFAULT_REMOTE, keyId} from './remote.js';
 import {classify, torsoX, bodyScale, nearPeople, GestureHold, DEFAULT_POSE, UPPER_BODY} from './pose.js';
+import {scoreCall, speak} from './voice.js';
 
 /** @typedef {'A'|'B'} Team */
 const $ = (/** @type {string} */ s) => /** @type {HTMLElement} */ (document.querySelector(s));
@@ -29,7 +30,7 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
-  volume: 0.5, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
+  volume: 0.5, voice: {on: false, mode: /** @type {'full'|'short'} */ ('full')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -40,7 +41,7 @@ if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete save
 // Swipe up became +1 by default; "reverse" used to mean exactly that, so every device starts on the new default once.
 if (!savedPrefs.swipeV) delete savedPrefs.reverseSwipe;
 const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
-  pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
+  pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}, voice: {...DEFAULT_PREFS.voice, ...savedPrefs.voice}};
 // The default hold went from 1 s to 0.7 s; devices still on the old default move once, a chosen value stays.
 if (!savedPrefs.holdV && prefs.pose.holdMs === 1000) prefs.pose.holdMs = DEFAULT_POSE.holdMs;
 prefs.holdV = 1;
@@ -87,7 +88,7 @@ let saveFailShown = false;
 
 // ---------- feedback ----------
 // Short synthesised sounds, soft enough to hear every rally without getting on anyone's nerves:
-//   ours   — bright rising two-note chime        theirs — lower, mellow "tok-tok" (not an error buzz)
+//   ours   — bright rising two-note chime        theirs — lower, softer two notes, also rising (never a let-down)
 //   cancel — small downward swoop (undo)         end    — rising three-note arpeggio
 /** @type {AudioContext|null} */ let audio = null;
 function audioCtx() {
@@ -110,7 +111,7 @@ function note(ctx, {f, to, at, len, type = 'sine', level = 1}) {
 }
 const SOUND = /** @type {Record<string, Parameters<typeof note>[1][]>} */ ({
   ours: [{f: 784, at: 0, len: 0.22, type: 'triangle'}, {f: 1175, at: 0.09, len: 0.38, type: 'triangle'}],
-  theirs: [{f: 523, at: 0, len: 0.16, level: 0.9}, {f: 392, at: 0.12, len: 0.3, level: 0.9}],
+  theirs: [{f: 440, at: 0, len: 0.18, level: 0.85}, {f: 587, at: 0.11, len: 0.32, level: 0.85}],
   cancel: [{f: 660, to: 330, at: 0, len: 0.22, type: 'triangle', level: 0.7}],
   end: [{f: 784, at: 0, len: 0.3, type: 'triangle'}, {f: 988, at: 0.12, len: 0.3, type: 'triangle'}, {f: 1319, at: 0.24, len: 0.6, type: 'triangle'}],
 });
@@ -120,6 +121,23 @@ function tone(/** @type {keyof typeof SOUND} */ name, force = false) {
   if (ctx) try { SOUND[name].forEach(n => note(ctx, n)); } catch {}
 }
 const teamSound = (/** @type {Team} */ t) => (t === prefs.ourTeam ? 'ours' : 'theirs');
+
+// ---------- voice: reads the score after every change, the server's (= last scorer's) score first ----------
+let callTimer = 0;
+function callScore(force = false) {
+  if (!prefs.voice.on && !force) return;
+  const state = derive(match);
+  const first = /** @type {Team} */ (state.gameOver ? state.game.winner : state.server);
+  const text = scoreCall(state.scores[first], state.scores[other(first)], prefs.voice.mode);
+  clearTimeout(callTimer);
+  callTimer = window.setTimeout(() => speak(state.gameOver ? `게임, ${text}` : text), 250); // after the chime
+}
+function renderVoice() {
+  const btn = $('#voiceToggle');
+  btn.classList.toggle('on', prefs.voice.on);
+  btn.setAttribute('aria-pressed', String(prefs.voice.on));
+  $('#voiceIcon').setAttribute('href', prefs.voice.on ? '#i-voice-on' : '#i-voice-off');
+}
 // iPhone/iPad only let a page make sound after a touch, so the first touch or key unlocks it.
 for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => { if (prefs.sound) audioCtx(); }, {once: true, capture: true});
 
@@ -152,17 +170,18 @@ function point(/** @type {Team} */ team, /** @type {string} */ source) {
   render();
   flash(team);
   if (state.gameOver) tone('end'); else tone(teamSound(team));
+  callScore();
   if (isDecidingInterval(state)) toast(`${Math.max(state.scores.A, state.scores.B)}점 · 마지막 게임 코트 교대 시점입니다`, 3500);
 }
 function cancelTeam(/** @type {Team} */ team, /** @type {string} */ source) {
   if (!cancelTeamPoint(match, team, source)) { toast(`${name(team)}: 이번 게임에서 취소할 득점이 없습니다.`); return; }
-  saveMatch(); render(); flash(team, 'unflash'); tone('cancel');
+  saveMatch(); render(); flash(team, 'unflash'); tone('cancel'); callScore();
   toast(`${name(team)} 1점 취소`);
 }
 function undo(/** @type {string} */ source) {
   const ev = undoLast(match, source);
   if (!ev) { toast('되돌릴 입력이 없습니다.'); return; }
-  saveMatch(); render(); tone('cancel');
+  saveMatch(); render(); tone('cancel'); callScore();
   if (ev.team) { flash(ev.team, 'unflash'); toast(`되돌리기: ${name(ev.team)} 득점 취소`); }
   else toast('되돌리기: 이전 게임 종료 상태로 돌아갑니다.');
 }
@@ -719,9 +738,18 @@ function applyTheme() {
 function renderVolume() {
   /** @type {HTMLInputElement} */ ($('#volume')).value = String(prefs.volume);
   $('#volumeOut').textContent = `${Math.round(prefs.volume * 100)}%`;
+  /** @type {HTMLSelectElement} */ ($('#voiceMode')).value = prefs.voice.mode;
 }
 $('#volume').addEventListener('input', e => { prefs.volume = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderVolume(); });
 $$('[data-try]').forEach(b => b.addEventListener('click', () => { b.blur(); tone(/** @type {keyof typeof SOUND} */ (b.dataset.try), true); }));
+$('#voiceMode').addEventListener('change', e => { prefs.voice.mode = /** @type {'full'|'short'} */ (/** @type {HTMLSelectElement} */ (e.target).value); savePrefs(); });
+$('#voiceTry').addEventListener('click', e => { /** @type {HTMLElement} */ (e.currentTarget).blur(); speak(scoreCall(11, 7, prefs.voice.mode)); });
+// Main-screen speaker button: voice call-outs on/off. Turning it on reads the current score straight away.
+$('#voiceToggle').addEventListener('click', e => {
+  /** @type {HTMLElement} */ (e.currentTarget).blur();
+  prefs.voice.on = !prefs.voice.on; savePrefs(); renderVoice();
+  if (prefs.voice.on) callScore(); else { globalThis.speechSynthesis?.cancel(); toast('음성 점수 읽기를 껐습니다'); }
+});
 
 // ---------- team colours: previewed live, kept only when settings are saved ----------
 let savedColors = {...prefs.colors};
@@ -1090,6 +1118,7 @@ fitScores();
 saveMatch();
 render();
 renderRemote();
+renderVoice();
 active();
 if (prefs.intro) showIntro();
 if (prefs.pose.enabled) {
