@@ -42,6 +42,12 @@ if (!savedPrefs.swipeV) delete savedPrefs.reverseSwipe;
 const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
   pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
 const savePrefs = () => store.set(KEY.prefs, prefs);
+// Ready-made names so the name chips are useful before anyone is registered. They join the player list once
+// (sorted with everyone else and deletable like any name); 설정 → 선수 can bring them back.
+const STARTER_NAMES = ['우리 팀', '상대 팀', '스매시 장인', '헤어핀 요정', '드롭샷 마법사', '네트 앞 수문장', '셔틀콕 도둑',
+  '라켓 부자', '서브 머신', '클리어 장인', '체력왕', '코트의 지배자', '아웃 판정단', '오늘의 MVP'];
+function addStarterNames() { prefs.players = [...prefs.players, ...STARTER_NAMES.filter(n => !prefs.players.includes(n))]; }
+if (!savedPrefs.startersV) { addStarterNames(); prefs.startersV = 1; savePrefs(); }
 
 /** @type {any} */
 let match = (() => {
@@ -615,6 +621,7 @@ function addPlayer() {
   prefs.players.push(v); savePrefs(); renderPlayers();
 }
 $('#playerAdd').addEventListener('click', addPlayer);
+$('#playerStarters').addEventListener('click', () => { addStarterNames(); savePrefs(); renderPlayers(); toast('기본 이름을 다시 넣었어요'); });
 $('#playerInput').addEventListener('keydown', e => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') { e.preventDefault(); e.stopPropagation(); addPlayer(); } });
 
 function fillSettings() {
@@ -772,7 +779,9 @@ $$('.team-name').forEach(el => el.addEventListener('click', () => {
   }
   // Floats just under the name, over the score, so nothing on the board moves.
   const head = /** @type {HTMLElement} */ (side.querySelector('.side-head'));
-  picker.style.top = `${head.offsetTop + head.offsetHeight + 8}px`;
+  const top = head.offsetTop + head.offsetHeight + 8;
+  picker.style.top = `${top}px`;
+  picker.style.maxHeight = `${Math.max(120, side.clientHeight - top - 12)}px`; // scrolls inside its half, never cut off
   head.after(picker);
 }));
 // A tap anywhere else closes the picker and does nothing else.
