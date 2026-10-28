@@ -294,7 +294,7 @@ function pointHint(/** @type {any} */ state) {
   const {A, B} = state.scores, r = state.rules;
   for (const team of /** @type {Team[]} */ (['A', 'B'])) {
     const next = {...state.scores, [team]: state.scores[team] + 1};
-    if (gameWinner(next, r) === team) return `${state.gamesWon[team] + 1 >= r.gamesToWin ? '매치' : '게임'} 포인트 · ${name(team)}`;
+    if (gameWinner(next, r) === team) return `매치포인트 · ${name(team)}`; // same word as the voice, for every game
   }
   return A === B && A >= r.target - 1 ? '듀스' : '';
 }
