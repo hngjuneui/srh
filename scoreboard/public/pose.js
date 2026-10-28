@@ -10,7 +10,7 @@
 /** @typedef {{x: number, y: number, visibility?: number}} Point
  *  @typedef {'circle'|'head'|'cross'|'tee'} Gesture */
 
-export const DEFAULT_POSE = {holdMs: 1000, cooldownMs: 2500};
+export const DEFAULT_POSE = {holdMs: 700, cooldownMs: 2500};
 
 const I = {nose: 0, ls: 11, rs: 12, le: 13, re: 14, lw: 15, rw: 16, lh: 23, rh: 24};
 const CORE = /** @type {(keyof typeof I)[]} */ (['nose', 'ls', 'rs']);

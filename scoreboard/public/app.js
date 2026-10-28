@@ -41,6 +41,9 @@ if (!savedPrefs.colorsV && savedPrefs.colors?.preset === 'contrast') delete save
 if (!savedPrefs.swipeV) delete savedPrefs.reverseSwipe;
 const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {...DEFAULT_REMOTE, ...savedPrefs.remote}, colors: {...DEFAULT_PREFS.colors, ...savedPrefs.colors},
   pose: {...DEFAULT_PREFS.pose, ...savedPrefs.pose}};
+// The default hold went from 1 s to 0.7 s; devices still on the old default move once, a chosen value stays.
+if (!savedPrefs.holdV && prefs.pose.holdMs === 1000) prefs.pose.holdMs = DEFAULT_POSE.holdMs;
+prefs.holdV = 1;
 const savePrefs = () => store.set(KEY.prefs, prefs);
 // Ready-made fun names, kept apart from the players you add: they show after a divider in the name picker, in
 // this order (not sorted in with people). Editable and deletable in 설정 → 선수; "재밌는 이름 다시 넣기" brings them back.
@@ -626,6 +629,11 @@ function renderPlayers() {
   };
   fill('#playerList', sortedPlayers(), 'players');
   fill('#funList', prefs.funNames, 'funNames');
+  // A "+" chip at the end of the fun names opens an empty one to type into.
+  const add = document.createElement('button');
+  add.type = 'button'; add.className = 'name-chip add'; add.textContent = '+'; add.setAttribute('aria-label', '재밌는 이름 추가');
+  add.addEventListener('click', () => editFunName(add, ''));
+  $('#funList').append(add); $('#funList').hidden = false;
 }
 function editFunName(/** @type {HTMLElement} */ chip, /** @type {string} */ old) {
   const input = document.createElement('input');
@@ -638,6 +646,7 @@ function editFunName(/** @type {HTMLElement} */ chip, /** @type {string} */ old)
     if (keep && v !== old) {
       if (!v) prefs.funNames = prefs.funNames.filter(x => x !== old);
       else if (knownNames().includes(v)) toast(`${v}은(는) 이미 있어요`);
+      else if (!old) prefs.funNames = [...prefs.funNames, v]; // from the + chip
       else prefs.funNames = prefs.funNames.map(x => (x === old ? v : x));
       savePrefs();
     }

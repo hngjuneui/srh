@@ -527,3 +527,5 @@ body.colored .name-divider { border-color: rgba(255, 255, 255, .45); }
 .fun-head { margin: 8px 0 4px; }
 .player-list .name-chip.editable::after { content: "✎"; margin-left: 8px; font-size: .85em; opacity: .55; }
 .name-chip-edit { min-height: 38px; width: 10em; padding: 0 14px; border-radius: 999px; font-size: 15px; border: 1px solid var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+.player-list .name-chip.add { min-width: 44px; justify-content: center; font-size: 20px; font-weight: 700; border-style: dashed; }
+.player-list .name-chip.add::after { content: none; }
