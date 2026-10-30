@@ -10,7 +10,7 @@
  * @typedef {'single'|'double'|'long'|'opponent'|'cancel'} RemoteAction
  */
 
-export const DEFAULT_REMOTE = /** @type {RemoteConfig} */ ({primary: null, opponent: null, cancel: null, longMs: 700, releaseGrace: 50, doubleMs: 300, useLong: true});
+export const DEFAULT_REMOTE = /** @type {RemoteConfig} */ ({primary: null, opponent: null, cancel: null, longMs: 700, releaseGrace: 50, doubleMs: 400, useLong: true});
 
 const IGNORED = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Unidentified', 'Process']);
 

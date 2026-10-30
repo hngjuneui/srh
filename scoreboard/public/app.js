@@ -46,6 +46,9 @@ const prefs = {...DEFAULT_PREFS, ...savedPrefs, colorsV: 2, swipeV: 2, remote: {
 // The default hold went from 1 s to 0.7 s; devices still on the old default move once, a chosen value stays.
 if (!savedPrefs.holdV && prefs.pose.holdMs === 1000) prefs.pose.holdMs = DEFAULT_POSE.holdMs;
 prefs.holdV = 1;
+// The remote's double-press gap default went from 0.3 s to 0.4 s; devices still on the old default move once.
+if (!savedPrefs.doubleV && prefs.remote.doubleMs === 300) prefs.remote.doubleMs = DEFAULT_REMOTE.doubleMs;
+prefs.doubleV = 1;
 // Spoken scores default to the short style; devices from before move to it once.
 if (!savedPrefs.voiceV) prefs.voice.mode = 'short';
 prefs.voiceV = 1;
