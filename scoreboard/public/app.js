@@ -30,7 +30,7 @@ const PALETTES = /** @type {Record<string, {label: string, A: string, B: string,
   neon: {label: '형광 · 라임 × 핑크', A: '#b6ff00', B: '#ff2ec4'},
 });
 const DEFAULT_PREFS = {ourTeam: /** @type {Team} */ ('A'), reverseSwipe: false, sound: true,
-  volume: 1, courtChange: {on: false, at: 0}, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short')}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
+  volume: 1, courtChange: {on: false, at: 0}, voice: {on: false, mode: /** @type {'full'|'short'} */ ('short'), volume: 1}, players: /** @type {string[]} */ ([]), idleDim: true, light: false, autoSwap: true, intro: true,
   colors: {preset: 'dark', A: PALETTES.dark.A, B: PALETTES.dark.B}, colorsV: 2, remote: {...DEFAULT_REMOTE},
   // team: the team the camera faces (set by the test). O = that team +1, X = the other team +1.
   // refScale: the tester's body size in the frame; people much smaller are on another court.
@@ -106,14 +106,22 @@ let saveFailShown = false;
 //   ours   — bright rising two-note chime        theirs — lower, softer two notes, also rising (never a let-down)
 //   cancel — small downward swoop (undo)         end    — rising three-note arpeggio
 /** @type {AudioContext|null} */ let audio = null;
+/** @type {DynamicsCompressorNode|null} */ let limiter = null;
 function audioCtx() {
   try { audio ??= new AudioContext(); if (audio.state === 'suspended') audio.resume(); } catch { return null; }
+  if (!limiter) {
+    // Effects play loud enough to match the voice at 100%; the limiter keeps overlapping notes from clipping.
+    limiter = audio.createDynamicsCompressor();
+    limiter.threshold.value = -8; limiter.knee.value = 6; limiter.ratio.value = 12;
+    limiter.attack.value = 0.002; limiter.release.value = 0.12;
+    limiter.connect(audio.destination);
+  }
   return audio;
 }
 /** One note: a quick attack and a smooth decay, through a gentle low-pass so nothing sounds harsh.
  *  @param {AudioContext} ctx @param {{f: number, to?: number, at: number, len: number, type?: OscillatorType, level?: number}} n */
 function note(ctx, {f, to, at, len, type = 'sine', level = 1}) {
-  const t = ctx.currentTime + at, vol = 0.32 * level * prefs.volume;
+  const t = ctx.currentTime + at, vol = 0.9 * level * prefs.volume;
   const osc = ctx.createOscillator(), gain = ctx.createGain(), soft = ctx.createBiquadFilter();
   osc.type = type; osc.frequency.setValueAtTime(f, t);
   if (to) osc.frequency.exponentialRampToValueAtTime(to, t + len);
@@ -121,7 +129,7 @@ function note(ctx, {f, to, at, len, type = 'sine', level = 1}) {
   gain.gain.setValueAtTime(0.0001, t);
   gain.gain.exponentialRampToValueAtTime(Math.max(vol, 0.0002), t + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
-  osc.connect(soft).connect(gain).connect(ctx.destination);
+  osc.connect(soft).connect(gain).connect(limiter ?? ctx.destination);
   osc.start(t); osc.stop(t + len + 0.02);
 }
 const SOUND = /** @type {Record<string, Parameters<typeof note>[1][]>} */ ({
@@ -131,7 +139,7 @@ const SOUND = /** @type {Record<string, Parameters<typeof note>[1][]>} */ ({
   end: [{f: 784, at: 0, len: 0.3, type: 'triangle'}, {f: 988, at: 0.12, len: 0.3, type: 'triangle'}, {f: 1319, at: 0.24, len: 0.6, type: 'triangle'}],
 });
 function tone(/** @type {keyof typeof SOUND} */ name, force = false) {
-  if (!prefs.sound && !force) return;
+  if ((!prefs.sound && !force) || prefs.volume <= 0) return;
   const ctx = audioCtx();
   if (ctx) try { SOUND[name].forEach(n => note(ctx, n)); } catch {}
 }
@@ -153,7 +161,7 @@ function callScore(force = false, courtChange = false) {
 }
 function speakSoon(/** @type {string} */ text) {
   clearTimeout(callTimer);
-  callTimer = window.setTimeout(() => speak(text), 250); // after the chime
+  callTimer = window.setTimeout(() => speak(text, prefs.voice.volume), 250); // after the chime
 }
 /** The score that triggers the mid-game court change: the chosen one, or half the target (11 for 21). */
 const courtChangeAt = () => prefs.courtChange.at || Math.ceil(match.settings.rules.target / 2);
@@ -777,11 +785,14 @@ function renderVolume() {
   /** @type {HTMLInputElement} */ ($('#volume')).value = String(prefs.volume);
   $('#volumeOut').textContent = `${Math.round(prefs.volume * 100)}%`;
   /** @type {HTMLSelectElement} */ ($('#voiceMode')).value = prefs.voice.mode;
+  /** @type {HTMLInputElement} */ ($('#voiceVolume')).value = String(prefs.voice.volume);
+  $('#voiceVolumeOut').textContent = `${Math.round(prefs.voice.volume * 100)}%`;
 }
 $('#volume').addEventListener('input', e => { prefs.volume = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderVolume(); });
 $$('[data-try]').forEach(b => b.addEventListener('click', () => { b.blur(); tone(/** @type {keyof typeof SOUND} */ (b.dataset.try), true); }));
+$('#voiceVolume').addEventListener('input', e => { prefs.voice.volume = Number(/** @type {HTMLInputElement} */ (e.target).value); savePrefs(); renderVolume(); });
 $('#voiceMode').addEventListener('change', e => { prefs.voice.mode = /** @type {'full'|'short'} */ (/** @type {HTMLSelectElement} */ (e.target).value); savePrefs(); });
-$('#voiceTry').addEventListener('click', e => { /** @type {HTMLElement} */ (e.currentTarget).blur(); speak(scoreCall(11, 7, prefs.voice.mode)); });
+$('#voiceTry').addEventListener('click', e => { /** @type {HTMLElement} */ (e.currentTarget).blur(); speak(scoreCall(11, 7, prefs.voice.mode), prefs.voice.volume); });
 // Main-screen speaker button: voice call-outs on/off. Turning it on reads the current score straight away.
 $('#voiceToggle').addEventListener('click', e => {
   /** @type {HTMLElement} */ (e.currentTarget).blur();

@@ -29,14 +29,15 @@ function pickVoice() {
 }
 globalThis.speechSynthesis?.addEventListener?.('voiceschanged', pickVoice);
 
-/** Says `text` now, cutting off anything still being said so the board never lags behind the game. @param {string} text */
-export function speak(text) {
+/** Says `text` now at `volume` (0..1), cutting off anything still being said so the board never lags behind the game.
+ *  @param {string} text @param {number} [volume] */
+export function speak(text, volume = 1) {
   const synth = globalThis.speechSynthesis;
-  if (!synth) return false;
+  if (!synth || volume <= 0) return false;
   if (!koVoice) pickVoice();
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ko-KR'; u.rate = 1.05;
+  u.lang = 'ko-KR'; u.rate = 1.05; u.volume = Math.min(1, volume);
   if (koVoice) u.voice = koVoice;
   synth.speak(u);
   return true;

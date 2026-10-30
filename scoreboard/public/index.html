@@ -190,9 +190,10 @@
       <label class="row">게임이 끝나면 좌우 자동 교대<input type="checkbox" name="autoSwap"></label>
       <label class="row"><span>쓸기 방향 반대로<small>기본: 위로 쓸기 = +1, 아래로 쓸기 = 1점 취소 · 켜면 반대</small></span><input type="checkbox" name="reverseSwipe"></label>
       <label class="row"><span>효과음<small>우리 팀 +1 · 상대 팀 +1 · 되돌리기마다 다른 소리</small></span><input type="checkbox" name="sound"></label>
-      <label class="row">효과음 크기 <output id="volumeOut"></output><input type="range" id="volume" min="0.1" max="1" step="0.05"></label>
+      <label class="row">효과음 크기 <output id="volumeOut"></output><input type="range" id="volume" min="0" max="1" step="0.05"></label>
       <div class="row"><span>들어보기</span><span class="sound-try"><button type="button" class="glass-btn" data-try="ours">우리 팀</button><button type="button" class="glass-btn" data-try="theirs">상대 팀</button><button type="button" class="glass-btn" data-try="cancel">되돌리기</button></span></div>
       <label class="row"><span>음성 점수 읽기<small>메인 화면 오른쪽 위 스피커 버튼으로 켜고 끄기 · 서브권(방금 득점한) 쪽 점수부터</small></span><select id="voiceMode"><option value="short">간략 (11 → 일, 10점대 십 생략)</option><option value="full">숫자 그대로 (십일 대 영)</option></select></label>
+      <label class="row">음성 크기 <output id="voiceVolumeOut"></output><input type="range" id="voiceVolume" min="0" max="1" step="0.05"></label>
       <div class="row"><span>음성 들어보기</span><button type="button" class="glass-btn" id="voiceTry">11 : 7 읽기</button></div>
       <label class="row">가만히 있으면 조작부 흐리게<input type="checkbox" name="idleDim"></label>
       <label class="row">밝은 테마<input type="checkbox" name="light"></label>
