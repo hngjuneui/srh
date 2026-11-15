@@ -1130,6 +1130,29 @@
             </label>
           </div>
 
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="performanceMode">성능 모드</label>
+              <select id="performanceMode">
+                <option value="eco">효율 우선</option>
+                <option value="balanced">균형</option>
+                <option value="performance">성능 우선</option>
+              </select>
+            </div>
+            <p class="setting-description">성능 우선: 포즈를 쉬지 않고 분석해 반응이 가장 빠르지만 배터리와 발열이 커집니다(대회용). 효율 우선: 초당 12번만 분석해 배터리를 아낍니다(연습·테스트용).</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="poseModel">포즈 모델</label>
+              <select id="poseModel">
+                <option value="lite">빠른 모델</option>
+                <option value="full">정밀 모델</option>
+              </select>
+            </div>
+            <p class="setting-description">정밀 모델은 팔이 겹치거나 어두울 때 인식률이 더 좋지만, 분석 한 번이 더 오래 걸려 반응이 느려지고 발열이 커집니다. 성능 좋은 휴대폰에서만 권장합니다.</p>
+          </div>
+
           <button id="resetSettingsBtn" class="text-button reset-button setting-row" type="button">기본 설정으로 초기화</button>
         </div>
       </div>
@@ -1179,6 +1202,13 @@
         gripperOpen: { code: "9", label: "그리퍼 열기" }
       });
 
+      // 성능 모드: 카메라 초당 장수와 포즈 분석 횟수 상한. 분석을 자주 할수록 빠르지만 배터리·발열이 늘어난다.
+      const PERFORMANCE_PROFILES = Object.freeze({
+        eco: { label: "효율 우선", cameraFps: 15, analysisFps: 12 },
+        balanced: { label: "균형", cameraFps: 24, analysisFps: 20 },
+        performance: { label: "성능 우선", cameraFps: 30, analysisFps: 0 }
+      });
+
       const DEFAULT_SETTINGS = Object.freeze({
         stopDeadzone: 0.30,
         speedSensitivity: 1.0,
@@ -1194,7 +1224,9 @@
         haptics: true,
         keepAwake: true,
         backwardGesture: "raise",
-        liteEffects: false
+        liteEffects: false,
+        performanceMode: "balanced",
+        poseModel: "lite"
       });
 
       const state = {
@@ -1214,6 +1246,7 @@
           pumping: false
         },
         wristFilters: null,
+        lastAnalysisAt: 0,
         backwardReleaseSince: 0,
         lastHapticAt: 0,
         logQueue: [],
@@ -1338,7 +1371,9 @@
           haptics: Boolean(value.haptics),
           keepAwake: Boolean(value.keepAwake),
           backwardGesture: ["raise", "cross"].includes(value.backwardGesture) ? value.backwardGesture : DEFAULT_SETTINGS.backwardGesture,
-          liteEffects: Boolean(value.liteEffects)
+          liteEffects: Boolean(value.liteEffects),
+          performanceMode: Object.hasOwn(PERFORMANCE_PROFILES, value.performanceMode) ? value.performanceMode : DEFAULT_SETTINGS.performanceMode,
+          poseModel: ["lite", "full"].includes(value.poseModel) ? value.poseModel : DEFAULT_SETTINGS.poseModel
         };
       }
 
@@ -1387,7 +1422,9 @@
           haptics: document.getElementById("haptics").checked,
           keepAwake: document.getElementById("keepAwake").checked,
           backwardGesture: document.getElementById("backwardGesture").value,
-          liteEffects: document.getElementById("liteEffects").checked
+          liteEffects: document.getElementById("liteEffects").checked,
+          performanceMode: document.getElementById("performanceMode").value,
+          poseModel: document.getElementById("poseModel").value
         });
       }
 
@@ -1426,6 +1463,7 @@
         updateGripperModeUi();
         if (previousBackwardGesture !== state.settings.backwardGesture) state.backwardReleaseSince = 0;
         applyVisualSettings();
+        applyCameraFrameRate();
         updateControlStatus(modeLabel(state.motion), state.speed, steeringLabel(state.steering));
         if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
         if (!state.settings.keepAwake) releaseWakeLock();
@@ -2019,7 +2057,7 @@
                 facingMode: { ideal: "user" },
                 width: { ideal: 480, max: 720 },
                 height: { ideal: 640, max: 960 },
-                frameRate: { ideal: 30, max: 30 }
+                frameRate: { ideal: currentProfile().cameraFps, max: 30 }
               }
             });
           } catch (error) {
@@ -2086,7 +2124,7 @@
       function applyModelSettings() {
         if (state.pose) {
           state.pose.setOptions({
-            modelComplexity: 0,
+            modelComplexity: state.settings.poseModel === "full" ? 1 : 0,
             // 모델 내부 스무딩을 끄고, 아래 One Euro 필터 한 번만 사용한다(이중 스무딩으로 인한 지연 제거).
             smoothLandmarks: false,
             enableSegmentation: false,
@@ -2105,14 +2143,29 @@
         }
       }
 
+      function currentProfile() {
+        return PERFORMANCE_PROFILES[state.settings.performanceMode] || PERFORMANCE_PROFILES.balanced;
+      }
+
+      // 카메라가 켜진 상태에서 성능 모드를 바꾸면 카메라를 다시 켜지 않고 초당 장수만 바꾼다.
+      function applyCameraFrameRate() {
+        const track = state.cameraStream?.getVideoTracks?.()[0];
+        if (!track || typeof track.applyConstraints !== "function") return;
+        track.applyConstraints({ frameRate: { ideal: currentProfile().cameraFps, max: 30 } })
+          .catch((error) => addConsoleError("카메라 프레임 속도 변경 실패", error));
+      }
+
       async function processVideoFrame() {
         if (!state.cameraRunning) return;
-        if (state.processingFrame || el.videoElement.readyState < 2) {
+        const analysisFps = currentProfile().analysisFps;
+        const tooSoon = analysisFps > 0 && performance.now() - state.lastAnalysisAt < 1000 / analysisFps - 4;
+        if (tooSoon || state.processingFrame || el.videoElement.readyState < 2) {
           state.animationFrame = requestAnimationFrame(processVideoFrame);
           return;
         }
 
         state.processingFrame = true;
+        state.lastAnalysisAt = performance.now();
         try {
           await state.pose.send({ image: el.videoElement });
           state.frameCount += 1;
