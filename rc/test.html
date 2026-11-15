@@ -974,6 +974,15 @@
 
           <div class="setting-row">
             <div class="setting-head">
+              <label class="setting-label" for="raiseLineOffset">후진선 높이</label>
+              <output id="raiseLineOffsetValue" class="setting-value" for="raiseLineOffset"></output>
+            </div>
+            <input id="raiseLineOffset" type="range" min="-10" max="15" step="1">
+            <p class="setting-description">주먹 올리기에서 화면에 보이는 주황색 후진선의 위치입니다. 두 주먹 점이 모두 이 선 위로 올라가면 후진합니다. 후진이 잘 안 걸리면 선을 아래로, 전진 중에 후진이 잘못 걸리면 위로 옮기세요.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
               <label class="setting-label" for="stopDeadzone">정지/출발 데드존</label>
               <output id="stopDeadzoneValue" class="setting-value" for="stopDeadzone"></output>
             </div>
@@ -1185,8 +1194,7 @@
       const STOP_HYSTERESIS = 0.02;        // 출발한 뒤에는 데드존보다 조금 더 가까워져야 정지 (떨림 방지)
       const STEERING_HYSTERESIS = 4;       // 회전 중에는 데드존보다 4° 더 수평이 되어야 직진 복귀
       const SPEED_HYSTERESIS = 0.15;       // 속도 단계 경계에서 0.15단계 이상 넘어가야 단계 변경
-      const RAISE_ENTER_MARGIN = 0.02;     // 주먹 올리기: 손목이 어깨선보다 이만큼 위면 후진
-      const RAISE_EXIT_MARGIN = 0.03;      // 후진 중에는 어깨선보다 이만큼 아래로 내려야 전진 복귀
+      const RAISE_EXIT_MARGIN = 0.035;     // 후진 중에는 후진선보다 이만큼 아래로 내려야 전진 복귀
       const CROSS_EXIT_MARGIN = 0.05;      // 교차 후진 중에는 확실히 풀려야 전진 복귀
       const BACKWARD_RELEASE_MS = 150;     // 후진 해제 조건이 이 시간 이상 유지되어야 전진으로 전환
 
@@ -1226,7 +1234,8 @@
         backwardGesture: "raise",
         liteEffects: false,
         performanceMode: "balanced",
-        poseModel: "lite"
+        poseModel: "lite",
+        raiseLineOffset: 0
       });
 
       const state = {
@@ -1246,6 +1255,7 @@
           pumping: false
         },
         wristFilters: null,
+        backLineY: null,
         lastAnalysisAt: 0,
         backwardReleaseSince: 0,
         lastHapticAt: 0,
@@ -1340,7 +1350,7 @@
         document.addEventListener("visibilitychange", handleVisibilityChange);
         window.addEventListener("pagehide", handlePageHide);
 
-        ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence"]
+        ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence", "raiseLineOffset"]
           .forEach((id) => document.getElementById(id).addEventListener("input", updateAllSettingOutputs));
         document.getElementById("gripperControlMode").addEventListener("change", syncGripperSettingsVisibility);
       }
@@ -1373,7 +1383,8 @@
           backwardGesture: ["raise", "cross"].includes(value.backwardGesture) ? value.backwardGesture : DEFAULT_SETTINGS.backwardGesture,
           liteEffects: Boolean(value.liteEffects),
           performanceMode: Object.hasOwn(PERFORMANCE_PROFILES, value.performanceMode) ? value.performanceMode : DEFAULT_SETTINGS.performanceMode,
-          poseModel: ["lite", "full"].includes(value.poseModel) ? value.poseModel : DEFAULT_SETTINGS.poseModel
+          poseModel: ["lite", "full"].includes(value.poseModel) ? value.poseModel : DEFAULT_SETTINGS.poseModel,
+          raiseLineOffset: Math.round(clampNumber(value.raiseLineOffset, -10, 15, DEFAULT_SETTINGS.raiseLineOffset))
         };
       }
 
@@ -1424,7 +1435,8 @@
           backwardGesture: document.getElementById("backwardGesture").value,
           liteEffects: document.getElementById("liteEffects").checked,
           performanceMode: document.getElementById("performanceMode").value,
-          poseModel: document.getElementById("poseModel").value
+          poseModel: document.getElementById("poseModel").value,
+          raiseLineOffset: document.getElementById("raiseLineOffset").value
         });
       }
 
@@ -1433,6 +1445,8 @@
         document.getElementById("stopDeadzoneValue").textContent = Number(value("stopDeadzone")).toFixed(2);
         document.getElementById("speedSensitivityValue").textContent = Number(value("speedSensitivity")).toFixed(1) + "×";
         document.getElementById("steeringDeadzoneValue").textContent = value("steeringDeadzone") + "°";
+        const lineOffset = Number(value("raiseLineOffset"));
+        document.getElementById("raiseLineOffsetValue").textContent = lineOffset === 0 ? "어깨선" : (lineOffset > 0 ? `${lineOffset}% 아래` : `${-lineOffset}% 위`);
         document.getElementById("winkSensitivityValue").textContent = value("winkSensitivity") + " / 10";
         document.getElementById("winkHoldValue").textContent = value("winkHold") + " ms";
         document.getElementById("poseConfidenceValue").textContent = Math.round(Number(value("poseConfidence")) * 100) + "%";
@@ -2080,6 +2094,7 @@
           state.poseLostAt = 0;
           state.smoothedWrists = null;
           state.wristFilters = null;
+          state.backLineY = null;
           state.fpsFrames = 0;
           state.fpsSince = performance.now();
           el.cameraBtn.textContent = "카메라 종료";
@@ -2206,6 +2221,8 @@
         const threshold = crossHold ? Math.max(0.2, state.settings.poseConfidence * 0.6) : state.settings.poseConfidence;
         const visible = leftOnScreen.visibility > threshold && rightOnScreen.visibility > threshold;
         const inBounds = pointInBounds(leftOnScreen) && pointInBounds(rightOnScreen);
+        updateBackwardLine(landmarks);
+        drawBackwardLine();
 
         if (!visible || !inBounds) {
           handlePoseMissing();
@@ -2258,7 +2275,8 @@
       }
 
       function pointInBounds(point) {
-        return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+        // 주먹을 높이 들면 점이 화면 위쪽으로 살짝 벗어날 수 있어 위쪽은 여유를 둔다.
+        return point.x >= 0 && point.x <= 1 && point.y >= -0.08 && point.y <= 1;
       }
 
       // One Euro 필터: 손이 가만히 있을 때는 떨림을 강하게 걸러내고, 빠르게 움직이면 거의 지연 없이 따라간다.
@@ -2306,6 +2324,48 @@
         return w;
       }
 
+      // 후진선: 어깨 높이를 따라다니는 기준선. 화면에 보이는 두 주먹 점이 모두 이 선 위에 있으면 후진이다.
+      function updateBackwardLine(landmarks) {
+        if (state.settings.backwardGesture !== "raise") {
+          state.backLineY = null;
+          return;
+        }
+        const shoulderA = landmarks[11];
+        const shoulderB = landmarks[12];
+        if ((shoulderA?.visibility ?? 0) < 0.35 || (shoulderB?.visibility ?? 0) < 0.35) return;
+        const lineY = (shoulderA.y + shoulderB.y) / 2 + state.settings.raiseLineOffset / 100;
+        state.backLineY = state.backLineY === null ? lineY : state.backLineY + (lineY - state.backLineY) * 0.3;
+      }
+
+      function drawBackwardLine() {
+        if (state.backLineY === null) return;
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        const y = state.backLineY * height;
+        const active = state.drive.target.motion === "backward";
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.strokeStyle = active ? "rgba(255, 179, 71, 0.95)" : "rgba(255, 179, 71, 0.55)";
+        ctx.lineWidth = Math.max(2, width / (active ? 160 : 240));
+        ctx.setLineDash([Math.max(6, width / 60), Math.max(6, width / 60)]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const fontSize = Math.max(13, width / 30);
+        ctx.font = `800 ${fontSize}px -apple-system, "Apple SD Gothic Neo", sans-serif`;
+        ctx.textBaseline = "bottom";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+        ctx.fillStyle = active ? "#ffb347" : "rgba(255, 200, 120, 0.9)";
+        const label = active ? "▲ 후진 중" : "▲ 이 선 위로 = 후진";
+        ctx.strokeText(label, width * 0.03, y - 4);
+        ctx.fillText(label, width * 0.03, y - 4);
+        ctx.restore();
+      }
+
       function drawWristGuide(left, right) {
         const ctx = el.canvasContext;
         const width = el.canvasElement.width;
@@ -2320,7 +2380,7 @@
         ctx.beginPath();
         ctx.moveTo(lx, ly);
         ctx.lineTo(rx, ry);
-        ctx.strokeStyle = "rgba(72, 223, 181, 0.9)";
+        ctx.strokeStyle = state.drive.target.motion === "backward" ? "rgba(255, 179, 71, 0.95)" : "rgba(72, 223, 181, 0.9)";
         ctx.lineWidth = Math.max(3, width / 150);
         ctx.setLineDash([12, 8]);
         ctx.stroke();
@@ -2380,6 +2440,7 @@
         if (performance.now() - state.poseLostAt > 1000) {
           state.smoothedWrists = null;
           state.wristFilters = null;
+          state.backLineY = null;
         }
       }
 
@@ -2436,15 +2497,11 @@
         let exit;
 
         if (state.settings.backwardGesture === "raise") {
-          const shoulderA = landmarks[11];
-          const shoulderB = landmarks[12];
-          const shouldersVisible = (shoulderA?.visibility ?? 0) > 0.35 && (shoulderB?.visibility ?? 0) > 0.35;
-          if (!shouldersVisible) return isBackward;
-          const shoulderY = (shoulderA.y + shoulderB.y) / 2;
-          // offsetWrist가 y를 0.045 올렸으므로 원래 손목 높이로 되돌려 비교한다.
-          const lowerWristY = Math.max(left.y, right.y) + 0.045;
-          enter = lowerWristY < shoulderY - RAISE_ENTER_MARGIN;
-          exit = lowerWristY > shoulderY + RAISE_EXIT_MARGIN;
+          if (state.backLineY === null) return isBackward;
+          // 화면에 그려지는 주먹 점(둘 중 더 낮은 쪽)을 화면에 그려지는 후진선과 그대로 비교한다.
+          const lowerFistY = Math.max(left.y, right.y);
+          enter = lowerFistY < state.backLineY;
+          exit = lowerFistY > state.backLineY + RAISE_EXIT_MARGIN;
         } else {
           enter = left.x > right.x;
           exit = left.x < right.x - CROSS_EXIT_MARGIN;
