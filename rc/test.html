@@ -1,0 +1,2797 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0b0d10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>운반로봇 포즈모델 조종기</title>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06080b;
+      --bg-2: #0c1117;
+      --text: #f5f8fb;
+      --muted: rgba(235, 242, 248, 0.62);
+      --faint: rgba(235, 242, 248, 0.38);
+      --line: rgba(255, 255, 255, 0.10);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --surface: rgba(255, 255, 255, 0.05);
+      --surface-raised: rgba(255, 255, 255, 0.08);
+      --accent: #4ce3b8;
+      --accent-strong: #22c997;
+      --blue: #7cb1ff;
+      --amber: #ffc861;
+      --red: #ff7a7a;
+      --forward: #4ce3b8;
+      --backward: #ffb347;
+      --stop: #c4ccd6;
+      --glass-bg: linear-gradient(140deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.07) 46%, rgba(255, 255, 255, 0.12) 100%);
+      --glass-border: rgba(255, 255, 255, 0.26);
+      --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.30);
+      --glass-blur: blur(14px) saturate(175%);
+      --radius-xl: 30px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    [hidden] { display: none !important; }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      background:
+        radial-gradient(120% 60% at 50% -10%, rgba(76, 227, 184, 0.10), transparent 60%),
+        radial-gradient(90% 50% at 100% 100%, rgba(124, 177, 255, 0.08), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      font-family: Pretendard, Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+      padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.modal-open { overflow: hidden; }
+
+    button, input, select { font: inherit; }
+    button { touch-action: manipulation; }
+
+    .app-shell {
+      width: min(100%, 560px);
+      margin: 0 auto;
+    }
+
+    /* ---------- 상단 ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      padding: 2px 4px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: conic-gradient(from 210deg, var(--accent), var(--blue), var(--accent));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 4px 14px rgba(76, 227, 184, 0.25);
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      overflow: hidden;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .system-chip {
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      gap: 7px;
+      min-height: 30px;
+      padding: 6px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .system-chip::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--faint);
+      content: "";
+    }
+
+    .system-chip.online { border-color: rgba(76, 227, 184, 0.34); color: var(--accent); }
+    .system-chip.online::before { background: var(--accent); box-shadow: 0 0 0 4px rgba(76, 227, 184, 0.14); }
+    .system-chip.warning { border-color: rgba(255, 200, 97, 0.34); color: var(--amber); }
+    .system-chip.warning::before { background: var(--amber); }
+
+    /* ---------- 리퀴드 글래스 ---------- */
+    .glass {
+      position: relative;
+      isolation: isolate;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      box-shadow: var(--glass-shadow);
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+
+    .glass::before {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      background: radial-gradient(120% 90% at 12% 0%, rgba(255, 255, 255, 0.28), transparent 46%);
+      content: "";
+      pointer-events: none;
+    }
+
+    body.lite-effects .glass {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background: rgba(12, 16, 22, 0.74);
+    }
+
+    /* ---------- 카메라 무대 ---------- */
+    .camera-stage {
+      position: relative;
+      width: max(min(100%, 290px), min(100%, calc((100svh - 200px) * 0.75)));
+      margin: 0 auto;
+      aspect-ratio: 3 / 4;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: #05070a;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    video {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hud-top {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .hud-top > * { pointer-events: auto; }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      padding: 7px 12px 7px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .stage-badge::after {
+      order: -1;
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber);
+      content: "";
+    }
+
+    .stage-badge.live::after {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(76, 227, 184, 0.22);
+      animation: live-pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      50% { box-shadow: 0 0 0 7px rgba(76, 227, 184, 0); }
+    }
+
+    .stage-fps {
+      color: rgba(255, 255, 255, 0.6);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+
+    .glass-icon-button {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .glass-icon-button svg { width: 19px; height: 19px; }
+
+    .stage-help {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 2;
+      width: min(82%, 320px);
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      text-align: center;
+      transform: translate(-50%, -50%);
+    }
+
+    .stage-help strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+
+    .hud-bottom {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      left: 10px;
+      z-index: 3;
+      display: grid;
+      gap: 6px;
+    }
+
+    .signal-card {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      padding: 7px 9px 7px 7px;
+      border-radius: 22px;
+      cursor: pointer;
+      text-align: left;
+      --motion-color: var(--stop);
+    }
+
+    .signal-card[data-motion="forward"] { --motion-color: var(--forward); }
+    .signal-card[data-motion="backward"] { --motion-color: var(--backward); }
+
+    .signal-glyph {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--motion-color) 30%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 1px color-mix(in srgb, var(--motion-color) 55%, transparent);
+      color: var(--motion-color);
+      transition: background-color 120ms ease;
+    }
+
+    .signal-glyph svg {
+      width: 26px;
+      height: 26px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+      transition: transform 140ms ease;
+      transform: rotate(var(--glyph-rot, 0deg));
+    }
+
+    .signal-glyph .glyph-stop { display: none; }
+    .signal-card[data-motion="stop"] .glyph-arrow { display: none; }
+    .signal-card[data-motion="stop"] .glyph-stop { display: block; }
+
+    .signal-text { min-width: 0; }
+
+    .hud-label {
+      display: block;
+      margin-bottom: 2px;
+      color: rgba(255, 255, 255, 0.66);
+      font-size: 0.64rem;
+      font-weight: 750;
+      letter-spacing: 0.02em;
+    }
+
+    .signal-value {
+      display: block;
+      overflow: hidden;
+      font-size: 1.18rem;
+      font-weight: 850;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .signal-code {
+      display: grid;
+      place-items: center;
+      min-width: 40px;
+      height: 40px;
+      padding: 0 8px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.18);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .signal-card.flash .signal-code {
+      animation: code-flash 260ms ease-out;
+    }
+
+    @keyframes code-flash {
+      from { background: color-mix(in srgb, var(--motion-color) 70%, transparent); transform: scale(1.08); }
+      to { background: rgba(0, 0, 0, 0.18); transform: scale(1); }
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 7px 2px;
+      border-radius: 18px;
+    }
+
+    .hud-bottom.compact .metrics { display: none; }
+
+    .metric {
+      min-width: 0;
+      padding: 2px 9px;
+    }
+
+    .metric + .metric { border-left: 1px solid rgba(255, 255, 255, 0.16); }
+
+    .metric-value {
+      display: block;
+      overflow: hidden;
+      font-size: 0.9rem;
+      font-weight: 820;
+      letter-spacing: -0.03em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed-bar {
+      display: flex;
+      gap: 3px;
+      margin-top: 5px;
+    }
+
+    .speed-bar i {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .speed-bar i.on { background: var(--accent); box-shadow: 0 0 6px rgba(76, 227, 184, 0.6); }
+
+    .meter {
+      display: block;
+      position: relative;
+      height: 4px;
+      margin-top: 5px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .meter-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    .meter-mark {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 2px;
+      border-radius: 1px;
+      background: #fff;
+      opacity: 0.85;
+    }
+
+    /* ---------- 아래 도크 ---------- */
+    .voice-control {
+      display: grid;
+      grid-template-columns: minmax(130px, 0.7fr) minmax(0, 1.3fr);
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
+    .voice-button.listening {
+      border-color: rgba(255, 122, 122, 0.5);
+      background: rgba(255, 122, 122, 0.1);
+      color: var(--red);
+    }
+
+    .voice-status {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+
+    .voice-status-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--faint);
+    }
+
+    .voice-status.listening { color: var(--accent); }
+    .voice-status.listening .voice-status-dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(76, 227, 184, 0.12); }
+    .voice-status.error { color: var(--red); }
+    .voice-status.error .voice-status-dot { background: var(--red); }
+
+    .voice-status-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dock {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .button {
+      min-height: 54px;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      transition: transform 120ms ease, background-color 140ms ease, border-color 140ms ease;
+    }
+
+    .button:active:not(:disabled) { transform: scale(0.97); }
+
+    .button:focus-visible,
+    .glass-icon-button:focus-visible,
+    .signal-card:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+    .button-primary {
+      background: linear-gradient(180deg, #6befc9, var(--accent-strong));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 8px 22px rgba(34, 201, 151, 0.25);
+      color: #03140e;
+    }
+
+    .button-primary.running {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+      border-color: var(--line-strong);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      color: var(--text);
+    }
+
+    .button-secondary {
+      border-color: var(--line-strong);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      color: var(--text);
+    }
+
+    .button-secondary.connected {
+      border-color: rgba(76, 227, 184, 0.45);
+      color: var(--accent);
+    }
+
+    /* ---------- 로그 ---------- */
+    .log-section {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .log-section summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .log-section summary::-webkit-details-marker { display: none; }
+
+    .log-section summary::after {
+      color: var(--muted);
+      content: "펼치기";
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .log-section[open] summary::after { content: "접기"; }
+
+    .log-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 16px 4px;
+    }
+
+    .text-button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-weight: 750;
+    }
+
+    .log-panel {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 0 16px 10px;
+      scrollbar-width: thin;
+    }
+
+    .log-item {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      color: rgba(235, 242, 248, 0.8);
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .log-item:last-child { border-bottom: 0; }
+
+    .log-time {
+      color: var(--faint);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer {
+      padding: 20px 10px 4px;
+      color: var(--faint);
+      font-size: 0.66rem;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    /* ---------- 설정 ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      align-items: end;
+      padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      background: rgba(0, 0, 0, 0.6);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+
+    .settings-modal {
+      width: min(100%, 520px);
+      max-height: min(88vh, 760px);
+      margin: 0 auto;
+      border: 1px solid var(--line-strong);
+      border-radius: 28px;
+      background: #121820;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 28px 90px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      animation: modal-up 180ms ease-out;
+    }
+
+    @keyframes modal-up {
+      from { transform: translateY(18px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 17px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-header h2 { font-size: 1rem; }
+
+    .modal-close {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--surface-raised);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.15rem;
+    }
+
+    .settings-body {
+      max-height: calc(min(88vh, 760px) - 140px);
+      overflow-y: auto;
+      padding: 5px 18px 18px;
+    }
+
+    .settings-group {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .settings-group:last-child { border-bottom: 0; }
+
+    .settings-group-title {
+      margin-bottom: 13px;
+      color: var(--blue);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .setting-row + .setting-row { margin-top: 16px; }
+
+    .setting-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .setting-label {
+      font-size: 0.81rem;
+      font-weight: 750;
+    }
+
+    .setting-value {
+      min-width: 52px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .setting-description {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.45;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 22px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    select {
+      width: 128px;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      background: #0c1117;
+      color: var(--text);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .switch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 46px;
+      height: 27px;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: #242b33;
+      cursor: pointer;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .switch-track::after {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: #a5afb9;
+      content: "";
+      transition: transform 150ms ease, background-color 150ms ease;
+    }
+
+    .switch input:checked + .switch-track { border-color: var(--accent-strong); background: var(--accent-strong); }
+    .switch input:checked + .switch-track::after { background: #06120f; transform: translateX(19px); }
+    .switch input:focus-visible + .switch-track { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 0.8fr 1fr;
+      gap: 9px;
+      padding: 12px 18px max(12px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: #121820;
+    }
+
+    .modal-actions .button { min-height: 48px; border-radius: 14px; }
+
+    .reset-button { margin-right: auto; color: var(--red); }
+
+    .toast {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top));
+      right: 16px;
+      left: 16px;
+      z-index: 40;
+      width: min(calc(100% - 32px), 440px);
+      margin: 0 auto;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    @media (min-width: 560px) {
+      body { padding-top: 24px; }
+      .modal-backdrop { align-items: center; }
+    }
+
+    @media (max-width: 380px) {
+      .signal-value { font-size: 1.05rem; }
+      .metric { padding: 2px 6px; }
+      .metric-value { font-size: 0.8rem; }
+      .voice-control { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <p class="eyebrow">Pose Drive · 2026</p>
+          <h1>운반로봇 포즈모델 조종기</h1>
+        </div>
+      </div>
+      <div id="systemChip" class="system-chip" role="status">시스템 확인</div>
+    </header>
+
+    <section class="camera-stage" aria-label="전면 카메라 포즈 인식 화면">
+      <video id="videoElement" autoplay muted playsinline></video>
+      <canvas id="canvasElement" width="480" height="640"></canvas>
+
+      <div class="hud-top">
+        <div id="stageBadge" class="glass stage-badge"><span id="stageBadgeText">카메라 대기</span><span id="stageFps" class="stage-fps"></span></div>
+        <button id="settingsBtn" class="glass glass-icon-button" type="button" aria-label="조종기 설정 열기" title="설정">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+      </div>
+
+      <div id="stageHelp" class="glass stage-help">
+        <strong>카메라를 시작하세요</strong>
+        두 주먹을 벌리면 전진, 기울이면 회전합니다.<br>BLE 연결 없이도 신호를 테스트할 수 있습니다.
+      </div>
+
+      <div id="hudBottom" class="hud-bottom">
+        <button id="signalCard" class="glass signal-card" type="button" data-motion="stop" aria-label="최근 신호. 누르면 상태 표시를 접거나 펼칩니다.">
+          <span class="signal-glyph" aria-hidden="true">
+            <svg class="glyph-arrow" id="glyphArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+            <svg class="glyph-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
+          </span>
+          <span class="signal-text">
+            <span class="hud-label">최근 신호</span>
+            <strong id="signalStatus" class="signal-value" role="status">—</strong>
+          </span>
+          <span id="signalCode" class="signal-code" aria-hidden="true">–</span>
+        </button>
+
+        <div id="metricsCard" class="glass metrics">
+          <div class="metric">
+            <span class="hud-label">속도</span>
+            <strong id="speedStatus" class="metric-value">0 / 5</strong>
+            <span id="speedBar" class="speed-bar" aria-hidden="true"></span>
+          </div>
+          <div class="metric">
+            <span class="hud-label">방향</span>
+            <strong id="directionStatus" class="metric-value">직진</strong>
+          </div>
+          <div class="metric">
+            <span class="hud-label">주먹 거리</span>
+            <strong id="distanceStatus" class="metric-value">0.00</strong>
+            <span class="meter" aria-hidden="true"><span id="distanceFill" class="meter-fill"></span><span id="distanceMark" class="meter-mark"></span></span>
+          </div>
+          <div class="metric">
+            <span class="hud-label">그리퍼</span>
+            <strong id="gripperStatus" class="metric-value">대기</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="voiceControl" class="voice-control" hidden>
+      <button id="voiceBtn" class="button button-secondary voice-button" type="button">음성명령 시작</button>
+      <div id="voiceStatus" class="voice-status" role="status" aria-live="polite">
+        <span class="voice-status-dot" aria-hidden="true"></span>
+        <span id="voiceStatusText" class="voice-status-text">열 또는 닫 소리를 기다립니다.</span>
+      </div>
+    </div>
+
+    <div class="dock">
+      <button id="connectBtn" class="button button-secondary" type="button">BLE 연결</button>
+      <button id="cameraBtn" class="button button-primary" type="button">카메라 시작</button>
+    </div>
+
+    <details class="log-section">
+      <summary id="logTitle">신호 로그</summary>
+      <div class="log-toolbar"><button id="clearLogBtn" class="text-button" type="button">로그 지우기</button></div>
+      <div id="logPanel" class="log-panel" role="log" aria-live="off"></div>
+    </details>
+
+    <footer class="footer">
+      2026 Teacher Hong, Dept. of Robotics Mechanical Design,<br>
+      Seoul Robotics Highschool
+    </footer>
+  </main>
+
+  <div id="settingsBackdrop" class="modal-backdrop" hidden>
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header class="modal-header">
+        <h2 id="settingsTitle">조종기 설정</h2>
+        <button id="closeSettingsBtn" class="modal-close" type="button" aria-label="설정 닫기">×</button>
+      </header>
+
+      <div class="settings-body">
+        <div class="settings-group">
+          <h3 class="settings-group-title">Drive</h3>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="backwardGesture">후진 동작</label>
+              <select id="backwardGesture">
+                <option value="raise">주먹 올리기</option>
+                <option value="cross">주먹 교차</option>
+              </select>
+            </div>
+            <p class="setting-description">주먹 올리기: 두 주먹을 어깨선보다 위로 올리면 후진합니다. 팔이 겹치지 않아 인식이 안정적입니다. 주먹 교차: 기존처럼 두 주먹을 X자로 교차합니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="stopDeadzone">정지/출발 데드존</label>
+              <output id="stopDeadzoneValue" class="setting-value" for="stopDeadzone"></output>
+            </div>
+            <input id="stopDeadzone" type="range" min="0.18" max="0.45" step="0.01">
+            <p class="setting-description">값이 클수록 두 주먹을 더 멀리 벌려야 출발합니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="speedSensitivity">속도 민감도</label>
+              <output id="speedSensitivityValue" class="setting-value" for="speedSensitivity"></output>
+            </div>
+            <input id="speedSensitivity" type="range" min="0.5" max="2" step="0.1">
+            <p class="setting-description">값이 높을수록 작은 거리 변화에도 빠르게 가속합니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="speedSteps">속도 단계</label>
+              <select id="speedSteps">
+                <option value="1">1단계</option>
+                <option value="2">2단계</option>
+                <option value="3">3단계</option>
+                <option value="4">4단계</option>
+                <option value="5">5단계</option>
+              </select>
+            </div>
+            <p class="setting-description">아두이노에 전송할 증속/감속 단계의 최대값입니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="steeringDeadzone">조향 데드존</label>
+              <output id="steeringDeadzoneValue" class="setting-value" for="steeringDeadzone"></output>
+            </div>
+            <input id="steeringDeadzone" type="range" min="5" max="35" step="1">
+            <p class="setting-description">수평에 가까운 손 떨림을 직진으로 처리하는 각도입니다.</p>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">좌/우 신호 반전</div>
+              <p class="setting-description">화면의 좌회전·우회전 신호를 서로 바꿉니다.</p>
+            </div>
+            <label class="switch">
+              <input id="invertSteering" type="checkbox" aria-label="좌우 신호 반전">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">전진/후진 신호 반전</div>
+              <p class="setting-description">전진 2와 후진 8 신호를 서로 바꿉니다.</p>
+            </div>
+            <label class="switch">
+              <input id="invertDrive" type="checkbox" aria-label="전후진 신호 반전">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">Vision</h3>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="gripperControlMode">그리퍼 작동 방식</label>
+              <select id="gripperControlMode">
+                <option value="wink">윙크</option>
+                <option value="voice">보이스</option>
+                <option value="mouth">입 모션</option>
+              </select>
+            </div>
+            <p class="setting-description">윙크, 음성명령, 입 벌림·다묾 중 그리퍼 제어 방식을 선택합니다.</p>
+          </div>
+
+          <div id="winkSettings">
+            <div class="setting-row">
+              <div class="setting-head">
+                <label class="setting-label" for="winkSensitivity">윙크 민감도</label>
+                <output id="winkSensitivityValue" class="setting-value" for="winkSensitivity"></output>
+              </div>
+              <input id="winkSensitivity" type="range" min="1" max="10" step="1">
+              <p class="setting-description">오른쪽 눈 윙크는 그리퍼 열기(9), 왼쪽 눈 윙크는 닫기(7)입니다.</p>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-head">
+                <label class="setting-label" for="winkHold">윙크 유지 시간</label>
+                <output id="winkHoldValue" class="setting-value" for="winkHold"></output>
+              </div>
+              <input id="winkHold" type="range" min="250" max="1000" step="50">
+              <p class="setting-description">짧은 눈 깜빡임이 임무 신호로 잘못 인식되는 것을 막습니다.</p>
+            </div>
+          </div>
+
+          <div id="mouthSettings" hidden>
+            <div class="setting-row toggle-row">
+              <div>
+                <div class="setting-label">입 그리퍼 반전</div>
+                <p class="setting-description">기본은 입을 벌리면 열기(9), 다물면 닫기(7)입니다. 반전하면 두 신호가 서로 바뀝니다.</p>
+              </div>
+              <label class="switch">
+                <input id="invertMouthGripper" type="checkbox" aria-label="입 그리퍼 신호 반전">
+                <span class="switch-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="poseConfidence">포즈 인식 신뢰도</label>
+              <output id="poseConfidenceValue" class="setting-value" for="poseConfidence"></output>
+            </div>
+            <input id="poseConfidence" type="range" min="0.30" max="0.80" step="0.05">
+            <p class="setting-description">오인식을 줄이려면 높이고, 어두운 환경에서는 낮춰 보세요.</p>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">Device</h3>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">신호 진동 피드백</div>
+              <p class="setting-description">지원하는 스마트폰에서 조종 신호가 바뀔 때 짧게 진동합니다.</p>
+            </div>
+            <label class="switch">
+              <input id="haptics" type="checkbox" aria-label="진동 피드백">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">화면 자동 꺼짐 방지</div>
+              <p class="setting-description">카메라 제어 중 지원되는 브라우저에서 화면을 켜 둡니다.</p>
+            </div>
+            <label class="switch">
+              <input id="keepAwake" type="checkbox" aria-label="화면 자동 꺼짐 방지">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">글래스 효과 줄이기</div>
+              <p class="setting-description">오래된 휴대폰에서 화면이 버벅이면 켜세요. 반투명 흐림 효과를 꺼서 포즈 인식에 처리 능력을 더 씁니다.</p>
+            </div>
+            <label class="switch">
+              <input id="liteEffects" type="checkbox" aria-label="글래스 효과 줄이기">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <button id="resetSettingsBtn" class="text-button reset-button setting-row" type="button">기본 설정으로 초기화</button>
+        </div>
+      </div>
+
+      <footer class="modal-actions">
+        <button id="cancelSettingsBtn" class="button button-secondary" type="button">취소</button>
+        <button id="saveSettingsBtn" class="button button-primary" type="button">설정 저장</button>
+      </footer>
+    </section>
+  </div>
+
+  <div id="toast" class="toast glass" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SERVICE_UUID = "00c0ffee-1234-1234-1234-123456789abc";
+      const CHARACTERISTIC_UUID = "00c0ffee-4321-4321-4321-cba987654321";
+      const STORAGE_KEY = "srh-pose-controller-settings-v2";
+      const DEVICE_KEY = "srh-pose-controller-device-id";
+      const POSE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/";
+      const FACE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
+      const MAX_DISTANCE = 0.9;
+      const MOUTH_OPEN_THRESHOLD = 0.16;
+      const MOUTH_CLOSE_THRESHOLD = 0.09;
+      const MOUTH_STABLE_DURATION = 180;
+      const HUD_KEY = "srh-pose-controller-hud-compact";
+      // 반응속도 튜닝 값
+      const STOP_HYSTERESIS = 0.02;        // 출발한 뒤에는 데드존보다 조금 더 가까워져야 정지 (떨림 방지)
+      const STEERING_HYSTERESIS = 4;       // 회전 중에는 데드존보다 4° 더 수평이 되어야 직진 복귀
+      const SPEED_HYSTERESIS = 0.15;       // 속도 단계 경계에서 0.15단계 이상 넘어가야 단계 변경
+      const RAISE_ENTER_MARGIN = 0.02;     // 주먹 올리기: 손목이 어깨선보다 이만큼 위면 후진
+      const RAISE_EXIT_MARGIN = 0.03;      // 후진 중에는 어깨선보다 이만큼 아래로 내려야 전진 복귀
+      const CROSS_EXIT_MARGIN = 0.05;      // 교차 후진 중에는 확실히 풀려야 전진 복귀
+      const BACKWARD_RELEASE_MS = 150;     // 후진 해제 조건이 이 시간 이상 유지되어야 전진으로 전환
+
+      const COMMANDS = Object.freeze({
+        forward: { code: "2", label: "전진" },
+        backward: { code: "8", label: "후진" },
+        stop: { code: "5", label: "정지" },
+        speedUp: { code: "3", label: "속도 증가" },
+        speedDown: { code: "1", label: "속도 감소" },
+        left: { code: "4", label: "좌회전" },
+        right: { code: "6", label: "우회전" },
+        gripperClose: { code: "7", label: "그리퍼 닫기" },
+        gripperOpen: { code: "9", label: "그리퍼 열기" }
+      });
+
+      const DEFAULT_SETTINGS = Object.freeze({
+        stopDeadzone: 0.30,
+        speedSensitivity: 1.0,
+        speedSteps: 5,
+        steeringDeadzone: 15,
+        invertSteering: false,
+        invertDrive: false,
+        gripperControlMode: "wink",
+        invertMouthGripper: false,
+        winkSensitivity: 5,
+        winkHold: 500,
+        poseConfidence: 0.50,
+        haptics: true,
+        keepAwake: true,
+        backwardGesture: "raise",
+        liteEffects: false
+      });
+
+      const state = {
+        settings: { ...DEFAULT_SETTINGS },
+        bleDevice: null,
+        bleCharacteristic: null,
+        connecting: false,
+        manualDisconnect: false,
+        reconnectAttempts: 0,
+        reconnectTimer: null,
+        // 조종 신호 엔진: "지금 보내야 할 상태(target)"와 "아두이노가 받은 상태(sent)"를 비교해 차이만 전송한다.
+        drive: {
+          target: { motion: "stop", speed: 0, steering: "straight" },
+          sent: { motion: "stop", speed: 0, steering: "straight" },
+          events: [],
+          forceStop: false,
+          pumping: false
+        },
+        wristFilters: null,
+        backwardReleaseSince: 0,
+        lastHapticAt: 0,
+        logQueue: [],
+        logFlushTimer: null,
+        fpsFrames: 0,
+        fpsSince: 0,
+        lastSignalCode: "",
+        cameraStream: null,
+        cameraRunning: false,
+        processingFrame: false,
+        animationFrame: 0,
+        frameCount: 0,
+        frameErrors: 0,
+        pose: null,
+        faceMesh: null,
+        faceResults: null,
+        lastFaceAt: 0,
+        smoothedWrists: null,
+        poseLostAt: 0,
+        motion: "stop",
+        speed: 0,
+        steering: "straight",
+        wakeLock: null,
+        toastTimer: null,
+        speechRecognition: null,
+        voiceWanted: false,
+        voiceListening: false,
+        voiceRestartTimer: null,
+        lastVoiceCommandAt: 0,
+        mouth: {
+          candidate: null,
+          candidateSince: 0,
+          applied: null
+        },
+        wink: {
+          left: { startedAt: 0, fired: false },
+          right: { startedAt: 0, fired: false }
+        }
+      };
+
+      const el = {};
+      const encoder = new TextEncoder();
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        [
+          "connectBtn", "cameraBtn", "settingsBtn", "systemChip", "videoElement", "canvasElement",
+          "voiceControl", "voiceBtn", "voiceStatus", "voiceStatusText",
+          "stageBadge", "stageBadgeText", "stageFps", "stageHelp", "speedStatus", "directionStatus",
+          "distanceStatus", "gripperStatus", "signalStatus", "signalCard", "signalCode", "glyphArrow", "hudBottom",
+          "speedBar", "distanceFill", "distanceMark", "logPanel", "clearLogBtn", "settingsBackdrop",
+          "closeSettingsBtn", "cancelSettingsBtn", "saveSettingsBtn", "resetSettingsBtn", "toast"
+        ].forEach((id) => { el[id] = document.getElementById(id); });
+
+        el.canvasContext = el.canvasElement.getContext("2d", { alpha: false });
+        state.settings = loadSettings();
+        bindEvents();
+        populateSettingsForm(state.settings);
+        updateAllSettingOutputs();
+        updateGripperModeUi();
+        applyVisualSettings();
+        restoreHudMode();
+        updateControlStatus("대기", 0, "직진");
+        drawPlaceholder();
+        addLog("카메라 단독 테스트 또는 BLE 연결을 시작하세요.");
+        checkCapabilities();
+        restoreKnownDevice();
+      }
+
+      function bindEvents() {
+        el.connectBtn.addEventListener("click", handleConnectButton);
+        el.cameraBtn.addEventListener("click", toggleCamera);
+        el.voiceBtn.addEventListener("click", toggleVoiceRecognition);
+        el.settingsBtn.addEventListener("click", openSettings);
+        el.signalCard.addEventListener("click", toggleHudMode);
+        el.closeSettingsBtn.addEventListener("click", closeSettings);
+        el.cancelSettingsBtn.addEventListener("click", closeSettings);
+        el.saveSettingsBtn.addEventListener("click", saveSettingsFromForm);
+        el.resetSettingsBtn.addEventListener("click", resetSettingsForm);
+        el.clearLogBtn.addEventListener("click", () => {
+          el.logPanel.replaceChildren();
+          addLog("로그를 초기화했습니다.");
+        });
+        el.settingsBackdrop.addEventListener("click", (event) => {
+          if (event.target === el.settingsBackdrop) closeSettings();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !el.settingsBackdrop.hidden) closeSettings();
+        });
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("pagehide", handlePageHide);
+
+        ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence"]
+          .forEach((id) => document.getElementById(id).addEventListener("input", updateAllSettingOutputs));
+        document.getElementById("gripperControlMode").addEventListener("change", syncGripperSettingsVisibility);
+      }
+
+      function loadSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          return sanitizeSettings({ ...DEFAULT_SETTINGS, ...saved });
+        } catch (error) {
+          addConsoleError("설정 불러오기 실패", error);
+          return { ...DEFAULT_SETTINGS };
+        }
+      }
+
+      function sanitizeSettings(value) {
+        return {
+          stopDeadzone: clampNumber(value.stopDeadzone, 0.18, 0.45, DEFAULT_SETTINGS.stopDeadzone),
+          speedSensitivity: clampNumber(value.speedSensitivity, 0.5, 2, DEFAULT_SETTINGS.speedSensitivity),
+          speedSteps: Math.round(clampNumber(value.speedSteps, 1, 5, DEFAULT_SETTINGS.speedSteps)),
+          steeringDeadzone: Math.round(clampNumber(value.steeringDeadzone, 5, 35, DEFAULT_SETTINGS.steeringDeadzone)),
+          invertSteering: Boolean(value.invertSteering),
+          invertDrive: Boolean(value.invertDrive),
+          gripperControlMode: ["wink", "voice", "mouth"].includes(value.gripperControlMode) ? value.gripperControlMode : "wink",
+          invertMouthGripper: Boolean(value.invertMouthGripper),
+          winkSensitivity: Math.round(clampNumber(value.winkSensitivity, 1, 10, DEFAULT_SETTINGS.winkSensitivity)),
+          winkHold: Math.round(clampNumber(value.winkHold, 250, 1000, DEFAULT_SETTINGS.winkHold)),
+          poseConfidence: clampNumber(value.poseConfidence, 0.3, 0.8, DEFAULT_SETTINGS.poseConfidence),
+          haptics: Boolean(value.haptics),
+          keepAwake: Boolean(value.keepAwake),
+          backwardGesture: ["raise", "cross"].includes(value.backwardGesture) ? value.backwardGesture : DEFAULT_SETTINGS.backwardGesture,
+          liteEffects: Boolean(value.liteEffects)
+        };
+      }
+
+      function clampNumber(value, min, max, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+      }
+
+      function openSettings() {
+        populateSettingsForm(state.settings);
+        updateAllSettingOutputs();
+        syncGripperSettingsVisibility();
+        el.settingsBackdrop.hidden = false;
+        document.body.classList.add("modal-open");
+        requestAnimationFrame(() => document.getElementById("stopDeadzone").focus());
+      }
+
+      function closeSettings() {
+        el.settingsBackdrop.hidden = true;
+        document.body.classList.remove("modal-open");
+        el.settingsBtn.focus({ preventScroll: true });
+      }
+
+      function populateSettingsForm(settings) {
+        Object.entries(settings).forEach(([key, value]) => {
+          const input = document.getElementById(key);
+          if (!input) return;
+          if (input.type === "checkbox") input.checked = value;
+          else input.value = String(value);
+        });
+      }
+
+      function readSettingsForm() {
+        return sanitizeSettings({
+          stopDeadzone: document.getElementById("stopDeadzone").value,
+          speedSensitivity: document.getElementById("speedSensitivity").value,
+          speedSteps: document.getElementById("speedSteps").value,
+          steeringDeadzone: document.getElementById("steeringDeadzone").value,
+          invertSteering: document.getElementById("invertSteering").checked,
+          invertDrive: document.getElementById("invertDrive").checked,
+          gripperControlMode: document.getElementById("gripperControlMode").value,
+          invertMouthGripper: document.getElementById("invertMouthGripper").checked,
+          winkSensitivity: document.getElementById("winkSensitivity").value,
+          winkHold: document.getElementById("winkHold").value,
+          poseConfidence: document.getElementById("poseConfidence").value,
+          haptics: document.getElementById("haptics").checked,
+          keepAwake: document.getElementById("keepAwake").checked,
+          backwardGesture: document.getElementById("backwardGesture").value,
+          liteEffects: document.getElementById("liteEffects").checked
+        });
+      }
+
+      function updateAllSettingOutputs() {
+        const value = (id) => document.getElementById(id).value;
+        document.getElementById("stopDeadzoneValue").textContent = Number(value("stopDeadzone")).toFixed(2);
+        document.getElementById("speedSensitivityValue").textContent = Number(value("speedSensitivity")).toFixed(1) + "×";
+        document.getElementById("steeringDeadzoneValue").textContent = value("steeringDeadzone") + "°";
+        document.getElementById("winkSensitivityValue").textContent = value("winkSensitivity") + " / 10";
+        document.getElementById("winkHoldValue").textContent = value("winkHold") + " ms";
+        document.getElementById("poseConfidenceValue").textContent = Math.round(Number(value("poseConfidence")) * 100) + "%";
+      }
+
+      function saveSettingsFromForm() {
+        const previousMode = state.settings.gripperControlMode;
+        const previousMouthInverted = state.settings.invertMouthGripper;
+        const previousBackwardGesture = state.settings.backwardGesture;
+        state.settings = readSettingsForm();
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.settings));
+        } catch (error) {
+          addConsoleError("설정 저장 실패", error);
+        }
+        if (previousMode !== state.settings.gripperControlMode) {
+          resetWinks();
+          resetMouthControl();
+          state.faceResults = null;
+          el.gripperStatus.textContent = state.settings.gripperControlMode === "mouth" ? "입 인식 대기" : "대기";
+          if (state.settings.gripperControlMode !== "voice") stopVoiceRecognition();
+        }
+        if (previousMouthInverted !== state.settings.invertMouthGripper) {
+          resetMouthControl();
+          if (state.settings.gripperControlMode === "mouth") el.gripperStatus.textContent = "입 인식 대기";
+        }
+        applyModelSettings();
+        updateGripperModeUi();
+        if (previousBackwardGesture !== state.settings.backwardGesture) state.backwardReleaseSince = 0;
+        applyVisualSettings();
+        updateControlStatus(modeLabel(state.motion), state.speed, steeringLabel(state.steering));
+        if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
+        if (!state.settings.keepAwake) releaseWakeLock();
+        closeSettings();
+        showToast("설정을 이 기기에 저장했습니다.");
+        addLog("조종기 설정을 저장했습니다.");
+      }
+
+      function resetSettingsForm() {
+        populateSettingsForm(DEFAULT_SETTINGS);
+        updateAllSettingOutputs();
+        syncGripperSettingsVisibility();
+        showToast("기본값을 불러왔습니다. 저장을 눌러 적용하세요.");
+      }
+
+      function syncGripperSettingsVisibility() {
+        const mode = document.getElementById("gripperControlMode").value;
+        document.getElementById("winkSettings").hidden = mode !== "wink";
+        document.getElementById("mouthSettings").hidden = mode !== "mouth";
+      }
+
+      function updateGripperModeUi() {
+        const voiceMode = state.settings.gripperControlMode === "voice";
+        el.voiceControl.hidden = !voiceMode;
+        if (!voiceMode) return;
+
+        const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+        el.voiceBtn.disabled = !supported;
+        if (!supported) {
+          el.voiceBtn.textContent = "음성명령 미지원";
+          setVoiceStatus("이 브라우저에서는 음성 인식을 사용할 수 없습니다.", "error");
+        } else if (!state.voiceListening && !state.voiceWanted) {
+          el.voiceBtn.textContent = "음성명령 시작";
+          setVoiceStatus("열 또는 닫 소리를 기다립니다.", "");
+        }
+      }
+
+      async function checkCapabilities() {
+        if (!window.isSecureContext) {
+          setSystemStatus("HTTPS 연결 필요", "warning");
+          el.connectBtn.disabled = true;
+          addLog("BLE와 카메라는 HTTPS 주소에서 실행해야 합니다.");
+          return;
+        }
+
+        if (!("mediaDevices" in navigator) || !("getUserMedia" in navigator.mediaDevices)) {
+          el.cameraBtn.disabled = true;
+          addLog("이 브라우저는 카메라 API를 지원하지 않습니다.");
+        }
+
+        if (!("bluetooth" in navigator)) {
+          setSystemStatus("BLE 미지원", "warning");
+          el.connectBtn.disabled = true;
+          el.connectBtn.textContent = "BLE 미지원";
+          addLog("BLE 미지원 브라우저입니다. Android Chrome/Edge 또는 iPhone Bluefy를 사용하세요.");
+          return;
+        }
+
+        try {
+          const available = typeof navigator.bluetooth.getAvailability === "function"
+            ? await navigator.bluetooth.getAvailability()
+            : true;
+          if (!available) {
+            setSystemStatus("Bluetooth 꺼짐", "warning");
+            addLog("스마트폰 Bluetooth를 켠 뒤 연결 버튼을 다시 누르세요.");
+          } else {
+            setSystemStatus("준비됨", "");
+          }
+        } catch (error) {
+          setSystemStatus("준비됨", "");
+        }
+      }
+
+      async function restoreKnownDevice() {
+        if (!("bluetooth" in navigator) || typeof navigator.bluetooth.getDevices !== "function") return;
+        try {
+          const savedId = localStorage.getItem(DEVICE_KEY);
+          if (!savedId) return;
+          const devices = await navigator.bluetooth.getDevices();
+          const known = devices.find((device) => device.id === savedId);
+          if (known) {
+            prepareBleDevice(known);
+            el.connectBtn.textContent = "BLE 재연결";
+            addLog("이전에 허용한 BLE 장치를 찾았습니다.");
+          }
+        } catch (error) {
+          addConsoleError("저장 장치 확인 실패", error);
+        }
+      }
+
+      async function handleConnectButton() {
+        if (state.bleDevice?.gatt?.connected) {
+          disconnectBLE();
+          return;
+        }
+
+        if (!("bluetooth" in navigator)) {
+          showToast("이 브라우저에서는 Web Bluetooth를 사용할 수 없습니다.");
+          return;
+        }
+
+        el.connectBtn.disabled = true;
+        el.connectBtn.textContent = "연결 중…";
+        state.manualDisconnect = false;
+
+        try {
+          let device = state.bleDevice;
+          if (!device) {
+            device = await navigator.bluetooth.requestDevice({
+              acceptAllDevices: true,
+              optionalServices: [SERVICE_UUID]
+            });
+            prepareBleDevice(device);
+            try { localStorage.setItem(DEVICE_KEY, device.id); } catch (error) { /* 저장 불가 시 연결은 계속 */ }
+          }
+          await connectGatt(device, 3);
+        } catch (error) {
+          handleBleError(error);
+        } finally {
+          el.connectBtn.disabled = false;
+          updateBleUi();
+        }
+      }
+
+      function prepareBleDevice(device) {
+        if (state.bleDevice && state.bleDevice !== device) {
+          state.bleDevice.removeEventListener("gattserverdisconnected", handleGattDisconnected);
+        }
+        state.bleDevice = device;
+        device.removeEventListener("gattserverdisconnected", handleGattDisconnected);
+        device.addEventListener("gattserverdisconnected", handleGattDisconnected);
+      }
+
+      async function connectGatt(device, attempts = 1) {
+        let lastError;
+        state.connecting = true;
+        try {
+          for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            try {
+              const server = device.gatt.connected ? device.gatt : await device.gatt.connect();
+              const service = await server.getPrimaryService(SERVICE_UUID);
+              state.bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+              state.reconnectAttempts = 0;
+              setSystemStatus("BLE 연결됨", "online");
+              updateBleUi();
+              addLog(`BLE 연결 성공 · ${device.name || "이름 없는 장치"}`);
+              // 연결 직후 아두이노 상태를 정지로 맞춘 뒤, 현재 손 동작 상태를 다시 전송한다.
+              state.drive.events = [];
+              requestForcedStop();
+              return;
+            } catch (error) {
+              lastError = error;
+              state.bleCharacteristic = null;
+              if (device.gatt.connected) device.gatt.disconnect();
+              if (attempt < attempts) await delay(350 * attempt);
+            }
+          }
+        } finally {
+          state.connecting = false;
+        }
+        throw lastError;
+      }
+
+      function disconnectBLE() {
+        state.manualDisconnect = true;
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = null;
+        state.bleCharacteristic = null;
+        if (state.bleDevice?.gatt?.connected) state.bleDevice.gatt.disconnect();
+        setSystemStatus("준비됨", "");
+        updateBleUi();
+        addLog("BLE 연결을 해제했습니다. 카메라는 테스트 모드로 계속 사용할 수 있습니다.");
+      }
+
+      function handleGattDisconnected() {
+        state.bleCharacteristic = null;
+        updateBleUi();
+        setSystemStatus("BLE 연결 끊김", "warning");
+        addLog("BLE 연결이 끊겼습니다.");
+
+        if (state.connecting || state.manualDisconnect || !state.bleDevice || state.reconnectAttempts >= 3) return;
+        state.reconnectAttempts += 1;
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = setTimeout(async () => {
+          try {
+            addLog(`BLE 자동 재연결 시도 ${state.reconnectAttempts}/3`);
+            await connectGatt(state.bleDevice, 1);
+          } catch (error) {
+            if (state.reconnectAttempts < 3) handleGattDisconnected();
+            else addLog("자동 재연결을 중단했습니다. BLE 연결 버튼을 눌러 다시 시도하세요.");
+          }
+        }, 900 * state.reconnectAttempts);
+      }
+
+      function handleBleError(error) {
+        const name = error?.name || "Error";
+        let message = "BLE 연결에 실패했습니다.";
+        if (name === "NotFoundError") message = "장치 선택이 취소되었거나 주변에서 장치를 찾지 못했습니다.";
+        else if (name === "SecurityError") message = "BLE 권한이 차단되었습니다. HTTPS 주소와 브라우저 권한을 확인하세요.";
+        else if (name === "NetworkError") message = "GATT 연결에 실패했습니다. 다른 앱의 BLE 연결을 끊고 다시 시도하세요.";
+        else if (name === "NotSupportedError") message = "선택한 장치에서 필요한 BLE 서비스 또는 쓰기 특성을 찾지 못했습니다.";
+        else if (error?.message) message += " " + error.message;
+        addLog(message);
+        showToast(message);
+        setSystemStatus("BLE 연결 실패", "warning");
+      }
+
+      function updateBleUi() {
+        const connected = Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
+        el.connectBtn.classList.toggle("connected", connected);
+        el.connectBtn.textContent = connected ? "BLE 해제" : (state.bleDevice ? "BLE 재연결" : "BLE 연결");
+        if (state.cameraRunning) {
+          el.stageBadgeText.textContent = connected ? "실기 제어 중" : "오프라인 테스트";
+          el.stageBadge.classList.toggle("live", connected);
+        }
+      }
+
+      // ---------- 조종 신호 엔진 ----------
+      // 예전 방식: 신호가 생길 때마다 줄(대기열)에 세워서 하나씩 보냈다. 손이 조금만 떨려도
+      // "3,1,3,1…" 같은 신호가 줄에 쌓여, 정작 중요한 조향 신호가 그 뒤에서 기다렸다.
+      // 새 방식: "지금 원하는 상태"만 기억하고, 블루투스가 비는 순간마다 아두이노가 아는 상태와의
+      // 차이 중 가장 급한 것 하나만 보낸다. 오래된 신호는 줄을 서지 않고 버려진다.
+      function isBleConnected() {
+        return Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
+      }
+
+      // 윙크·입·음성 그리퍼 신호와 일회성 신호는 순서대로 반드시 전송한다(기존과 동일한 신호).
+      function transmitCommand(command) {
+        state.drive.events.push(command);
+        pumpCommands();
+        return Promise.resolve(isBleConnected());
+      }
+
+      function requestForcedStop() {
+        state.drive.forceStop = true;
+        pumpCommands();
+      }
+
+      function nextDriveCommand() {
+        const drive = state.drive;
+        const target = drive.target;
+        const sent = drive.sent;
+
+        // 1순위: 정지
+        if (drive.forceStop || (target.motion === "stop" && sent.motion !== "stop")) {
+          drive.forceStop = false;
+          setSentStopped();
+          return COMMANDS.stop;
+        }
+
+        // 2순위: 전진/후진 전환 (기존 프로토콜 그대로: 정지 → 주행 방향 → 증속)
+        if (target.motion !== "stop" && target.motion !== sent.motion) {
+          if (sent.motion !== "stop") {
+            setSentStopped();
+            return COMMANDS.stop;
+          }
+          sent.motion = target.motion;
+          sent.speed = 0;
+          sent.steering = "straight";
+          return driveCommand(target.motion);
+        }
+
+        // 3순위: 그리퍼 등 일회성 신호
+        if (drive.events.length) return drive.events.shift();
+
+        if (target.motion === "stop") return null;
+
+        // 4순위: 조향 (속도 단계보다 먼저 보내 회전 반응을 빠르게)
+        if (target.steering !== sent.steering) {
+          sent.steering = target.steering;
+          return target.steering === "straight" ? driveCommand(target.motion) : steeringCommand(target.steering);
+        }
+
+        // 5순위: 속도 단계 (한 번에 한 단계씩, 최신 목표만 따라감)
+        if (target.speed !== sent.speed) {
+          const up = target.speed > sent.speed;
+          sent.speed += up ? 1 : -1;
+          return up ? COMMANDS.speedUp : COMMANDS.speedDown;
+        }
+        return null;
+      }
+
+      function setSentStopped() {
+        state.drive.sent.motion = "stop";
+        state.drive.sent.speed = 0;
+        state.drive.sent.steering = "straight";
+      }
+
+      function pumpCommands() {
+        if (state.drive.pumping) return;
+
+        if (!isBleConnected()) {
+          // 오프라인 테스트: 블루투스 대기 없이 바로 처리
+          let command;
+          let guard = 0;
+          while ((command = nextDriveCommand()) && guard < 40) {
+            guard += 1;
+            showSentSignal(command);
+            addLog(`TEST · 신호 ${command.code} (${command.label})`);
+          }
+          return;
+        }
+
+        state.drive.pumping = true;
+        (async () => {
+          try {
+            let command;
+            while ((command = nextDriveCommand())) {
+              if (!isBleConnected()) {
+                // 전송 중 연결이 끊기면 다음 연결 때 정지부터 다시 맞춘다.
+                state.drive.events = [];
+                break;
+              }
+              try {
+                await writeCommand(command);
+                showSentSignal(command);
+                addLog(`TX · 신호 ${command.code} (${command.label})`);
+              } catch (error) {
+                addLog(`BLE 전송 실패 · ${error.message || error}`);
+                if (!state.bleDevice?.gatt?.connected) {
+                  handleGattDisconnected();
+                  break;
+                }
+              }
+            }
+          } finally {
+            state.drive.pumping = false;
+          }
+        })();
+      }
+
+      async function writeCommand(command) {
+        const characteristic = state.bleCharacteristic;
+        if (!characteristic) throw new Error("BLE 특성이 없습니다.");
+        const payload = encoder.encode(command.code + "\n");
+        if (characteristic.properties?.writeWithoutResponse && typeof characteristic.writeValueWithoutResponse === "function") {
+          await characteristic.writeValueWithoutResponse(payload);
+        } else if (characteristic.properties?.write && typeof characteristic.writeValueWithResponse === "function") {
+          await characteristic.writeValueWithResponse(payload);
+        } else if (typeof characteristic.writeValue === "function") {
+          await characteristic.writeValue(payload);
+        } else {
+          throw new Error("쓰기 가능한 BLE 특성이 아닙니다.");
+        }
+      }
+
+      function showSentSignal(command) {
+        el.signalStatus.textContent = command.label;
+        el.signalCode.textContent = command.code;
+        if (typeof el.signalCode.animate === "function") {
+          el.signalCode.animate(
+            [{ transform: "scale(1.12)", opacity: 0.55 }, { transform: "scale(1)", opacity: 1 }],
+            { duration: 220, easing: "ease-out" }
+          );
+        }
+        if (command.code !== state.lastSignalCode) pulseHaptic();
+        state.lastSignalCode = command.code;
+      }
+
+      function toggleVoiceRecognition() {
+        if (state.voiceWanted || state.voiceListening) stopVoiceRecognition();
+        else startVoiceRecognition();
+      }
+
+      function createVoiceRecognition() {
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Recognition) return null;
+
+        const recognition = new Recognition();
+        recognition.lang = "ko-KR";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 5;
+
+        try {
+          if ("phrases" in recognition && typeof window.SpeechRecognitionPhrase === "function") {
+            recognition.phrases = [
+              new window.SpeechRecognitionPhrase("열어", 6),
+              new window.SpeechRecognitionPhrase("열어줘", 6),
+              new window.SpeechRecognitionPhrase("열기", 6),
+              new window.SpeechRecognitionPhrase("열어라", 6),
+              new window.SpeechRecognitionPhrase("열라고", 6),
+              new window.SpeechRecognitionPhrase("열으라고", 6),
+              new window.SpeechRecognitionPhrase("집게 열어", 6),
+              new window.SpeechRecognitionPhrase("그리퍼 열어", 6),
+              new window.SpeechRecognitionPhrase("닫아", 6),
+              new window.SpeechRecognitionPhrase("닫아줘", 6),
+              new window.SpeechRecognitionPhrase("닫기", 6),
+              new window.SpeechRecognitionPhrase("닫음", 6),
+              new window.SpeechRecognitionPhrase("닫으라고", 6),
+              new window.SpeechRecognitionPhrase("집게 닫아", 6),
+              new window.SpeechRecognitionPhrase("그리퍼 닫아", 6)
+            ];
+          }
+        } catch (error) {
+          addConsoleError("음성 명령어 우선순위 설정 실패", error);
+        }
+
+        recognition.onstart = () => {
+          state.voiceListening = true;
+          el.voiceBtn.disabled = false;
+          el.voiceBtn.textContent = "음성명령 중지";
+          el.voiceBtn.classList.add("listening");
+          setVoiceStatus("듣는 중 · ‘열어’ 또는 ‘닫아’라고 말하세요.", "listening");
+          addLog("음성명령 듣기를 시작했습니다.");
+        };
+
+        recognition.onresult = (event) => {
+          for (let index = event.resultIndex; index < event.results.length; index += 1) {
+            const result = event.results[index];
+            const alternatives = [];
+            for (let alternativeIndex = 0; alternativeIndex < result.length; alternativeIndex += 1) {
+              const transcript = result[alternativeIndex]?.transcript?.trim() || "";
+              if (transcript) alternatives.push(transcript);
+            }
+            if (!alternatives.length) continue;
+            setVoiceStatus(`인식 · ${alternatives[0]}`, "listening");
+            if (processVoiceTranscripts(alternatives)) {
+              try { recognition.stop(); } catch (error) { /* 이미 종료 중 */ }
+              break;
+            }
+          }
+        };
+
+        recognition.onerror = (event) => {
+          state.voiceListening = false;
+          const fatalErrors = ["not-allowed", "service-not-allowed", "audio-capture", "language-not-supported"];
+          if (event.error === "aborted") return;
+          if (fatalErrors.includes(event.error)) state.voiceWanted = false;
+
+          const message = voiceErrorMessage(event.error);
+          setVoiceStatus(message, "error");
+          addLog(message);
+          if (!state.voiceWanted) {
+            el.voiceBtn.textContent = "음성명령 시작";
+            el.voiceBtn.classList.remove("listening");
+          }
+        };
+
+        recognition.onend = () => {
+          state.voiceListening = false;
+          el.voiceBtn.classList.remove("listening");
+          clearTimeout(state.voiceRestartTimer);
+          if (state.voiceWanted && state.settings.gripperControlMode === "voice" && document.visibilityState === "visible") {
+            el.voiceBtn.textContent = "마이크 재연결 중…";
+            state.voiceRestartTimer = setTimeout(() => startVoiceRecognition(true), 280);
+          } else if (!state.voiceWanted) {
+            el.voiceBtn.textContent = "음성명령 시작";
+          }
+        };
+
+        return recognition;
+      }
+
+      function startVoiceRecognition(isRestart = false) {
+        if (state.settings.gripperControlMode !== "voice") return;
+        if (!state.speechRecognition) state.speechRecognition = createVoiceRecognition();
+        if (!state.speechRecognition) {
+          state.voiceWanted = false;
+          el.voiceBtn.disabled = true;
+          el.voiceBtn.textContent = "음성명령 미지원";
+          setVoiceStatus("이 브라우저에서는 음성 인식을 사용할 수 없습니다.", "error");
+          return;
+        }
+        if (state.voiceListening) return;
+
+        state.voiceWanted = true;
+        clearTimeout(state.voiceRestartTimer);
+        el.voiceBtn.disabled = true;
+        el.voiceBtn.textContent = isRestart ? "마이크 재연결 중…" : "마이크 연결 중…";
+        setVoiceStatus("마이크 권한을 확인하고 있습니다.", "");
+        try {
+          state.speechRecognition.start();
+        } catch (error) {
+          el.voiceBtn.disabled = false;
+          if (error?.name !== "InvalidStateError") {
+            state.voiceWanted = false;
+            el.voiceBtn.textContent = "음성명령 시작";
+            setVoiceStatus("음성 인식을 시작하지 못했습니다.", "error");
+            addConsoleError("음성 인식 시작 실패", error);
+          }
+        }
+      }
+
+      function stopVoiceRecognition() {
+        state.voiceWanted = false;
+        state.voiceListening = false;
+        clearTimeout(state.voiceRestartTimer);
+        state.voiceRestartTimer = null;
+        if (state.speechRecognition) {
+          try { state.speechRecognition.abort(); } catch (error) { /* 이미 종료됨 */ }
+        }
+        el.voiceBtn.disabled = false;
+        el.voiceBtn.textContent = "음성명령 시작";
+        el.voiceBtn.classList.remove("listening");
+        setVoiceStatus("음성명령이 중지되었습니다.", "");
+      }
+
+      function classifyVoiceTranscript(transcript) {
+        const normalized = transcript.replace(/\s+/g, "");
+        const openKeywords = ["열", "여러", "열러", "여뤄"];
+        const closeKeywords = ["닫", "다다", "타다", "다듬", "다끼"];
+        let openIndex = -1;
+        let closeIndex = -1;
+
+        openKeywords.forEach((keyword) => {
+          const keywordIndex = normalized.indexOf(keyword);
+          if (keywordIndex >= 0 && (openIndex < 0 || keywordIndex < openIndex)) {
+            openIndex = keywordIndex;
+          }
+        });
+
+        closeKeywords.forEach((keyword) => {
+          const keywordIndex = normalized.indexOf(keyword);
+          if (keywordIndex >= 0 && (closeIndex < 0 || keywordIndex < closeIndex)) {
+            closeIndex = keywordIndex;
+          }
+        });
+
+        if (openIndex < 0 && closeIndex < 0) return null;
+        return {
+          transcript,
+          shouldOpen: openIndex >= 0 && (closeIndex < 0 || openIndex < closeIndex)
+        };
+      }
+
+      function processVoiceTranscripts(transcripts) {
+        let match = null;
+        for (const transcript of transcripts) {
+          match = classifyVoiceTranscript(transcript);
+          if (match) break;
+        }
+        if (!match) return false;
+
+        const now = performance.now();
+        if (now - state.lastVoiceCommandAt < 900) return false;
+        state.lastVoiceCommandAt = now;
+
+        const command = match.shouldOpen ? COMMANDS.gripperOpen : COMMANDS.gripperClose;
+        const gripperLabel = match.shouldOpen ? "열림" : "닫힘";
+        transmitCommand(command);
+        el.gripperStatus.textContent = gripperLabel;
+        setVoiceStatus(`명령 인식 · ${match.transcript} → ${gripperLabel}`, "listening");
+        addLog(`VOICE · “${match.transcript}” → 신호 ${command.code}`);
+        return true;
+      }
+
+      function setVoiceStatus(message, stateClass) {
+        el.voiceStatusText.textContent = message;
+        el.voiceStatus.className = "voice-status" + (stateClass ? " " + stateClass : "");
+      }
+
+      function voiceErrorMessage(error) {
+        if (error === "not-allowed" || error === "service-not-allowed") {
+          return "마이크 또는 음성 인식 권한이 거부되었습니다. 브라우저 권한을 확인하세요.";
+        }
+        if (error === "audio-capture") return "사용할 수 있는 마이크를 찾지 못했습니다.";
+        if (error === "language-not-supported") return "이 브라우저는 한국어 음성 인식을 지원하지 않습니다.";
+        if (error === "network") return "음성 인식 네트워크 연결을 확인하세요.";
+        if (error === "no-speech") return "음성이 들리지 않아 다시 듣고 있습니다.";
+        return `음성 인식 오류 · ${error}`;
+      }
+
+      async function toggleCamera() {
+        if (state.cameraRunning) {
+          stopCamera();
+          return;
+        }
+        await startCamera();
+      }
+
+      async function startCamera() {
+        if (!window.isSecureContext) {
+          showToast("카메라는 HTTPS로 접속했을 때만 사용할 수 있습니다.");
+          return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          showToast("이 브라우저는 카메라를 지원하지 않습니다.");
+          return;
+        }
+
+        el.cameraBtn.disabled = true;
+        el.cameraBtn.textContent = "준비 중…";
+
+        try {
+          let stream;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                facingMode: { ideal: "user" },
+                width: { ideal: 480, max: 720 },
+                height: { ideal: 640, max: 960 },
+                frameRate: { ideal: 30, max: 30 }
+              }
+            });
+          } catch (error) {
+            if (error?.name !== "OverconstrainedError") throw error;
+            stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } });
+          }
+
+          state.cameraStream = stream;
+          el.videoElement.srcObject = stream;
+          await el.videoElement.play();
+          await initializeModels();
+
+          const width = el.videoElement.videoWidth || 480;
+          const height = el.videoElement.videoHeight || 640;
+          el.canvasElement.width = width;
+          el.canvasElement.height = height;
+          state.cameraRunning = true;
+          state.frameCount = 0;
+          state.frameErrors = 0;
+          state.poseLostAt = 0;
+          state.smoothedWrists = null;
+          state.wristFilters = null;
+          state.fpsFrames = 0;
+          state.fpsSince = performance.now();
+          el.cameraBtn.textContent = "카메라 종료";
+          el.cameraBtn.classList.add("running");
+          el.stageHelp.hidden = true;
+          updateBleUi();
+          if (!state.bleCharacteristic) {
+            el.stageBadgeText.textContent = "오프라인 테스트";
+            el.stageBadge.classList.remove("live");
+          }
+          addLog(state.bleCharacteristic ? "카메라 제어를 시작했습니다." : "카메라 테스트를 시작했습니다. 신호는 로그에만 표시됩니다.");
+          if (state.settings.keepAwake) requestWakeLock();
+          state.animationFrame = requestAnimationFrame(processVideoFrame);
+        } catch (error) {
+          cleanupCameraStream();
+          const message = cameraErrorMessage(error);
+          addLog(message);
+          showToast(message);
+          drawPlaceholder();
+        } finally {
+          el.cameraBtn.disabled = false;
+          if (!state.cameraRunning) el.cameraBtn.textContent = "카메라 시작";
+        }
+      }
+
+      async function initializeModels() {
+        if (typeof window.Pose !== "function" || typeof window.FaceMesh !== "function") {
+          throw new Error("포즈 모델 파일을 불러오지 못했습니다. 인터넷 연결을 확인하세요.");
+        }
+
+        if (!state.pose) {
+          state.pose = new Pose({ locateFile: (file) => POSE_ASSET_BASE + file });
+          state.pose.onResults(onPoseResults);
+        }
+        if (!state.faceMesh) {
+          state.faceMesh = new FaceMesh({ locateFile: (file) => FACE_ASSET_BASE + file });
+          state.faceMesh.onResults(onFaceResults);
+        }
+        applyModelSettings();
+      }
+
+      function applyModelSettings() {
+        if (state.pose) {
+          state.pose.setOptions({
+            modelComplexity: 0,
+            // 모델 내부 스무딩을 끄고, 아래 One Euro 필터 한 번만 사용한다(이중 스무딩으로 인한 지연 제거).
+            smoothLandmarks: false,
+            enableSegmentation: false,
+            selfieMode: false,
+            minDetectionConfidence: state.settings.poseConfidence,
+            minTrackingConfidence: state.settings.poseConfidence
+          });
+        }
+        if (state.faceMesh) {
+          state.faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: state.settings.poseConfidence,
+            minTrackingConfidence: state.settings.poseConfidence
+          });
+        }
+      }
+
+      async function processVideoFrame() {
+        if (!state.cameraRunning) return;
+        if (state.processingFrame || el.videoElement.readyState < 2) {
+          state.animationFrame = requestAnimationFrame(processVideoFrame);
+          return;
+        }
+
+        state.processingFrame = true;
+        try {
+          await state.pose.send({ image: el.videoElement });
+          state.frameCount += 1;
+          updateFps();
+          if (state.settings.gripperControlMode !== "voice" && state.frameCount % 2 === 0) {
+            await state.faceMesh.send({ image: el.videoElement });
+          }
+          state.frameErrors = 0;
+        } catch (error) {
+          state.frameErrors += 1;
+          if (state.frameErrors === 1) addLog("영상 분석을 다시 시도하고 있습니다.");
+          if (state.frameErrors >= 8) {
+            addLog("영상 분석을 중단했습니다. 카메라를 다시 시작하세요.");
+            stopCamera();
+            return;
+          }
+        } finally {
+          state.processingFrame = false;
+        }
+
+        if (state.cameraRunning) state.animationFrame = requestAnimationFrame(processVideoFrame);
+      }
+
+      function onPoseResults(results) {
+        if (!state.cameraRunning) return;
+        drawCameraFrame(results);
+        const landmarks = results.poseLandmarks;
+        if (!landmarks) {
+          handlePoseMissing();
+          return;
+        }
+
+        // 전면 카메라 원본 좌표에서 16번(사용자 오른손)은 왼쪽, 15번(사용자 왼손)은 오른쪽에 보인다.
+        const leftOnScreen = offsetWrist(landmarks[16]);
+        const rightOnScreen = offsetWrist(landmarks[15]);
+        // 교차 후진 중에는 팔이 겹쳐 손목 신뢰도가 떨어지므로 기준을 낮춰 놓치지 않게 한다.
+        const crossHold = state.settings.backwardGesture === "cross" && state.drive.target.motion === "backward";
+        const threshold = crossHold ? Math.max(0.2, state.settings.poseConfidence * 0.6) : state.settings.poseConfidence;
+        const visible = leftOnScreen.visibility > threshold && rightOnScreen.visibility > threshold;
+        const inBounds = pointInBounds(leftOnScreen) && pointInBounds(rightOnScreen);
+
+        if (!visible || !inBounds) {
+          handlePoseMissing();
+          return;
+        }
+
+        state.poseLostAt = 0;
+        const wrists = smoothWrists(leftOnScreen, rightOnScreen, results);
+        drawWristGuide(wrists.left, wrists.right);
+        processWristControl(wrists.left, wrists.right, landmarks);
+      }
+
+      function onFaceResults(results) {
+        const gripperMode = state.settings.gripperControlMode;
+        if (gripperMode === "voice") return;
+        state.faceResults = results;
+        state.lastFaceAt = performance.now();
+        const landmarks = results.multiFaceLandmarks?.[0];
+        if (!landmarks) {
+          resetWinks();
+          clearMouthCandidate();
+          return;
+        }
+        if (gripperMode === "wink") processEyeControl(landmarks);
+        if (gripperMode === "mouth") processMouthControl(landmarks);
+      }
+
+      function drawCameraFrame(results) {
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        ctx.save();
+        ctx.setTransform(-1, 0, 0, 1, width, 0);
+        ctx.drawImage(results.image || el.videoElement, 0, 0, width, height);
+
+        if (state.settings.gripperControlMode !== "voice" && state.faceResults?.multiFaceLandmarks?.[0] && performance.now() - state.lastFaceAt < 800) {
+          const face = state.faceResults.multiFaceLandmarks[0];
+          if (state.settings.gripperControlMode === "wink") {
+            drawEyeMarker(ctx, face, [159, 145, 33, 133], "#48dfb5");
+            drawEyeMarker(ctx, face, [386, 374, 362, 263], "#74a7ff");
+          } else if (state.settings.gripperControlMode === "mouth") {
+            drawMouthMarker(ctx, face);
+          }
+        }
+        ctx.restore();
+      }
+
+      function offsetWrist(point) {
+        return { x: point.x, y: point.y - 0.045, visibility: point.visibility ?? 0 };
+      }
+
+      function pointInBounds(point) {
+        return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+      }
+
+      // One Euro 필터: 손이 가만히 있을 때는 떨림을 강하게 걸러내고, 빠르게 움직이면 거의 지연 없이 따라간다.
+      // (예전 방식은 항상 같은 비율로 천천히 따라가서 동작이 한 박자 늦게 반영됐다.)
+      function createOneEuro(minCutoff, beta, dCutoff) {
+        let previous = null;
+        let previousDerivative = 0;
+        let previousTime = 0;
+        const smoothing = (cutoff, dt) => {
+          const tau = 1 / (2 * Math.PI * cutoff);
+          return 1 / (1 + tau / dt);
+        };
+        return (value, time) => {
+          if (previous === null) {
+            previous = value;
+            previousTime = time;
+            return value;
+          }
+          const dt = Math.min(0.25, Math.max(0.001, (time - previousTime) / 1000));
+          previousTime = time;
+          const derivative = (value - previous) / dt;
+          const aD = smoothing(dCutoff, dt);
+          previousDerivative += aD * (derivative - previousDerivative);
+          const cutoff = minCutoff + beta * Math.abs(previousDerivative);
+          previous += smoothing(cutoff, dt) * (value - previous);
+          return previous;
+        };
+      }
+
+      function smoothWrists(left, right) {
+        const now = performance.now();
+        if (!state.wristFilters || !state.smoothedWrists) {
+          const make = () => createOneEuro(1.6, 6.0, 1.0);
+          state.wristFilters = { lx: make(), ly: make(), rx: make(), ry: make() };
+          state.smoothedWrists = { left: { ...left }, right: { ...right } };
+        }
+        const f = state.wristFilters;
+        const w = state.smoothedWrists;
+        w.left.x = f.lx(left.x, now);
+        w.left.y = f.ly(left.y, now);
+        w.left.visibility = left.visibility;
+        w.right.x = f.rx(right.x, now);
+        w.right.y = f.ry(right.y, now);
+        w.right.visibility = right.visibility;
+        return w;
+      }
+
+      function drawWristGuide(left, right) {
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        ctx.save();
+        ctx.setTransform(-1, 0, 0, 1, width, 0);
+        const lx = left.x * width;
+        const ly = left.y * height;
+        const rx = right.x * width;
+        const ry = right.y * height;
+
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(rx, ry);
+        ctx.strokeStyle = "rgba(72, 223, 181, 0.9)";
+        ctx.lineWidth = Math.max(3, width / 150);
+        ctx.setLineDash([12, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawPoint(ctx, lx, ly, "#48dfb5");
+        drawPoint(ctx, rx, ry, "#74a7ff");
+        ctx.restore();
+      }
+
+      function drawPoint(ctx, x, y, color) {
+        const radius = Math.max(9, el.canvasElement.width / 34);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      function drawEyeMarker(ctx, landmarks, indices, color) {
+        const points = indices.map((index) => landmarks[index]);
+        const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length * el.canvasElement.width;
+        const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length * el.canvasElement.height;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, Math.max(5, el.canvasElement.width / 70), 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      function drawMouthMarker(ctx, landmarks) {
+        const top = landmarks[13];
+        const bottom = landmarks[14];
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        const x1 = top.x * width;
+        const y1 = top.y * height;
+        const x2 = bottom.x * width;
+        const y2 = bottom.y * height;
+        const color = state.mouth.applied === "open" ? "#48dfb5" : "#ffca68";
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(4, width / 100);
+        ctx.stroke();
+        drawPoint(ctx, x1, y1, color);
+        drawPoint(ctx, x2, y2, color);
+      }
+
+      function handlePoseMissing() {
+        if (!state.poseLostAt) state.poseLostAt = performance.now();
+        if (performance.now() - state.poseLostAt > 320) {
+          setMotion("stop", 0, "straight", "인식 대기");
+        }
+        if (performance.now() - state.poseLostAt > 1000) {
+          state.smoothedWrists = null;
+          state.wristFilters = null;
+        }
+      }
+
+      function processWristControl(left, right, landmarks) {
+        const dx = right.x - left.x;
+        const dy = right.y - left.y;
+        const distance = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, Math.max(Math.abs(dx), 0.0001)) * 180 / Math.PI;
+        const target = state.drive.target;
+        const moving = target.motion !== "stop";
+        updateDistanceStatus(distance);
+
+        const backward = detectBackward(left, right, landmarks);
+        // 교차하면 두 주먹이 가까워질 수밖에 없으므로 교차 후진일 때는 출발 거리 기준을 낮춘다.
+        const deadzone = backward && state.settings.backwardGesture === "cross"
+          ? state.settings.stopDeadzone * 0.6
+          : state.settings.stopDeadzone;
+        const stopAt = moving ? deadzone - STOP_HYSTERESIS : deadzone;
+
+        if (distance < stopAt) {
+          setMotion("stop", 0, "straight", "정지");
+          return;
+        }
+
+        const normalized = Math.min(1, Math.max(0, (distance - deadzone) / (MAX_DISTANCE - deadzone)));
+        const response = Math.pow(normalized, 1 / state.settings.speedSensitivity);
+        const steps = state.settings.speedSteps;
+        const level = response * steps;
+        let speed = Math.min(steps, Math.max(1, Math.ceil(level)));
+        const current = target.speed;
+        const releasing = backward && state.backwardReleaseSince > 0;
+        if (releasing) speed = current || speed;   // 후진 해제 판정 중에는 속도를 건드리지 않는다
+        else if (moving && current > 0 && speed !== current) {
+          if (speed > current && level <= current + SPEED_HYSTERESIS) speed = current;
+          else if (speed < current && level > current - 1 - SPEED_HYSTERESIS) speed = current;
+        }
+
+        const steeringDeadzone = state.settings.steeringDeadzone;
+        const turnSide = angle > 0 ? "left" : "right";
+        let steering;
+        if (Math.abs(angle) > steeringDeadzone) steering = turnSide;
+        else if (moving && target.steering === turnSide && Math.abs(angle) > Math.max(2, steeringDeadzone - STEERING_HYSTERESIS)) steering = target.steering;
+        else steering = "straight";
+
+        setMotion(backward ? "backward" : "forward", speed, steering);
+      }
+
+      // 후진 판정
+      // - 주먹 올리기(기본): 두 손목이 모두 어깨선보다 위에 있으면 후진. 팔이 겹치지 않아 모델이 손목을 놓치지 않는다.
+      // - 주먹 교차: 화면 좌우가 뒤바뀌면 후진. 교차 중 손목이 흔들려도 확실히 풀릴 때까지 후진을 유지한다.
+      function detectBackward(left, right, landmarks) {
+        const isBackward = state.drive.target.motion === "backward";
+        let enter;
+        let exit;
+
+        if (state.settings.backwardGesture === "raise") {
+          const shoulderA = landmarks[11];
+          const shoulderB = landmarks[12];
+          const shouldersVisible = (shoulderA?.visibility ?? 0) > 0.35 && (shoulderB?.visibility ?? 0) > 0.35;
+          if (!shouldersVisible) return isBackward;
+          const shoulderY = (shoulderA.y + shoulderB.y) / 2;
+          // offsetWrist가 y를 0.045 올렸으므로 원래 손목 높이로 되돌려 비교한다.
+          const lowerWristY = Math.max(left.y, right.y) + 0.045;
+          enter = lowerWristY < shoulderY - RAISE_ENTER_MARGIN;
+          exit = lowerWristY > shoulderY + RAISE_EXIT_MARGIN;
+        } else {
+          enter = left.x > right.x;
+          exit = left.x < right.x - CROSS_EXIT_MARGIN;
+        }
+
+        if (!isBackward) {
+          state.backwardReleaseSince = 0;
+          return enter;
+        }
+        if (!exit) {
+          state.backwardReleaseSince = 0;
+          return true;
+        }
+        const now = performance.now();
+        if (!state.backwardReleaseSince) state.backwardReleaseSince = now;
+        return now - state.backwardReleaseSince < BACKWARD_RELEASE_MS;
+      }
+
+      function setMotion(targetMotion, targetSpeed, targetSteering, displayOverride = "") {
+        const target = state.drive.target;
+        if (targetMotion === "stop") {
+          target.motion = "stop";
+          target.speed = 0;
+          target.steering = "straight";
+          state.backwardReleaseSince = 0;
+        } else {
+          target.motion = targetMotion;
+          target.speed = targetSpeed;
+          target.steering = targetSteering;
+        }
+        state.motion = target.motion;
+        state.speed = target.speed;
+        state.steering = target.steering;
+        pumpCommands();
+        updateControlStatus(
+          targetMotion === "stop" ? (displayOverride || "정지") : modeLabel(targetMotion),
+          target.speed,
+          steeringLabel(target.steering)
+        );
+      }
+
+      function driveCommand(motion) {
+        const invertedMotion = state.settings.invertDrive
+          ? (motion === "forward" ? "backward" : "forward")
+          : motion;
+        return COMMANDS[invertedMotion];
+      }
+
+      function steeringCommand(steering) {
+        const invertedSteering = state.settings.invertSteering
+          ? (steering === "left" ? "right" : "left")
+          : steering;
+        return COMMANDS[invertedSteering];
+      }
+
+      function processEyeControl(landmarks) {
+        if (state.settings.gripperControlMode !== "wink") return;
+        // Face Mesh 기준 사용자의 오른쪽 눈은 33/133, 왼쪽 눈은 362/263 계열이다.
+        const rightEar = calculateEar(landmarks, 159, 145, 33, 133);
+        const leftEar = calculateEar(landmarks, 386, 374, 362, 263);
+        const threshold = 0.14 + state.settings.winkSensitivity * 0.012;
+        const rightClosed = rightEar < threshold;
+        const leftClosed = leftEar < threshold;
+        const rightOnly = rightClosed && leftEar > threshold * 1.08;
+        const leftOnly = leftClosed && rightEar > threshold * 1.08;
+
+        updateWink("right", rightOnly, rightClosed, COMMANDS.gripperOpen, "열림");
+        updateWink("left", leftOnly, leftClosed, COMMANDS.gripperClose, "닫힘");
+      }
+
+      function calculateEar(landmarks, topIndex, bottomIndex, outerIndex, innerIndex) {
+        const top = landmarks[topIndex];
+        const bottom = landmarks[bottomIndex];
+        const outer = landmarks[outerIndex];
+        const inner = landmarks[innerIndex];
+        return Math.hypot(top.x - bottom.x, top.y - bottom.y) /
+          Math.max(Math.hypot(outer.x - inner.x, outer.y - inner.y), 0.0001);
+      }
+
+      function updateWink(side, isOnlyEyeClosed, isPhysicallyClosed, command, gripperLabel) {
+        const wink = state.wink[side];
+        const now = performance.now();
+        if (isOnlyEyeClosed) {
+          if (!wink.startedAt) wink.startedAt = now;
+          if (!wink.fired && now - wink.startedAt >= state.settings.winkHold) {
+            wink.fired = true;
+            transmitCommand(command);
+            el.gripperStatus.textContent = gripperLabel;
+          }
+        } else {
+          wink.startedAt = 0;
+          if (!isPhysicallyClosed) wink.fired = false;
+        }
+      }
+
+      function resetWinks() {
+        for (const side of ["left", "right"]) {
+          state.wink[side].startedAt = 0;
+          state.wink[side].fired = false;
+        }
+      }
+
+      function processMouthControl(landmarks) {
+        if (state.settings.gripperControlMode !== "mouth") return;
+
+        const top = landmarks[13];
+        const bottom = landmarks[14];
+        const leftCorner = landmarks[78];
+        const rightCorner = landmarks[308];
+        const vertical = Math.hypot(top.x - bottom.x, top.y - bottom.y);
+        const horizontal = Math.max(
+          Math.hypot(leftCorner.x - rightCorner.x, leftCorner.y - rightCorner.y),
+          0.0001
+        );
+        const mouthRatio = vertical / horizontal;
+        const reference = state.mouth.candidate || state.mouth.applied;
+        let detectedState = null;
+
+        if (reference === "open") {
+          detectedState = mouthRatio > MOUTH_CLOSE_THRESHOLD ? "open" : "closed";
+        } else if (reference === "closed") {
+          detectedState = mouthRatio >= MOUTH_OPEN_THRESHOLD ? "open" : "closed";
+        } else if (mouthRatio >= MOUTH_OPEN_THRESHOLD) {
+          detectedState = "open";
+        } else if (mouthRatio <= MOUTH_CLOSE_THRESHOLD) {
+          detectedState = "closed";
+        }
+
+        if (!detectedState) return;
+        const now = performance.now();
+        if (state.mouth.candidate !== detectedState) {
+          state.mouth.candidate = detectedState;
+          state.mouth.candidateSince = now;
+          return;
+        }
+        if (now - state.mouth.candidateSince < MOUTH_STABLE_DURATION || state.mouth.applied === detectedState) return;
+
+        state.mouth.applied = detectedState;
+        const mouthIsOpen = detectedState === "open";
+        const gripperShouldOpen = state.settings.invertMouthGripper ? !mouthIsOpen : mouthIsOpen;
+        const command = gripperShouldOpen ? COMMANDS.gripperOpen : COMMANDS.gripperClose;
+        const mouthLabel = mouthIsOpen ? "입 벌림" : "입 다묾";
+        const gripperLabel = gripperShouldOpen ? "열림" : "닫힘";
+        transmitCommand(command);
+        el.gripperStatus.textContent = `${mouthLabel} · ${gripperLabel}`;
+        addLog(`MOUTH · ${mouthLabel} → 신호 ${command.code}`);
+      }
+
+      function clearMouthCandidate() {
+        state.mouth.candidate = null;
+        state.mouth.candidateSince = 0;
+      }
+
+      function resetMouthControl() {
+        clearMouthCandidate();
+        state.mouth.applied = null;
+      }
+
+      function stopCamera() {
+        if (!state.cameraRunning && !state.cameraStream) return;
+        state.cameraRunning = false;
+        cancelAnimationFrame(state.animationFrame);
+        cleanupCameraStream();
+        releaseWakeLock();
+        state.drive.forceStop = true;
+        setMotion("stop", 0, "straight");
+        state.smoothedWrists = null;
+        state.wristFilters = null;
+        state.faceResults = null;
+        resetWinks();
+        resetMouthControl();
+        el.cameraBtn.textContent = "카메라 시작";
+        el.cameraBtn.classList.remove("running");
+        el.stageBadgeText.textContent = "카메라 대기";
+        el.stageFps.textContent = "";
+        el.stageBadge.classList.remove("live");
+        el.stageHelp.hidden = false;
+        updateControlStatus("대기", 0, "직진");
+        drawPlaceholder();
+        addLog("카메라 제어를 종료하고 정지 신호를 처리했습니다.");
+      }
+
+      function cleanupCameraStream() {
+        if (state.cameraStream) state.cameraStream.getTracks().forEach((track) => track.stop());
+        state.cameraStream = null;
+        el.videoElement.srcObject = null;
+      }
+
+      function cameraErrorMessage(error) {
+        if (error?.name === "NotAllowedError") return "카메라 권한이 거부되었습니다. 브라우저 사이트 설정에서 카메라를 허용하세요.";
+        if (error?.name === "NotFoundError") return "사용할 수 있는 전면 카메라를 찾지 못했습니다.";
+        if (error?.name === "NotReadableError") return "다른 앱이 카메라를 사용 중입니다. 해당 앱을 닫고 다시 시도하세요.";
+        return error?.message || "카메라를 시작하지 못했습니다.";
+      }
+
+      async function requestWakeLock() {
+        if (!("wakeLock" in navigator) || !state.cameraRunning || document.visibilityState !== "visible") return;
+        try {
+          if (!state.wakeLock) {
+            state.wakeLock = await navigator.wakeLock.request("screen");
+            state.wakeLock.addEventListener("release", () => { state.wakeLock = null; });
+          }
+        } catch (error) {
+          addConsoleError("화면 켜짐 유지 실패", error);
+        }
+      }
+
+      async function releaseWakeLock() {
+        if (!state.wakeLock) return;
+        try { await state.wakeLock.release(); } catch (error) { /* 이미 해제됨 */ }
+        state.wakeLock = null;
+      }
+
+      function handleVisibilityChange() {
+        if (document.visibilityState === "hidden") {
+          if (state.voiceListening && state.speechRecognition) {
+            try { state.speechRecognition.abort(); } catch (error) { /* 이미 종료됨 */ }
+          }
+          return;
+        }
+        if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
+        if (state.voiceWanted && state.settings.gripperControlMode === "voice") startVoiceRecognition(true);
+      }
+
+      function handlePageHide() {
+        if (state.cameraRunning) {
+          state.drive.forceStop = true;
+          setMotion("stop", 0, "straight");
+        }
+        state.voiceWanted = false;
+        clearTimeout(state.voiceRestartTimer);
+        if (state.speechRecognition) {
+          try { state.speechRecognition.abort(); } catch (error) { /* 이미 종료됨 */ }
+        }
+        cleanupCameraStream();
+      }
+
+      function pulseHaptic() {
+        const now = performance.now();
+        if (now - state.lastHapticAt < 120) return;
+        state.lastHapticAt = now;
+        if (state.settings.haptics && typeof navigator.vibrate === "function") navigator.vibrate(18);
+      }
+
+      const statusCache = {};
+      function setText(element, key, text) {
+        if (statusCache[key] === text) return;
+        statusCache[key] = text;
+        element.textContent = text;
+      }
+
+      function updateControlStatus(mode, speed, direction) {
+        const steps = state.settings.speedSteps;
+        setText(el.speedStatus, "speed", `${speed} / ${steps}`);
+        setText(el.directionStatus, "direction", direction);
+
+        if (el.speedBar.childElementCount !== steps) {
+          el.speedBar.replaceChildren(...Array.from({ length: steps }, () => document.createElement("i")));
+          statusCache.speedBar = -1;
+        }
+        if (statusCache.speedBar !== speed) {
+          statusCache.speedBar = speed;
+          Array.from(el.speedBar.children).forEach((bar, index) => bar.classList.toggle("on", index < speed));
+        }
+
+        const motion = state.drive.target.motion;
+        const glyphKey = motion + ":" + state.drive.target.steering;
+        if (statusCache.glyph !== glyphKey) {
+          statusCache.glyph = glyphKey;
+          el.signalCard.dataset.motion = motion;
+          const steering = state.drive.target.steering;
+          const turn = steering === "left" ? -40 : steering === "right" ? 40 : 0;
+          const rotation = motion === "backward" ? 180 - turn : turn;
+          el.glyphArrow.style.setProperty("--glyph-rot", rotation + "deg");
+        }
+        updateDistanceMark();
+      }
+
+      function updateDistanceStatus(distance) {
+        setText(el.distanceStatus, "distance", distance.toFixed(2));
+        const percent = Math.round(Math.min(1, distance / MAX_DISTANCE) * 100);
+        if (statusCache.distanceFill !== percent) {
+          statusCache.distanceFill = percent;
+          el.distanceFill.style.width = percent + "%";
+        }
+      }
+
+      function updateDistanceMark() {
+        const percent = Math.round(state.settings.stopDeadzone / MAX_DISTANCE * 100);
+        if (statusCache.distanceMark !== percent) {
+          statusCache.distanceMark = percent;
+          el.distanceMark.style.left = percent + "%";
+        }
+      }
+
+      function updateFps() {
+        state.fpsFrames += 1;
+        const now = performance.now();
+        const elapsed = now - state.fpsSince;
+        if (elapsed >= 1000) {
+          el.stageFps.textContent = `${Math.round(state.fpsFrames * 1000 / elapsed)} fps`;
+          state.fpsFrames = 0;
+          state.fpsSince = now;
+        }
+      }
+
+      function applyVisualSettings() {
+        document.body.classList.toggle("lite-effects", state.settings.liteEffects);
+      }
+
+      function restoreHudMode() {
+        let compact = false;
+        try { compact = localStorage.getItem(HUD_KEY) === "1"; } catch (error) { /* 저장소 사용 불가 */ }
+        el.hudBottom.classList.toggle("compact", compact);
+      }
+
+      function toggleHudMode() {
+        const compact = !el.hudBottom.classList.contains("compact");
+        el.hudBottom.classList.toggle("compact", compact);
+        try { localStorage.setItem(HUD_KEY, compact ? "1" : "0"); } catch (error) { /* 저장소 사용 불가 */ }
+      }
+
+      function modeLabel(motion) {
+        return motion === "forward" ? "전진" : motion === "backward" ? "후진" : "정지";
+      }
+
+      function steeringLabel(steering) {
+        return steering === "left" ? "좌회전" : steering === "right" ? "우회전" : "직진";
+      }
+
+      function setSystemStatus(text, className) {
+        el.systemChip.textContent = text;
+        el.systemChip.className = "system-chip" + (className ? " " + className : "");
+      }
+
+      function drawPlaceholder() {
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = "#07090b";
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = "#20262d";
+        ctx.lineWidth = Math.max(2, width / 200);
+        ctx.beginPath();
+        ctx.arc(width / 2, height * 0.43, width * 0.12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(width * 0.25, height * 0.68);
+        ctx.quadraticCurveTo(width / 2, height * 0.50, width * 0.75, height * 0.68);
+        ctx.stroke();
+        ctx.fillStyle = "#68737e";
+        ctx.font = `700 ${Math.max(15, width / 27)}px -apple-system, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("CAMERA STANDBY", width / 2, height * 0.78);
+      }
+
+      // 로그는 모아서 잠깐 뒤에 한 번에 그린다(신호마다 화면을 다시 그리느라 조종이 늦어지지 않도록).
+      function addLog(message) {
+        if (!el.logPanel) return;
+        state.logQueue.push([new Date().toLocaleTimeString("ko-KR", { hour12: false }), message]);
+        if (state.logQueue.length > 30) state.logQueue.splice(0, state.logQueue.length - 30);
+        if (!state.logFlushTimer) state.logFlushTimer = setTimeout(flushLog, 250);
+      }
+
+      function flushLog() {
+        state.logFlushTimer = null;
+        const fragment = document.createDocumentFragment();
+        for (let index = state.logQueue.length - 1; index >= 0; index -= 1) {
+          const [stamp, message] = state.logQueue[index];
+          const item = document.createElement("div");
+          const time = document.createElement("time");
+          const text = document.createElement("span");
+          item.className = "log-item";
+          time.className = "log-time";
+          time.textContent = stamp;
+          text.textContent = message;
+          item.append(time, text);
+          fragment.append(item);
+        }
+        state.logQueue = [];
+        el.logPanel.prepend(fragment);
+        while (el.logPanel.children.length > 30) el.logPanel.lastElementChild.remove();
+      }
+
+      function showToast(message) {
+        clearTimeout(state.toastTimer);
+        el.toast.textContent = message;
+        el.toast.hidden = false;
+        state.toastTimer = setTimeout(() => { el.toast.hidden = true; }, 3200);
+      }
+
+      function addConsoleError(context, error) {
+        console.error(context, error);
+      }
+
+      function delay(milliseconds) {
+        return new Promise((resolve) => setTimeout(resolve, milliseconds));
+      }
+    })();
+  </script>
+</body>
+</html>
