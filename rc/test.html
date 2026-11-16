@@ -848,19 +848,21 @@
       display: grid;
       place-items: center;
       padding: 16px;
-      background: rgba(0, 0, 0, 0.62);
-      -webkit-backdrop-filter: blur(8px);
-      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.72);
     }
 
-    .tutorial-card {
+    /* 움직이는 그림 뒤에 흐림 효과(backdrop-filter)가 겹치면 일부 휴대폰에서 매 프레임 깜빡인다.
+       그래서 튜토리얼 카드는 유리처럼 보이는 불투명 배경을 쓴다. */
+    .tutorial-card,
+    body.lite-effects .tutorial-card {
       width: min(100%, 380px);
       border-radius: 30px;
+      background: linear-gradient(160deg, #2a323c 0%, #171d25 55%, #1d252e 100%);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
       overflow: hidden;
       animation: modal-up 220ms ease-out;
     }
-
-    body.lite-effects .tutorial-card { background: #121820; }
 
     .tutorial-progress {
       display: flex;
@@ -972,33 +974,28 @@
     .art-text { fill: #fff; font-size: 11px; font-weight: 800; font-family: inherit; }
     .art-text-back { fill: var(--backward); font-size: 11px; font-weight: 800; }
     .art-bar { fill: rgba(255, 255, 255, 0.22); }
-    .art-arrow { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 
     /* 팔·주먹의 움직임은 스크립트가 만든 SVG 애니메이션(SMIL)으로 처리한다. */
-    .art-spread .art-go { animation: go-pop 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-    @keyframes go-pop { 0%, 40% { opacity: 0; transform: translateY(6px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
 
     /* 2) 거리로 속도 */
-    .art-speed .art-bar-on { fill: var(--accent); animation: bar-on 3.6s ease-in-out infinite; }
+    .art-speed .art-bar-on { fill: var(--accent); animation: bar-on 4.4s ease-in-out infinite; }
     .art-speed .art-bar-on:nth-of-type(2) { animation-name: bar-on-2; }
     .art-speed .art-bar-on:nth-of-type(3) { animation-name: bar-on-3; }
     .art-speed .art-bar-on:nth-of-type(4) { animation-name: bar-on-4; }
     @keyframes bar-on { 0%, 100% { opacity: 1; } }
-    @keyframes bar-on-2 { 0%, 14% { opacity: 0; } 22%, 86% { opacity: 1; } 94%, 100% { opacity: 0; } }
-    @keyframes bar-on-3 { 0%, 26% { opacity: 0; } 34%, 74% { opacity: 1; } 82%, 100% { opacity: 0; } }
-    @keyframes bar-on-4 { 0%, 38% { opacity: 0; } 46%, 62% { opacity: 1; } 70%, 100% { opacity: 0; } }
+    @keyframes bar-on-2 { 0%, 12% { opacity: 0; } 24%, 80% { opacity: 1; } 92%, 100% { opacity: 0; } }
+    @keyframes bar-on-3 { 0%, 22% { opacity: 0; } 34%, 70% { opacity: 1; } 82%, 100% { opacity: 0; } }
+    @keyframes bar-on-4 { 0%, 32% { opacity: 0; } 44%, 60% { opacity: 1; } 72%, 100% { opacity: 0; } }
 
     /* 3) 기울이면 회전 */
-    .art-steer .art-left { animation: show-left 4s ease-in-out infinite; }
-    .art-steer .art-right { animation: show-right 4s ease-in-out infinite; }
-    @keyframes show-left { 0%, 14% { opacity: 0.2; } 22%, 42% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
-    @keyframes show-right { 0%, 50% { opacity: 0.2; } 58%, 78% { opacity: 1; } 86%, 100% { opacity: 0.2; } }
+    .art-steer .art-left { animation: show-left 5.6s ease-in-out infinite; }
+    .art-steer .art-right { animation: show-right 5.6s ease-in-out infinite; }
+    @keyframes show-left { 0%, 10% { opacity: 0.25; } 24%, 40% { opacity: 1; } 54%, 100% { opacity: 0.25; } }
+    @keyframes show-right { 0%, 46% { opacity: 0.25; } 60%, 76% { opacity: 1; } 90%, 100% { opacity: 0.25; } }
 
     /* 4) 후진선 위로 */
-    .art-back .art-link { animation: link-back 3.2s ease-in-out infinite; }
-    @keyframes link-back { 0%, 38% { stroke: var(--accent); } 45%, 80% { stroke: var(--backward); } 90%, 100% { stroke: var(--accent); } }
-    .art-back .art-go { animation: back-pop 3.2s ease-in-out infinite; }
-    @keyframes back-pop { 0%, 40% { opacity: 0; } 48%, 80% { opacity: 1; } 88%, 100% { opacity: 0; } }
+    .art-back .art-link { animation: link-back 4.6s ease-in-out infinite; }
+    @keyframes link-back { 0%, 30% { stroke: var(--accent); } 42%, 72% { stroke: var(--backward); } 84%, 100% { stroke: var(--accent); } }
 
     /* 5) 그리퍼 아이콘 */
     .icon-stroke { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -1025,7 +1022,8 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
+      /* 튜토리얼 그림은 움직임 자체가 설명이므로 제외한다(0.01ms로 줄이면 빠르게 깜빡이게 된다). */
+      *:not(.tutorial-card *), *:not(.tutorial-card *)::before, *:not(.tutorial-card *)::after {
         scroll-behavior: auto !important;
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
@@ -1352,18 +1350,17 @@
     <section class="glass tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
       <div id="tutorialProgress" class="tutorial-progress" aria-hidden="true"></div>
 
-      <div class="tutorial-slide" data-ms="5000">
+      <div class="tutorial-slide" data-ms="6500">
         <svg class="tutorial-art art-spread" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
           <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
           <g class="art-figure" data-figure="spread"></g>
-          <g class="art-go"><path class="art-arrow" d="M100 24V6M92 13l8-8 8 8" style="stroke: var(--forward)"/></g>
         </svg>
         <h2 id="tutorialTitle">두 주먹을 벌리면 전진</h2>
         <p>카메라 앞에서 두 주먹을 좌우로 벌리면 출발합니다. <span class="code-chip">8</span> 전송<br>주먹을 모으면 정지합니다. <span class="code-chip">5</span></p>
       </div>
 
-      <div class="tutorial-slide" data-ms="5000" hidden>
+      <div class="tutorial-slide" data-ms="6500" hidden>
         <svg class="tutorial-art art-speed" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
           <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
@@ -1379,26 +1376,25 @@
         <p>더 넓게 벌리면 빨라집니다. <span class="code-chip">3</span> 전송<br>좁히면 느려집니다. <span class="code-chip">1</span> 전송</p>
       </div>
 
-      <div class="tutorial-slide" data-ms="6000" hidden>
+      <div class="tutorial-slide" data-ms="8000" hidden>
         <svg class="tutorial-art art-steer" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
           <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
           <g class="art-figure" data-figure="steer"></g>
-          <g class="art-left"><path class="art-arrow" d="M34 14H12M20 6l-8 8 8 8"/><text class="art-text" x="40" y="18">좌회전 4</text></g>
-          <g class="art-right"><path class="art-arrow" d="M166 14h22M180 6l8 8-8 8"/><text class="art-text" x="160" y="18" text-anchor="end">우회전 6</text></g>
+          <g class="art-left"><text class="art-text" x="14" y="18">좌회전 4</text></g>
+          <g class="art-right"><text class="art-text" x="186" y="18" text-anchor="end">우회전 6</text></g>
         </svg>
         <h2>기울이면 좌회전·우회전</h2>
         <p>벌린 채로 핸들처럼 왼쪽으로 기울이면 좌회전 <span class="code-chip">4</span>, 오른쪽은 우회전 <span class="code-chip">6</span>.<br>회전 중에도 주먹 거리로 속도를 조절할 수 있습니다.</p>
       </div>
 
-      <div class="tutorial-slide" data-ms="5500" hidden>
+      <div class="tutorial-slide" data-ms="7000" hidden>
         <svg class="tutorial-art art-back" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
           <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
           <line class="art-line-back" x1="4" y1="53" x2="196" y2="53"/>
           <text class="art-text-back" x="6" y="48">▲ 후진</text>
           <g class="art-figure" data-figure="back"></g>
-          <g class="art-go"><path class="art-arrow" d="M100 124v18M92 135l8 8 8-8" style="stroke: var(--backward)"/></g>
         </svg>
         <h2>후진선 위로 올리면 후진</h2>
         <p>화면의 주황색 후진선(입 높이)보다 위로 두 주먹을 모두 올리면 후진합니다. <span class="code-chip">2</span> 전송</p>
@@ -1599,26 +1595,26 @@
       // 일러스트 자세: [팔꿈치x, 팔꿈치y, 주먹x, 주먹y]. l = 화면 왼쪽 팔, r = 화면 오른쪽 팔.
       const TUTORIAL_SHOULDERS = { l: [72, 84], r: [128, 84] };
       const TUTORIAL_POSES = {
-        close: { l: [64, 112, 88, 102], r: [136, 112, 112, 102] },
-        mid: { l: [58, 108, 60, 96], r: [142, 108, 140, 96] },
+        close: { l: [62, 112, 86, 104], r: [138, 112, 114, 104] },
+        mid: { l: [56, 106, 52, 96], r: [144, 106, 148, 96] },
         wide: { l: [54, 98, 34, 98], r: [146, 98, 166, 98] },
         tiltL: { l: [56, 104, 40, 120], r: [146, 92, 162, 76] },
         tiltR: { l: [54, 92, 38, 76], r: [144, 104, 160, 120] },
         raise: { l: [50, 70, 46, 28], r: [150, 70, 154, 28] }
       };
-      // times는 0~1 사이 시점, poses는 그 시점의 자세. CSS 쪽 화살표·막대 애니메이션과 길이를 맞췄다.
+      // times는 0~1 사이 시점, poses는 그 시점의 자세. CSS 쪽 속도 막대·글자 애니메이션과 길이를 맞췄다.
       const TUTORIAL_FIGURES = {
-        spread: { duration: 2.6, times: [0, 0.15, 0.55, 1], poses: ["close", "close", "wide", "wide"] },
-        speed: { duration: 3.6, times: [0, 0.1, 0.45, 0.6, 0.95, 1], poses: ["mid", "mid", "wide", "wide", "mid", "mid"] },
-        steer: { duration: 4, times: [0, 0.08, 0.22, 0.42, 0.58, 0.78, 0.92, 1], poses: ["wide", "wide", "tiltL", "tiltL", "tiltR", "tiltR", "wide", "wide"] },
-        back: { duration: 3.2, times: [0, 0.15, 0.45, 0.8, 1], poses: ["wide", "wide", "raise", "raise", "wide"] }
+        spread: { duration: 4.2, times: [0, 0.1, 0.42, 0.68, 1], poses: ["close", "close", "wide", "wide", "close"] },
+        speed: { duration: 4.4, times: [0, 0.08, 0.46, 0.58, 0.96, 1], poses: ["mid", "mid", "wide", "wide", "mid", "mid"] },
+        steer: { duration: 5.6, times: [0, 0.06, 0.24, 0.4, 0.6, 0.76, 0.94, 1], poses: ["wide", "wide", "tiltL", "tiltL", "tiltR", "tiltR", "wide", "wide"] },
+        back: { duration: 4.6, times: [0, 0.1, 0.42, 0.72, 1], poses: ["wide", "wide", "raise", "raise", "wide"] }
       };
 
       function buildTutorialFigures() {
         if (tutorial.built) return;
         tutorial.built = true;
         const SVG_NS = "http://www.w3.org/2000/svg";
-        const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        const still = false;
         const make = (name, attributes) => {
           const node = document.createElementNS(SVG_NS, name);
           Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
@@ -1639,7 +1635,7 @@
               repeatCount: "indefinite",
               calcMode: "spline",
               keyTimes: figure.times.join(";"),
-              keySplines: figure.times.slice(1).map(() => "0.42 0 0.58 1").join(";"),
+              keySplines: figure.times.slice(1).map(() => "0.45 0 0.25 1").join(";"),
               values: frames.map(pick).join(";")
             }));
           };
