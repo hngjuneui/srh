@@ -8,6 +8,15 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>운반로봇 포즈모델 조종기</title>
+  <!-- 크롬 "설치"(홈 화면 앱) 지원. 테스트 페이지는 테스트용 앱 정보로 바꿔서, 정식 앱과 따로 설치되게 한다. -->
+  <link id="manifestLink" rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <script>
+    if (/\/test(\.html)?$/.test(location.pathname)) {
+      document.getElementById("manifestLink").href = "manifest-test.webmanifest";
+    }
+  </script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
