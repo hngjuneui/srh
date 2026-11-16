@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers Builds("robot")가 이 저장소를 정적 사이트로 배포하도록 하는 설정.
+  // 서버 코드는 없고, 저장소의 HTML 파일들을 그대로 올린다. (예: /rc/test.html)
+  "name": "robot",
+  "compatibility_date": "2026-09-15",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "404-page"
+  }
+}
