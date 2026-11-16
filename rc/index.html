@@ -8,6 +8,15 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>운반로봇 포즈모델 조종기</title>
+  <!-- 크롬 "설치"(홈 화면 앱) 지원. 테스트 페이지는 테스트용 앱 정보로 바꿔서, 정식 앱과 따로 설치되게 한다. -->
+  <link id="manifestLink" rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <script>
+    if (/\/test(\.html)?$/.test(location.pathname)) {
+      document.getElementById("manifestLink").href = "manifest-test.webmanifest";
+    }
+  </script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
@@ -183,9 +192,10 @@
     /* ---------- 카메라 무대 ---------- */
     .camera-stage {
       position: relative;
-      width: max(min(100%, 290px), min(100%, calc((100svh - 200px) * 0.75)));
+      /* --cam-ratio는 실제 카메라 영상의 가로÷세로 비율(스크립트가 맞춘다). 폰 세로는 0.75, 태블릿 가로는 약 1.33 */
+      width: max(min(100%, 290px), min(100%, calc((100svh - 200px) * var(--cam-ratio, 0.75))));
       margin: 0 auto;
-      aspect-ratio: 3 / 4;
+      aspect-ratio: var(--cam-ratio, 0.75);
       border: 1px solid var(--line);
       border-radius: var(--radius-xl);
       background: #05070a;
@@ -1023,6 +1033,50 @@
     @media (min-width: 560px) {
       body { padding-top: 24px; }
       .modal-backdrop { align-items: center; }
+    }
+
+    /* ---------- 태블릿 ---------- */
+    /* 넓은 화면에서는 상태 카드가 화면 끝까지 늘어나지 않게 가운데로 모은다. */
+    .hud-bottom { width: min(calc(100% - 20px), 560px); right: auto; left: 50%; transform: translateX(-50%); }
+
+    /* 태블릿 세로: 한 줄 배치는 그대로 두고 폭만 넓힌다. */
+    @media (min-width: 700px) {
+      .app-shell { width: min(100%, 820px); }
+      .dock, .voice-control, .log-section { width: min(100%, 640px); margin-right: auto; margin-left: auto; }
+    }
+
+    /* 태블릿 가로(또는 넓은 화면): 왼쪽에 카메라, 오른쪽에 조작 패널 */
+    @media (min-width: 820px) and (min-aspect-ratio: 11/10) {
+      body { padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+      .app-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(270px, 28vw, 360px);
+        grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          "stage top"
+          "stage dock"
+          "stage voice"
+          "stage log"
+          "stage footer";
+        column-gap: 16px;
+        width: min(100%, 1500px);
+        height: calc(100svh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
+      }
+      .topbar { grid-area: top; flex-wrap: wrap; margin-bottom: 4px; }
+      h1 { white-space: normal; }
+      .camera-stage {
+        grid-area: stage;
+        align-self: center;
+        justify-self: center;
+        width: min(100%, calc((100svh - 2 * 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * var(--cam-ratio, 0.75)));
+        max-height: 100%;
+      }
+      .dock { grid-area: dock; width: auto; margin: 10px 0 0; }
+      .button { min-height: 60px; }
+      .voice-control { grid-area: voice; grid-template-columns: 1fr; width: auto; margin: 10px 0 0; }
+      .log-section { grid-area: log; align-self: start; display: flex; flex-direction: column; width: auto; max-height: 100%; min-height: 0; margin: 12px 0 0; }
+      .log-panel { flex: 1 1 auto; min-height: 0; max-height: none; }
+      .footer { grid-area: footer; padding: 10px 4px 0; }
     }
 
     @media (max-width: 380px) {
@@ -2164,6 +2218,16 @@
       const WRITE_GAP_MS = 60;
       const HEARTBEAT_MS = 700;
 
+      // 화면(캔버스)의 크기와 비율을 실제 카메라 영상에 맞춘다.
+      // 태블릿을 가로로 두면 영상도 가로로 넓어지므로, 영상을 자르지 않고 그대로 넓게 보여 준다.
+      function syncStageSize() {
+        const width = el.videoElement.videoWidth || 480;
+        const height = el.videoElement.videoHeight || 640;
+        if (el.canvasElement.width !== width) el.canvasElement.width = width;
+        if (el.canvasElement.height !== height) el.canvasElement.height = height;
+        document.documentElement.style.setProperty("--cam-ratio", (width / height).toFixed(4));
+      }
+
       function isBleConnected() {
         return Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
       }
@@ -2579,10 +2643,8 @@
           await el.videoElement.play();
           await initializeModels();
 
-          const width = el.videoElement.videoWidth || 480;
-          const height = el.videoElement.videoHeight || 640;
-          el.canvasElement.width = width;
-          el.canvasElement.height = height;
+          syncStageSize();
+          el.videoElement.onresize = syncStageSize;
           state.cameraRunning = true;
           state.frameCount = 0;
           state.frameErrors = 0;
