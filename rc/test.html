@@ -969,7 +969,7 @@
                 <option value="cross">주먹 교차</option>
               </select>
             </div>
-            <p class="setting-description">주먹 올리기: 두 주먹을 어깨선보다 위로 올리면 후진합니다. 팔이 겹치지 않아 인식이 안정적입니다. 주먹 교차: 기존처럼 두 주먹을 X자로 교차합니다.</p>
+            <p class="setting-description">주먹 올리기: 두 주먹을 입 높이의 후진선보다 위로 올리면 후진합니다. 팔이 겹치지 않아 인식이 안정적입니다. 주먹 교차: 기존처럼 두 주먹을 X자로 교차합니다.</p>
           </div>
 
           <div class="setting-row">
@@ -1196,6 +1196,7 @@
       const SPEED_HYSTERESIS = 0.15;       // 속도 단계 경계에서 0.15단계 이상 넘어가야 단계 변경
       const RAISE_EXIT_MARGIN = 0.035;     // 후진 중에는 후진선보다 이만큼 아래로 내려야 전진 복귀
       const CROSS_EXIT_MARGIN = 0.05;      // 교차 후진 중에는 확실히 풀려야 전진 복귀
+      const RAISE_REACH_SCALE = 0.55;      // 올리기 후진 중 주먹 거리 기준(출발·최고속도)을 이 비율로 축소
       const BACKWARD_RELEASE_MS = 150;     // 후진 해제 조건이 이 시간 이상 유지되어야 전진으로 전환
 
       const COMMANDS = Object.freeze({
@@ -1256,6 +1257,7 @@
         },
         wristFilters: null,
         backLineY: null,
+        backwardTooClose: false,
         lastAnalysisAt: 0,
         backwardReleaseSince: 0,
         lastHapticAt: 0,
@@ -1446,7 +1448,7 @@
         document.getElementById("speedSensitivityValue").textContent = Number(value("speedSensitivity")).toFixed(1) + "×";
         document.getElementById("steeringDeadzoneValue").textContent = value("steeringDeadzone") + "°";
         const lineOffset = Number(value("raiseLineOffset"));
-        document.getElementById("raiseLineOffsetValue").textContent = lineOffset === 0 ? "어깨선" : (lineOffset > 0 ? `${lineOffset}% 아래` : `${-lineOffset}% 위`);
+        document.getElementById("raiseLineOffsetValue").textContent = lineOffset === 0 ? "입 높이" : (lineOffset > 0 ? `${lineOffset}% 아래` : `${-lineOffset}% 위`);
         document.getElementById("winkSensitivityValue").textContent = value("winkSensitivity") + " / 10";
         document.getElementById("winkHoldValue").textContent = value("winkHold") + " ms";
         document.getElementById("poseConfidenceValue").textContent = Math.round(Number(value("poseConfidence")) * 100) + "%";
@@ -2324,16 +2326,17 @@
         return w;
       }
 
-      // 후진선: 어깨 높이를 따라다니는 기준선. 화면에 보이는 두 주먹 점이 모두 이 선 위에 있으면 후진이다.
+      // 후진선: 입 높이를 따라다니는 기준선. 화면에 보이는 두 주먹 점이 모두 이 선 위에 있으면 후진이다.
       function updateBackwardLine(landmarks) {
         if (state.settings.backwardGesture !== "raise") {
           state.backLineY = null;
           return;
         }
-        const shoulderA = landmarks[11];
-        const shoulderB = landmarks[12];
-        if ((shoulderA?.visibility ?? 0) < 0.35 || (shoulderB?.visibility ?? 0) < 0.35) return;
-        const lineY = (shoulderA.y + shoulderB.y) / 2 + state.settings.raiseLineOffset / 100;
+        // 포즈 모델의 9·10번이 입의 양 끝이다. 입이 안 보이면 마지막 위치를 그대로 쓴다.
+        const mouthA = landmarks[9];
+        const mouthB = landmarks[10];
+        if ((mouthA?.visibility ?? 0) < 0.35 || (mouthB?.visibility ?? 0) < 0.35) return;
+        const lineY = (mouthA.y + mouthB.y) / 2 + state.settings.raiseLineOffset / 100;
         state.backLineY = state.backLineY === null ? lineY : state.backLineY + (lineY - state.backLineY) * 0.3;
       }
 
@@ -2360,7 +2363,9 @@
         ctx.lineWidth = 3;
         ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
         ctx.fillStyle = active ? "#ffb347" : "rgba(255, 200, 120, 0.9)";
-        const label = active ? "▲ 후진 중" : "▲ 이 선 위로 = 후진";
+        const label = active
+          ? "▲ 후진 중"
+          : (state.backwardTooClose ? "▲ 후진 준비 · 주먹을 더 벌리세요" : "▲ 두 주먹을 이 선 위로 = 후진");
         ctx.strokeText(label, width * 0.03, y - 4);
         ctx.fillText(label, width * 0.03, y - 4);
         ctx.restore();
@@ -2455,17 +2460,23 @@
 
         const backward = detectBackward(left, right, landmarks);
         // 교차하면 두 주먹이 가까워질 수밖에 없으므로 교차 후진일 때는 출발 거리 기준을 낮춘다.
+        // 주먹을 얼굴 높이로 들면 팔이 접혀서 가슴 높이에서만큼 넓게 벌릴 수 없다.
+        // 그래서 올리기 후진일 때는 출발 거리와 최고 속도 거리를 함께 줄여 같은 느낌으로 조종되게 한다.
+        const raiseBackward = backward && state.settings.backwardGesture === "raise";
+        const reach = raiseBackward ? RAISE_REACH_SCALE : 1;
         const deadzone = backward && state.settings.backwardGesture === "cross"
           ? state.settings.stopDeadzone * 0.6
-          : state.settings.stopDeadzone;
+          : state.settings.stopDeadzone * reach;
+        const maxDistance = MAX_DISTANCE * reach;
         const stopAt = moving ? deadzone - STOP_HYSTERESIS : deadzone;
+        state.backwardTooClose = backward && distance < stopAt;
 
         if (distance < stopAt) {
           setMotion("stop", 0, "straight", "정지");
           return;
         }
 
-        const normalized = Math.min(1, Math.max(0, (distance - deadzone) / (MAX_DISTANCE - deadzone)));
+        const normalized = Math.min(1, Math.max(0, (distance - deadzone) / (maxDistance - deadzone)));
         const response = Math.pow(normalized, 1 / state.settings.speedSensitivity);
         const steps = state.settings.speedSteps;
         const level = response * steps;
@@ -2489,7 +2500,7 @@
       }
 
       // 후진 판정
-      // - 주먹 올리기(기본): 두 손목이 모두 어깨선보다 위에 있으면 후진. 팔이 겹치지 않아 모델이 손목을 놓치지 않는다.
+      // - 주먹 올리기(기본): 두 주먹 점이 모두 입 높이의 후진선보다 위에 있으면 후진. 팔이 겹치지 않아 모델이 손목을 놓치지 않는다.
       // - 주먹 교차: 화면 좌우가 뒤바뀌면 후진. 교차 중 손목이 흔들려도 확실히 풀릴 때까지 후진을 유지한다.
       function detectBackward(left, right, landmarks) {
         const isBackward = state.drive.target.motion === "backward";
