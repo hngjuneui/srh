@@ -962,9 +962,10 @@
     .gripper-item .gripper-desc { display: block; margin-top: 2px; color: rgba(255, 255, 255, 0.78); font-size: 0.76rem; line-height: 1.45; }
 
     /* 일러스트 공통 */
-    .art-body { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 3; stroke-linecap: round; }
+    .art-torso { fill: rgba(255, 255, 255, 0.12); stroke: rgba(255, 255, 255, 0.5); stroke-width: 2.5; stroke-linejoin: round; }
+    .art-arm { fill: none; stroke: rgba(255, 255, 255, 0.86); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
     .art-head { fill: rgba(255, 255, 255, 0.14); stroke: rgba(255, 255, 255, 0.6); stroke-width: 3; }
-    .art-link { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 6 5; stroke-linecap: round; }
+    .art-link { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 5 5; stroke-linecap: round; }
     .art-fist-a { fill: var(--accent); stroke: #fff; stroke-width: 2; }
     .art-fist-b { fill: var(--blue); stroke: #fff; stroke-width: 2; }
     .art-line-back { stroke: var(--backward); stroke-width: 2.5; stroke-dasharray: 7 6; }
@@ -973,26 +974,11 @@
     .art-bar { fill: rgba(255, 255, 255, 0.22); }
     .art-arrow { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 
-    .art-move-a, .art-move-b, .art-move-link, .art-tilt, .art-rise { transform-box: view-box; }
-    .art-move-link, .art-tilt { transform-origin: 100px 96px; }
-
-    /* 1) 벌리면 전진 */
-    .art-spread .art-move-a { animation: spread-a 2.6s ease-in-out infinite; }
-    .art-spread .art-move-b { animation: spread-b 2.6s ease-in-out infinite; }
-    .art-spread .art-move-link { animation: spread-link 2.6s ease-in-out infinite; }
-    @keyframes spread-a { 0%, 15% { transform: translateX(46px); } 55%, 100% { transform: translateX(0); } }
-    @keyframes spread-b { 0%, 15% { transform: translateX(-46px); } 55%, 100% { transform: translateX(0); } }
-    @keyframes spread-link { 0%, 15% { transform: scaleX(0.233); } 55%, 100% { transform: scaleX(1); } }
+    /* 팔·주먹의 움직임은 스크립트가 만든 SVG 애니메이션(SMIL)으로 처리한다. */
     .art-spread .art-go { animation: go-pop 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
     @keyframes go-pop { 0%, 40% { opacity: 0; transform: translateY(6px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
 
     /* 2) 거리로 속도 */
-    .art-speed .art-move-a { animation: speed-a 3.6s ease-in-out infinite; }
-    .art-speed .art-move-b { animation: speed-b 3.6s ease-in-out infinite; }
-    .art-speed .art-move-link { animation: speed-link 3.6s ease-in-out infinite; }
-    @keyframes speed-a { 0%, 10% { transform: translateX(30px); } 45%, 60% { transform: translateX(0); } 95%, 100% { transform: translateX(30px); } }
-    @keyframes speed-b { 0%, 10% { transform: translateX(-30px); } 45%, 60% { transform: translateX(0); } 95%, 100% { transform: translateX(-30px); } }
-    @keyframes speed-link { 0%, 10% { transform: scaleX(0.5); } 45%, 60% { transform: scaleX(1); } 95%, 100% { transform: scaleX(0.5); } }
     .art-speed .art-bar-on { fill: var(--accent); animation: bar-on 3.6s ease-in-out infinite; }
     .art-speed .art-bar-on:nth-of-type(2) { animation-name: bar-on-2; }
     .art-speed .art-bar-on:nth-of-type(3) { animation-name: bar-on-3; }
@@ -1003,16 +989,12 @@
     @keyframes bar-on-4 { 0%, 38% { opacity: 0; } 46%, 62% { opacity: 1; } 70%, 100% { opacity: 0; } }
 
     /* 3) 기울이면 회전 */
-    .art-steer .art-tilt { animation: tilt 4s ease-in-out infinite; }
-    @keyframes tilt { 0%, 8% { transform: rotate(0deg); } 22%, 42% { transform: rotate(-20deg); } 58%, 78% { transform: rotate(20deg); } 92%, 100% { transform: rotate(0deg); } }
     .art-steer .art-left { animation: show-left 4s ease-in-out infinite; }
     .art-steer .art-right { animation: show-right 4s ease-in-out infinite; }
     @keyframes show-left { 0%, 14% { opacity: 0.2; } 22%, 42% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
     @keyframes show-right { 0%, 50% { opacity: 0.2; } 58%, 78% { opacity: 1; } 86%, 100% { opacity: 0.2; } }
 
     /* 4) 후진선 위로 */
-    .art-back .art-rise { animation: rise 3.2s ease-in-out infinite; }
-    @keyframes rise { 0%, 15% { transform: translateY(0); } 45%, 80% { transform: translateY(-66px); } 100% { transform: translateY(0); } }
     .art-back .art-link { animation: link-back 3.2s ease-in-out infinite; }
     @keyframes link-back { 0%, 38% { stroke: var(--accent); } 45%, 80% { stroke: var(--backward); } 90%, 100% { stroke: var(--accent); } }
     .art-back .art-go { animation: back-pop 3.2s ease-in-out infinite; }
@@ -1373,10 +1355,8 @@
       <div class="tutorial-slide" data-ms="5000">
         <svg class="tutorial-art art-spread" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
-          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
-          <line class="art-link art-move-link" x1="40" y1="96" x2="160" y2="96"/>
-          <g class="art-move-a"><circle class="art-fist-a" cx="40" cy="96" r="10"/></g>
-          <g class="art-move-b"><circle class="art-fist-b" cx="160" cy="96" r="10"/></g>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <g class="art-figure" data-figure="spread"></g>
           <g class="art-go"><path class="art-arrow" d="M100 24V6M92 13l8-8 8 8" style="stroke: var(--forward)"/></g>
         </svg>
         <h2 id="tutorialTitle">두 주먹을 벌리면 전진</h2>
@@ -1386,10 +1366,8 @@
       <div class="tutorial-slide" data-ms="5000" hidden>
         <svg class="tutorial-art art-speed" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
-          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
-          <line class="art-link art-move-link" x1="40" y1="96" x2="160" y2="96"/>
-          <g class="art-move-a"><circle class="art-fist-a" cx="40" cy="96" r="10"/></g>
-          <g class="art-move-b"><circle class="art-fist-b" cx="160" cy="96" r="10"/></g>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <g class="art-figure" data-figure="speed"></g>
           <g>
             <rect class="art-bar" x="62" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="82" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="102" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="122" y="10" width="16" height="6" rx="3"/>
           </g>
@@ -1404,12 +1382,8 @@
       <div class="tutorial-slide" data-ms="6000" hidden>
         <svg class="tutorial-art art-steer" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
-          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
-          <g class="art-tilt">
-            <line class="art-link" x1="40" y1="96" x2="160" y2="96"/>
-            <circle class="art-fist-a" cx="40" cy="96" r="10"/>
-            <circle class="art-fist-b" cx="160" cy="96" r="10"/>
-          </g>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <g class="art-figure" data-figure="steer"></g>
           <g class="art-left"><path class="art-arrow" d="M34 14H12M20 6l-8 8 8 8"/><text class="art-text" x="40" y="18">좌회전 4</text></g>
           <g class="art-right"><path class="art-arrow" d="M166 14h22M180 6l8 8-8 8"/><text class="art-text" x="160" y="18" text-anchor="end">우회전 6</text></g>
         </svg>
@@ -1420,14 +1394,10 @@
       <div class="tutorial-slide" data-ms="5500" hidden>
         <svg class="tutorial-art art-back" viewBox="0 0 200 150" aria-hidden="true">
           <circle class="art-head" cx="100" cy="46" r="17"/>
-          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
           <line class="art-line-back" x1="4" y1="53" x2="196" y2="53"/>
           <text class="art-text-back" x="6" y="48">▲ 후진</text>
-          <g class="art-rise">
-            <line class="art-link" x1="46" y1="100" x2="154" y2="100"/>
-            <circle class="art-fist-a" cx="46" cy="100" r="10"/>
-            <circle class="art-fist-b" cx="154" cy="100" r="10"/>
-          </g>
+          <g class="art-figure" data-figure="back"></g>
           <g class="art-go"><path class="art-arrow" d="M100 124v18M92 135l8 8 8-8" style="stroke: var(--backward)"/></g>
         </svg>
         <h2>후진선 위로 올리면 후진</h2>
@@ -1477,6 +1447,7 @@
       const MOUTH_OPEN_THRESHOLD = 0.16;
       const MOUTH_CLOSE_THRESHOLD = 0.09;
       const MOUTH_STABLE_DURATION = 180;
+      const TUTORIAL_KEY = "srh-pose-controller-tutorial-seen";
       const HUD_KEY = "srh-pose-controller-hud-compact";
       // 반응속도 튜닝 값
       const STOP_HYSTERESIS = 0.02;        // 출발한 뒤에는 데드존보다 조금 더 가까워져야 정지 (떨림 방지)
@@ -1615,14 +1586,96 @@
         addLog("카메라 단독 테스트 또는 BLE 연결을 시작하세요.");
         checkCapabilities();
         restoreKnownDevice();
-        openTutorial();
+        // 튜토리얼은 이 기기에서 처음 열 때 한 번만 자동으로 띄운다. 다시 보려면 "?" 버튼.
+        let tutorialSeen = false;
+        try { tutorialSeen = localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (error) { /* 저장소 사용 불가 */ }
+        if (!tutorialSeen) openTutorial();
       }
 
       // ---------- 튜토리얼 ----------
-      // 페이지를 열 때마다 한 번 보여 주고, 장면이 자동으로 넘어간 뒤 마지막 장면이 끝나면 스스로 닫힌다.
-      const tutorial = { index: 0, timer: null, slides: [] };
+      // 처음 한 번 자동으로 보여 주고, 장면이 자동으로 넘어간 뒤 마지막 장면이 끝나면 스스로 닫힌다.
+      const tutorial = { index: 0, timer: null, slides: [], built: false };
+
+      // 일러스트 자세: [팔꿈치x, 팔꿈치y, 주먹x, 주먹y]. l = 화면 왼쪽 팔, r = 화면 오른쪽 팔.
+      const TUTORIAL_SHOULDERS = { l: [72, 84], r: [128, 84] };
+      const TUTORIAL_POSES = {
+        close: { l: [64, 112, 88, 102], r: [136, 112, 112, 102] },
+        mid: { l: [58, 108, 60, 96], r: [142, 108, 140, 96] },
+        wide: { l: [54, 98, 34, 98], r: [146, 98, 166, 98] },
+        tiltL: { l: [56, 104, 40, 120], r: [146, 92, 162, 76] },
+        tiltR: { l: [54, 92, 38, 76], r: [144, 104, 160, 120] },
+        raise: { l: [50, 70, 46, 28], r: [150, 70, 154, 28] }
+      };
+      // times는 0~1 사이 시점, poses는 그 시점의 자세. CSS 쪽 화살표·막대 애니메이션과 길이를 맞췄다.
+      const TUTORIAL_FIGURES = {
+        spread: { duration: 2.6, times: [0, 0.15, 0.55, 1], poses: ["close", "close", "wide", "wide"] },
+        speed: { duration: 3.6, times: [0, 0.1, 0.45, 0.6, 0.95, 1], poses: ["mid", "mid", "wide", "wide", "mid", "mid"] },
+        steer: { duration: 4, times: [0, 0.08, 0.22, 0.42, 0.58, 0.78, 0.92, 1], poses: ["wide", "wide", "tiltL", "tiltL", "tiltR", "tiltR", "wide", "wide"] },
+        back: { duration: 3.2, times: [0, 0.15, 0.45, 0.8, 1], poses: ["wide", "wide", "raise", "raise", "wide"] }
+      };
+
+      function buildTutorialFigures() {
+        if (tutorial.built) return;
+        tutorial.built = true;
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        const make = (name, attributes) => {
+          const node = document.createElementNS(SVG_NS, name);
+          Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+          return node;
+        };
+
+        el.tutorialBackdrop.querySelectorAll(".art-figure").forEach((group) => {
+          const figure = TUTORIAL_FIGURES[group.dataset.figure];
+          if (!figure) return;
+          const frames = figure.poses.map((name) => TUTORIAL_POSES[name]);
+          const restFrame = still ? frames[Math.floor(frames.length / 2)] : frames[0];
+          const animate = (node, attribute, pick) => {
+            if (still) return;
+            node.append(make("animate", {
+              attributeName: attribute,
+              begin: "indefinite",
+              dur: figure.duration + "s",
+              repeatCount: "indefinite",
+              calcMode: "spline",
+              keyTimes: figure.times.join(";"),
+              keySplines: figure.times.slice(1).map(() => "0.42 0 0.58 1").join(";"),
+              values: frames.map(pick).join(";")
+            }));
+          };
+          const armPath = (side) => (frame) => {
+            const [sx, sy] = TUTORIAL_SHOULDERS[side];
+            const [ex, ey, fx, fy] = frame[side];
+            return `M${sx} ${sy} L${ex} ${ey} L${fx} ${fy}`;
+          };
+
+          const link = make("line", {
+            class: "art-link",
+            x1: restFrame.l[2], y1: restFrame.l[3], x2: restFrame.r[2], y2: restFrame.r[3]
+          });
+          animate(link, "x1", (frame) => frame.l[2]);
+          animate(link, "y1", (frame) => frame.l[3]);
+          animate(link, "x2", (frame) => frame.r[2]);
+          animate(link, "y2", (frame) => frame.r[3]);
+          group.append(link);
+
+          for (const side of ["l", "r"]) {
+            const arm = make("path", { class: "art-arm", d: armPath(side)(restFrame) });
+            animate(arm, "d", armPath(side));
+            const fist = make("circle", {
+              class: side === "l" ? "art-fist-a" : "art-fist-b",
+              cx: restFrame[side][2], cy: restFrame[side][3], r: 10
+            });
+            animate(fist, "cx", (frame) => frame[side][2]);
+            animate(fist, "cy", (frame) => frame[side][3]);
+            group.append(arm, fist);
+          }
+        });
+      }
 
       function openTutorial() {
+        buildTutorialFigures();
+        try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (error) { /* 저장소 사용 불가 */ }
         tutorial.slides = Array.from(el.tutorialBackdrop.querySelectorAll(".tutorial-slide"));
         el.tutorialProgress.replaceChildren(...tutorial.slides.map(() => document.createElement("span")));
         el.tutorialBackdrop.hidden = false;
@@ -1638,6 +1691,10 @@
         tutorial.index = index;
         const duration = Number(tutorial.slides[index].dataset.ms) || 5000;
         tutorial.slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
+        // 팔 애니메이션을 화살표·막대 애니메이션과 같은 시점에서 다시 시작한다.
+        tutorial.slides[index].querySelectorAll("animate").forEach((node) => {
+          if (typeof node.beginElement === "function") node.beginElement();
+        });
         Array.from(el.tutorialProgress.children).forEach((bar, barIndex) => {
           bar.className = "";
           bar.style.setProperty("--slide-ms", duration + "ms");
