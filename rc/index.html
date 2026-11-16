@@ -1540,7 +1540,9 @@
           sent: { motion: "stop", speed: 0, steering: "straight" },
           events: [],
           forceStop: false,
-          pumping: false
+          pumping: false,
+          heartbeatOnly: false,
+          lastWriteAt: 0
         },
         wristFilters: null,
         backLineY: null,
@@ -2158,6 +2160,10 @@
       // "3,1,3,1…" 같은 신호가 줄에 쌓여, 정작 중요한 조향 신호가 그 뒤에서 기다렸다.
       // 새 방식: "지금 원하는 상태"만 기억하고, 블루투스가 비는 순간마다 아두이노가 아는 상태와의
       // 차이 중 가장 급한 것 하나만 보낸다. 오래된 신호는 줄을 서지 않고 버려진다.
+      const MAX_BATCH_COMMANDS = 16; // 아두이노 수신 버퍼(20바이트) 안쪽
+      const WRITE_GAP_MS = 60;
+      const HEARTBEAT_MS = 700;
+
       function isBleConnected() {
         return Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
       }
@@ -2247,17 +2253,27 @@
         state.drive.pumping = true;
         (async () => {
           try {
-            let command;
-            while ((command = nextDriveCommand())) {
+            while (true) {
+              // 밀린 신호를 한 묶음으로 모아 한 번에 보낸다.
+              // 아두이노는 "가장 마지막에 받은 값"만 읽기 때문에, 신호를 하나씩 연달아 보내면
+              // 앞의 신호(정지·후진 등)가 뒤의 신호에 덮여 사라질 수 있다. 한 묶음은 통째로 처리된다.
+              const batch = [];
+              let command;
+              while (batch.length < MAX_BATCH_COMMANDS && (command = nextDriveCommand())) batch.push(command);
+              if (!batch.length) break;
               if (!isBleConnected()) {
                 // 전송 중 연결이 끊기면 다음 연결 때 정지부터 다시 맞춘다.
                 state.drive.events = [];
                 break;
               }
+              const silent = state.drive.heartbeatOnly;
+              state.drive.heartbeatOnly = false;
               try {
-                await writeCommand(command);
-                showSentSignal(command);
-                addLog(`TX · 신호 ${command.code} (${command.label})`);
+                await writeCommands(batch);
+                showSentSignal(batch[batch.length - 1]);
+                if (!silent) {
+                  addLog(`TX · 신호 ${batch.map((item) => item.code).join(" ")} (${batch.map((item) => item.label).join(" → ")})`);
+                }
               } catch (error) {
                 addLog(`BLE 전송 실패 · ${error.message || error}`);
                 if (!state.bleDevice?.gatt?.connected) {
@@ -2265,6 +2281,8 @@
                   break;
                 }
               }
+              // 아두이노가 방금 보낸 묶음을 읽을 시간을 준다. 그 사이 생긴 변화는 다음 묶음에 합쳐진다.
+              await new Promise((resolve) => setTimeout(resolve, WRITE_GAP_MS));
             }
           } finally {
             state.drive.pumping = false;
@@ -2272,10 +2290,24 @@
         })();
       }
 
-      async function writeCommand(command) {
+      // 주행 중에는 현재 방향 신호를 주기적으로 다시 보내, 혹시 신호가 유실돼도 곧 바로잡히게 한다.
+      function heartbeatDrive() {
+        const drive = state.drive;
+        if (!isBleConnected() || drive.pumping) return;
+        if (drive.target.motion === "stop" || drive.sent.motion !== drive.target.motion) return;
+        if (drive.sent.steering !== drive.target.steering || drive.sent.speed !== drive.target.speed) return;
+        if (performance.now() - drive.lastWriteAt < HEARTBEAT_MS) return;
+        drive.sent.steering = "resend";
+        drive.heartbeatOnly = true;
+        pumpCommands();
+      }
+      setInterval(heartbeatDrive, 200);
+
+      async function writeCommands(commands) {
         const characteristic = state.bleCharacteristic;
         if (!characteristic) throw new Error("BLE 특성이 없습니다.");
-        const payload = encoder.encode(command.code + "\n");
+        const payload = encoder.encode(commands.map((item) => item.code).join("") + "\n");
+        state.drive.lastWriteAt = performance.now();
         if (characteristic.properties?.writeWithoutResponse && typeof characteristic.writeValueWithoutResponse === "function") {
           await characteristic.writeValueWithoutResponse(payload);
         } else if (characteristic.properties?.write && typeof characteristic.writeValueWithResponse === "function") {
