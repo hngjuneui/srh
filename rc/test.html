@@ -274,6 +274,8 @@
 
     .glass-icon-button svg { width: 19px; height: 19px; }
 
+    .hud-top-actions { display: flex; flex: 0 0 auto; gap: 8px; }
+
     .stage-help {
       position: absolute;
       top: 50%;
@@ -392,7 +394,7 @@
 
     .metrics {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       padding: 7px 2px;
       border-radius: 18px;
     }
@@ -838,6 +840,196 @@
       text-align: center;
     }
 
+    /* ---------- 튜토리얼 ---------- */
+    .tutorial-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.62);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+
+    .tutorial-card {
+      width: min(100%, 380px);
+      border-radius: 30px;
+      overflow: hidden;
+      animation: modal-up 220ms ease-out;
+    }
+
+    body.lite-effects .tutorial-card { background: #121820; }
+
+    .tutorial-progress {
+      display: flex;
+      gap: 5px;
+      padding: 14px 16px 0;
+    }
+
+    .tutorial-progress span {
+      position: relative;
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+      overflow: hidden;
+    }
+
+    .tutorial-progress span::after {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      content: "";
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+
+    .tutorial-progress span.done::after { transform: scaleX(1); }
+    .tutorial-progress span.current::after { animation: tutorial-fill var(--slide-ms, 5000ms) linear forwards; }
+
+    @keyframes tutorial-fill { to { transform: scaleX(1); } }
+
+    .tutorial-slide { padding: 6px 20px 4px; text-align: center; }
+
+    .tutorial-art {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 34svh;
+    }
+
+    .tutorial-slide h2 {
+      margin-top: 2px;
+      font-size: 1.22rem;
+      letter-spacing: -0.03em;
+    }
+
+    .tutorial-slide p {
+      min-height: 3.1em;
+      margin-top: 6px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+    .code-chip {
+      display: inline-grid;
+      place-items: center;
+      min-width: 1.6em;
+      height: 1.6em;
+      margin: 0 1px;
+      padding: 0 5px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 7px;
+      background: rgba(0, 0, 0, 0.25);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.86em;
+      font-weight: 800;
+      vertical-align: baseline;
+    }
+
+    .tutorial-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 9px;
+      padding: 12px 16px 16px;
+    }
+
+    .tutorial-actions .button { min-height: 46px; border-radius: 15px; }
+
+    .gripper-list {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0 2px;
+      text-align: left;
+    }
+
+    .gripper-item {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      align-items: center;
+      gap: 11px;
+      padding: 9px 12px 9px 9px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .gripper-item svg { width: 44px; height: 44px; }
+    .gripper-item strong { display: block; font-size: 0.86rem; }
+    .gripper-item .gripper-desc { display: block; margin-top: 2px; color: rgba(255, 255, 255, 0.78); font-size: 0.76rem; line-height: 1.45; }
+
+    /* 일러스트 공통 */
+    .art-body { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 3; stroke-linecap: round; }
+    .art-head { fill: rgba(255, 255, 255, 0.14); stroke: rgba(255, 255, 255, 0.6); stroke-width: 3; }
+    .art-link { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 6 5; stroke-linecap: round; }
+    .art-fist-a { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+    .art-fist-b { fill: var(--blue); stroke: #fff; stroke-width: 2; }
+    .art-line-back { stroke: var(--backward); stroke-width: 2.5; stroke-dasharray: 7 6; }
+    .art-text { fill: #fff; font-size: 11px; font-weight: 800; font-family: inherit; }
+    .art-text-back { fill: var(--backward); font-size: 11px; font-weight: 800; }
+    .art-bar { fill: rgba(255, 255, 255, 0.22); }
+    .art-arrow { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+    .art-move-a, .art-move-b, .art-move-link, .art-tilt, .art-rise { transform-box: view-box; }
+    .art-move-link, .art-tilt { transform-origin: 100px 96px; }
+
+    /* 1) 벌리면 전진 */
+    .art-spread .art-move-a { animation: spread-a 2.6s ease-in-out infinite; }
+    .art-spread .art-move-b { animation: spread-b 2.6s ease-in-out infinite; }
+    .art-spread .art-move-link { animation: spread-link 2.6s ease-in-out infinite; }
+    @keyframes spread-a { 0%, 15% { transform: translateX(46px); } 55%, 100% { transform: translateX(0); } }
+    @keyframes spread-b { 0%, 15% { transform: translateX(-46px); } 55%, 100% { transform: translateX(0); } }
+    @keyframes spread-link { 0%, 15% { transform: scaleX(0.233); } 55%, 100% { transform: scaleX(1); } }
+    .art-spread .art-go { animation: go-pop 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes go-pop { 0%, 40% { opacity: 0; transform: translateY(6px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
+
+    /* 2) 거리로 속도 */
+    .art-speed .art-move-a { animation: speed-a 3.6s ease-in-out infinite; }
+    .art-speed .art-move-b { animation: speed-b 3.6s ease-in-out infinite; }
+    .art-speed .art-move-link { animation: speed-link 3.6s ease-in-out infinite; }
+    @keyframes speed-a { 0%, 10% { transform: translateX(30px); } 45%, 60% { transform: translateX(0); } 95%, 100% { transform: translateX(30px); } }
+    @keyframes speed-b { 0%, 10% { transform: translateX(-30px); } 45%, 60% { transform: translateX(0); } 95%, 100% { transform: translateX(-30px); } }
+    @keyframes speed-link { 0%, 10% { transform: scaleX(0.5); } 45%, 60% { transform: scaleX(1); } 95%, 100% { transform: scaleX(0.5); } }
+    .art-speed .art-bar-on { fill: var(--accent); animation: bar-on 3.6s ease-in-out infinite; }
+    .art-speed .art-bar-on:nth-of-type(2) { animation-name: bar-on-2; }
+    .art-speed .art-bar-on:nth-of-type(3) { animation-name: bar-on-3; }
+    .art-speed .art-bar-on:nth-of-type(4) { animation-name: bar-on-4; }
+    @keyframes bar-on { 0%, 100% { opacity: 1; } }
+    @keyframes bar-on-2 { 0%, 14% { opacity: 0; } 22%, 86% { opacity: 1; } 94%, 100% { opacity: 0; } }
+    @keyframes bar-on-3 { 0%, 26% { opacity: 0; } 34%, 74% { opacity: 1; } 82%, 100% { opacity: 0; } }
+    @keyframes bar-on-4 { 0%, 38% { opacity: 0; } 46%, 62% { opacity: 1; } 70%, 100% { opacity: 0; } }
+
+    /* 3) 기울이면 회전 */
+    .art-steer .art-tilt { animation: tilt 4s ease-in-out infinite; }
+    @keyframes tilt { 0%, 8% { transform: rotate(0deg); } 22%, 42% { transform: rotate(-20deg); } 58%, 78% { transform: rotate(20deg); } 92%, 100% { transform: rotate(0deg); } }
+    .art-steer .art-left { animation: show-left 4s ease-in-out infinite; }
+    .art-steer .art-right { animation: show-right 4s ease-in-out infinite; }
+    @keyframes show-left { 0%, 14% { opacity: 0.2; } 22%, 42% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
+    @keyframes show-right { 0%, 50% { opacity: 0.2; } 58%, 78% { opacity: 1; } 86%, 100% { opacity: 0.2; } }
+
+    /* 4) 후진선 위로 */
+    .art-back .art-rise { animation: rise 3.2s ease-in-out infinite; }
+    @keyframes rise { 0%, 15% { transform: translateY(0); } 45%, 80% { transform: translateY(-66px); } 100% { transform: translateY(0); } }
+    .art-back .art-link { animation: link-back 3.2s ease-in-out infinite; }
+    @keyframes link-back { 0%, 38% { stroke: var(--accent); } 45%, 80% { stroke: var(--backward); } 90%, 100% { stroke: var(--accent); } }
+    .art-back .art-go { animation: back-pop 3.2s ease-in-out infinite; }
+    @keyframes back-pop { 0%, 40% { opacity: 0; } 48%, 80% { opacity: 1; } 88%, 100% { opacity: 0; } }
+
+    /* 5) 그리퍼 아이콘 */
+    .icon-stroke { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-wink { animation: wink 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes wink { 0%, 35%, 65%, 100% { transform: scaleY(1); } 45%, 55% { transform: scaleY(0.08); } }
+    .icon-mouth { animation: mouth 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes mouth { 0%, 20%, 80%, 100% { transform: scaleY(0.15); } 40%, 60% { transform: scaleY(1); } }
+    .icon-wave { animation: wave 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .icon-wave:nth-of-type(2) { animation-delay: 0.15s; }
+    .icon-wave:nth-of-type(3) { animation-delay: 0.3s; }
+    .icon-wave:nth-of-type(4) { animation-delay: 0.45s; }
+    @keyframes wave { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+
     @media (min-width: 560px) {
       body { padding-top: 24px; }
       .modal-backdrop { align-items: center; }
@@ -879,9 +1071,14 @@
 
       <div class="hud-top">
         <div id="stageBadge" class="glass stage-badge"><span id="stageBadgeText">카메라 대기</span><span id="stageFps" class="stage-fps"></span></div>
+        <span class="hud-top-actions">
+        <button id="helpBtn" class="glass glass-icon-button" type="button" aria-label="조종 방법 보기" title="조종 방법">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.2 9a3 3 0 1 1 4.6 2.5c-1 .7-1.8 1.3-1.8 2.5"/><path d="M12 17.5v.01"/></svg>
+        </button>
         <button id="settingsBtn" class="glass glass-icon-button" type="button" aria-label="조종기 설정 열기" title="설정">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
         </button>
+        </span>
       </div>
 
       <div id="stageHelp" class="glass stage-help">
@@ -907,10 +1104,6 @@
             <span class="hud-label">속도</span>
             <strong id="speedStatus" class="metric-value">0 / 5</strong>
             <span id="speedBar" class="speed-bar" aria-hidden="true"></span>
-          </div>
-          <div class="metric">
-            <span class="hud-label">방향</span>
-            <strong id="directionStatus" class="metric-value">직진</strong>
           </div>
           <div class="metric">
             <span class="hud-label">주먹 거리</span>
@@ -1036,7 +1229,7 @@
           <div class="setting-row toggle-row">
             <div>
               <div class="setting-label">전진/후진 신호 반전</div>
-              <p class="setting-description">전진 2와 후진 8 신호를 서로 바꿉니다.</p>
+              <p class="setting-description">기본은 전진 8, 후진 2입니다. 켜면 두 신호를 서로 바꿉니다.</p>
             </div>
             <label class="switch">
               <input id="invertDrive" type="checkbox" aria-label="전후진 신호 반전">
@@ -1173,6 +1366,100 @@
     </section>
   </div>
 
+  <div id="tutorialBackdrop" class="tutorial-backdrop" hidden>
+    <section class="glass tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+      <div id="tutorialProgress" class="tutorial-progress" aria-hidden="true"></div>
+
+      <div class="tutorial-slide" data-ms="5000">
+        <svg class="tutorial-art art-spread" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
+          <line class="art-link art-move-link" x1="40" y1="96" x2="160" y2="96"/>
+          <g class="art-move-a"><circle class="art-fist-a" cx="40" cy="96" r="10"/></g>
+          <g class="art-move-b"><circle class="art-fist-b" cx="160" cy="96" r="10"/></g>
+          <g class="art-go"><path class="art-arrow" d="M100 24V6M92 13l8-8 8 8" style="stroke: var(--forward)"/></g>
+        </svg>
+        <h2 id="tutorialTitle">두 주먹을 벌리면 전진</h2>
+        <p>카메라 앞에서 두 주먹을 좌우로 벌리면 출발합니다. <span class="code-chip">8</span> 전송<br>주먹을 모으면 정지합니다. <span class="code-chip">5</span></p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="5000" hidden>
+        <svg class="tutorial-art art-speed" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
+          <line class="art-link art-move-link" x1="40" y1="96" x2="160" y2="96"/>
+          <g class="art-move-a"><circle class="art-fist-a" cx="40" cy="96" r="10"/></g>
+          <g class="art-move-b"><circle class="art-fist-b" cx="160" cy="96" r="10"/></g>
+          <g>
+            <rect class="art-bar" x="62" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="82" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="102" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="122" y="10" width="16" height="6" rx="3"/>
+          </g>
+          <g>
+            <rect class="art-bar-on" x="62" y="10" width="16" height="6" rx="3"/><rect class="art-bar-on" x="82" y="10" width="16" height="6" rx="3"/><rect class="art-bar-on" x="102" y="10" width="16" height="6" rx="3"/><rect class="art-bar-on" x="122" y="10" width="16" height="6" rx="3"/>
+          </g>
+        </svg>
+        <h2>벌리는 거리로 속도 조절</h2>
+        <p>더 넓게 벌리면 빨라집니다. <span class="code-chip">3</span> 전송<br>좁히면 느려집니다. <span class="code-chip">1</span> 전송</p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="6000" hidden>
+        <svg class="tutorial-art art-steer" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
+          <g class="art-tilt">
+            <line class="art-link" x1="40" y1="96" x2="160" y2="96"/>
+            <circle class="art-fist-a" cx="40" cy="96" r="10"/>
+            <circle class="art-fist-b" cx="160" cy="96" r="10"/>
+          </g>
+          <g class="art-left"><path class="art-arrow" d="M34 14H12M20 6l-8 8 8 8"/><text class="art-text" x="40" y="18">좌회전 4</text></g>
+          <g class="art-right"><path class="art-arrow" d="M166 14h22M180 6l8 8-8 8"/><text class="art-text" x="160" y="18" text-anchor="end">우회전 6</text></g>
+        </svg>
+        <h2>기울이면 좌회전·우회전</h2>
+        <p>벌린 채로 핸들처럼 왼쪽으로 기울이면 좌회전 <span class="code-chip">4</span>, 오른쪽은 우회전 <span class="code-chip">6</span>.<br>회전 중에도 주먹 거리로 속도를 조절할 수 있습니다.</p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="5500" hidden>
+        <svg class="tutorial-art art-back" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-body" d="M52 140c2-30 20-44 48-44s46 14 48 44"/>
+          <line class="art-line-back" x1="4" y1="53" x2="196" y2="53"/>
+          <text class="art-text-back" x="6" y="48">▲ 후진</text>
+          <g class="art-rise">
+            <line class="art-link" x1="46" y1="100" x2="154" y2="100"/>
+            <circle class="art-fist-a" cx="46" cy="100" r="10"/>
+            <circle class="art-fist-b" cx="154" cy="100" r="10"/>
+          </g>
+          <g class="art-go"><path class="art-arrow" d="M100 124v18M92 135l8 8 8-8" style="stroke: var(--backward)"/></g>
+        </svg>
+        <h2>후진선 위로 올리면 후진</h2>
+        <p>화면의 주황색 후진선(입 높이)보다 위로 두 주먹을 모두 올리면 후진합니다. <span class="code-chip">2</span> 전송</p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="9000" hidden>
+        <h2 style="margin-top: 14px">그리퍼는 세 가지 방법으로</h2>
+        <div class="gripper-list">
+          <div class="gripper-item">
+            <svg viewBox="0 0 44 44" aria-hidden="true"><path class="icon-stroke" d="M6 22c4-7 9-10 16-10s12 3 16 10c-4 7-9 10-16 10S10 29 6 22z"/><circle class="icon-wink" cx="22" cy="22" r="5" fill="#fff"/></svg>
+            <div><strong>윙크</strong><span class="gripper-desc">오른쪽 눈 = 열기 <span class="code-chip">9</span> · 왼쪽 눈 = 닫기 <span class="code-chip">7</span></span></div>
+          </div>
+          <div class="gripper-item">
+            <svg viewBox="0 0 44 44" aria-hidden="true"><path class="icon-stroke" d="M8 20c4-3 9-4 14-4s10 1 14 4"/><ellipse class="icon-mouth" cx="22" cy="26" rx="10" ry="8" fill="rgba(255,255,255,0.85)"/></svg>
+            <div><strong>입 모션</strong><span class="gripper-desc">벌리기 = 열기 <span class="code-chip">9</span> · 다물기 = 닫기 <span class="code-chip">7</span></span></div>
+          </div>
+          <div class="gripper-item">
+            <svg viewBox="0 0 44 44" aria-hidden="true"><g fill="#fff"><rect class="icon-wave" x="9" y="12" width="4" height="20" rx="2"/><rect class="icon-wave" x="17" y="8" width="4" height="28" rx="2"/><rect class="icon-wave" x="25" y="12" width="4" height="20" rx="2"/><rect class="icon-wave" x="33" y="16" width="4" height="12" rx="2"/></g></svg>
+            <div><strong>음성 명령</strong><span class="gripper-desc">“열어” = 열기 <span class="code-chip">9</span> · “닫아” = 닫기 <span class="code-chip">7</span></span></div>
+          </div>
+        </div>
+        <p style="min-height: 0">방식은 오른쪽 위 설정에서 고릅니다.</p>
+      </div>
+
+      <div class="tutorial-actions">
+        <button id="tutorialCloseBtn" class="button button-secondary" type="button">닫기</button>
+        <button id="tutorialNextBtn" class="button button-primary" type="button">다음</button>
+      </div>
+    </section>
+  </div>
+
   <div id="toast" class="toast glass" role="status" aria-live="polite" hidden></div>
 
   <script>
@@ -1181,7 +1468,8 @@
 
       const SERVICE_UUID = "00c0ffee-1234-1234-1234-123456789abc";
       const CHARACTERISTIC_UUID = "00c0ffee-4321-4321-4321-cba987654321";
-      const STORAGE_KEY = "srh-pose-controller-settings-v2";
+      const STORAGE_KEY = "srh-pose-controller-settings-v3";
+      const LEGACY_STORAGE_KEY = "srh-pose-controller-settings-v2";
       const DEVICE_KEY = "srh-pose-controller-device-id";
       const POSE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/";
       const FACE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
@@ -1200,8 +1488,8 @@
       const BACKWARD_RELEASE_MS = 150;     // 후진 해제 조건이 이 시간 이상 유지되어야 전진으로 전환
 
       const COMMANDS = Object.freeze({
-        forward: { code: "2", label: "전진" },
-        backward: { code: "8", label: "후진" },
+        forward: { code: "8", label: "전진" },
+        backward: { code: "2", label: "후진" },
         stop: { code: "5", label: "정지" },
         speedUp: { code: "3", label: "속도 증가" },
         speedDown: { code: "1", label: "속도 감소" },
@@ -1308,9 +1596,9 @@
         [
           "connectBtn", "cameraBtn", "settingsBtn", "systemChip", "videoElement", "canvasElement",
           "voiceControl", "voiceBtn", "voiceStatus", "voiceStatusText",
-          "stageBadge", "stageBadgeText", "stageFps", "stageHelp", "speedStatus", "directionStatus",
+          "stageBadge", "stageBadgeText", "stageFps", "stageHelp", "speedStatus",
           "distanceStatus", "gripperStatus", "signalStatus", "signalCard", "signalCode", "glyphArrow", "hudBottom",
-          "speedBar", "distanceFill", "distanceMark", "logPanel", "clearLogBtn", "settingsBackdrop",
+          "speedBar", "distanceFill", "distanceMark", "helpBtn", "tutorialBackdrop", "tutorialProgress", "tutorialCloseBtn", "tutorialNextBtn", "logPanel", "clearLogBtn", "settingsBackdrop",
           "closeSettingsBtn", "cancelSettingsBtn", "saveSettingsBtn", "resetSettingsBtn", "toast"
         ].forEach((id) => { el[id] = document.getElementById(id); });
 
@@ -1327,6 +1615,43 @@
         addLog("카메라 단독 테스트 또는 BLE 연결을 시작하세요.");
         checkCapabilities();
         restoreKnownDevice();
+        openTutorial();
+      }
+
+      // ---------- 튜토리얼 ----------
+      // 페이지를 열 때마다 한 번 보여 주고, 장면이 자동으로 넘어간 뒤 마지막 장면이 끝나면 스스로 닫힌다.
+      const tutorial = { index: 0, timer: null, slides: [] };
+
+      function openTutorial() {
+        tutorial.slides = Array.from(el.tutorialBackdrop.querySelectorAll(".tutorial-slide"));
+        el.tutorialProgress.replaceChildren(...tutorial.slides.map(() => document.createElement("span")));
+        el.tutorialBackdrop.hidden = false;
+        showTutorialSlide(0);
+      }
+
+      function showTutorialSlide(index) {
+        clearTimeout(tutorial.timer);
+        if (index >= tutorial.slides.length) {
+          closeTutorial();
+          return;
+        }
+        tutorial.index = index;
+        const duration = Number(tutorial.slides[index].dataset.ms) || 5000;
+        tutorial.slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
+        Array.from(el.tutorialProgress.children).forEach((bar, barIndex) => {
+          bar.className = "";
+          bar.style.setProperty("--slide-ms", duration + "ms");
+          void bar.offsetWidth;   // 진행 막대 애니메이션을 처음부터 다시 시작
+          bar.className = barIndex < index ? "done" : (barIndex === index ? "current" : "");
+        });
+        el.tutorialNextBtn.textContent = index === tutorial.slides.length - 1 ? "시작하기" : "다음";
+        tutorial.timer = setTimeout(() => showTutorialSlide(index + 1), duration);
+      }
+
+      function closeTutorial() {
+        clearTimeout(tutorial.timer);
+        tutorial.timer = null;
+        el.tutorialBackdrop.hidden = true;
       }
 
       function bindEvents() {
@@ -1335,6 +1660,12 @@
         el.voiceBtn.addEventListener("click", toggleVoiceRecognition);
         el.settingsBtn.addEventListener("click", openSettings);
         el.signalCard.addEventListener("click", toggleHudMode);
+        el.helpBtn.addEventListener("click", () => openTutorial());
+        el.tutorialCloseBtn.addEventListener("click", closeTutorial);
+        el.tutorialNextBtn.addEventListener("click", () => showTutorialSlide(tutorial.index + 1));
+        el.tutorialBackdrop.addEventListener("click", (event) => {
+          if (event.target === el.tutorialBackdrop) closeTutorial();
+        });
         el.closeSettingsBtn.addEventListener("click", closeSettings);
         el.cancelSettingsBtn.addEventListener("click", closeSettings);
         el.saveSettingsBtn.addEventListener("click", saveSettingsFromForm);
@@ -1348,6 +1679,7 @@
         });
         document.addEventListener("keydown", (event) => {
           if (event.key === "Escape" && !el.settingsBackdrop.hidden) closeSettings();
+          else if (event.key === "Escape" && !el.tutorialBackdrop.hidden) closeTutorial();
         });
         document.addEventListener("visibilitychange", handleVisibilityChange);
         window.addEventListener("pagehide", handlePageHide);
@@ -1359,7 +1691,15 @@
 
       function loadSettings() {
         try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          let raw = localStorage.getItem(STORAGE_KEY);
+          let migrated = false;
+          if (raw === null) {
+            // 이전 버전 설정은 가져오되, 전후진 기본 신호가 바뀌었으므로(전진 8, 후진 2) 반전 스위치는 끈 상태로 시작한다.
+            raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+            migrated = raw !== null;
+          }
+          const saved = JSON.parse(raw || "{}");
+          if (migrated) saved.invertDrive = false;
           return sanitizeSettings({ ...DEFAULT_SETTINGS, ...saved });
         } catch (error) {
           addConsoleError("설정 불러오기 실패", error);
@@ -2365,7 +2705,7 @@
         ctx.fillStyle = active ? "#ffb347" : "rgba(255, 200, 120, 0.9)";
         const label = active
           ? "▲ 후진 중"
-          : (state.backwardTooClose ? "▲ 후진 준비 · 주먹을 더 벌리세요" : "▲ 두 주먹을 이 선 위로 = 후진");
+          : (state.backwardTooClose ? "▲ 후진 준비 · 주먹을 더 벌리세요" : "▲ 후진");
         ctx.strokeText(label, width * 0.03, y - 4);
         ctx.fillText(label, width * 0.03, y - 4);
         ctx.restore();
@@ -2767,7 +3107,6 @@
       function updateControlStatus(mode, speed, direction) {
         const steps = state.settings.speedSteps;
         setText(el.speedStatus, "speed", `${speed} / ${steps}`);
-        setText(el.directionStatus, "direction", direction);
 
         if (el.speedBar.childElementCount !== steps) {
           el.speedBar.replaceChildren(...Array.from({ length: steps }, () => document.createElement("i")));
