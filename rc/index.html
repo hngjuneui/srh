@@ -15,22 +15,30 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0d10;
-      --surface: #13171c;
-      --surface-raised: #191e24;
-      --surface-soft: #101419;
-      --line: #29313a;
-      --line-strong: #38434f;
-      --text: #f4f7fa;
-      --muted: #909ba7;
-      --accent: #48dfb5;
-      --accent-strong: #20c997;
-      --blue: #74a7ff;
-      --amber: #ffca68;
-      --red: #ff7474;
+      --bg: #06080b;
+      --bg-2: #0c1117;
+      --text: #f5f8fb;
+      --muted: rgba(235, 242, 248, 0.62);
+      --faint: rgba(235, 242, 248, 0.38);
+      --line: rgba(255, 255, 255, 0.10);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --surface: rgba(255, 255, 255, 0.05);
+      --surface-raised: rgba(255, 255, 255, 0.08);
+      --accent: #4ce3b8;
+      --accent-strong: #22c997;
+      --blue: #7cb1ff;
+      --amber: #ffc861;
+      --red: #ff7a7a;
+      --forward: #4ce3b8;
+      --backward: #ffb347;
+      --stop: #c4ccd6;
+      --glass-bg: linear-gradient(140deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.07) 46%, rgba(255, 255, 255, 0.12) 100%);
+      --glass-border: rgba(255, 255, 255, 0.26);
+      --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.30);
+      --glass-blur: blur(14px) saturate(175%);
+      --radius-xl: 30px;
       --radius-lg: 22px;
-      --radius-md: 15px;
-      --shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+      --radius-md: 16px;
     }
 
     * {
@@ -40,9 +48,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    [hidden] {
-      display: none !important;
-    }
+    [hidden] { display: none !important; }
 
     html {
       min-height: 100%;
@@ -52,54 +58,68 @@
     body {
       min-height: 100vh;
       min-height: 100svh;
-      background: var(--bg);
+      background:
+        radial-gradient(120% 60% at 50% -10%, rgba(76, 227, 184, 0.10), transparent 60%),
+        radial-gradient(90% 50% at 100% 100%, rgba(124, 177, 255, 0.08), transparent 60%),
+        var(--bg);
       color: var(--text);
-      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: max(18px, env(safe-area-inset-top)) 14px max(22px, env(safe-area-inset-bottom));
+      font-family: Pretendard, Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+      padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
       overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
     }
 
-    body.modal-open {
-      overflow: hidden;
-    }
+    body.modal-open { overflow: hidden; }
 
-    button,
-    input,
-    select {
-      font: inherit;
-    }
-
-    button {
-      touch-action: manipulation;
-    }
+    button, input, select { font: inherit; }
+    button { touch-action: manipulation; }
 
     .app-shell {
-      width: min(100%, 520px);
+      width: min(100%, 560px);
       margin: 0 auto;
     }
 
+    /* ---------- 상단 ---------- */
     .topbar {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 16px;
-      padding: 4px 2px;
+      gap: 12px;
+      margin-bottom: 10px;
+      padding: 2px 4px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: conic-gradient(from 210deg, var(--accent), var(--blue), var(--accent));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 4px 14px rgba(76, 227, 184, 0.25);
     }
 
     .eyebrow {
       color: var(--accent);
-      font-size: 0.72rem;
+      font-size: 0.62rem;
       font-weight: 800;
-      letter-spacing: 0.15em;
-      margin-bottom: 7px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
     }
 
     h1 {
-      font-size: clamp(1.35rem, 6vw, 1.8rem);
-      letter-spacing: -0.045em;
-      line-height: 1.15;
+      overflow: hidden;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .system-chip {
@@ -107,13 +127,13 @@
       align-items: center;
       flex: 0 0 auto;
       gap: 7px;
-      min-height: 34px;
-      padding: 8px 11px;
+      min-height: 30px;
+      padding: 6px 11px;
       border: 1px solid var(--line);
       border-radius: 999px;
       background: var(--surface);
       color: var(--muted);
-      font-size: 0.73rem;
+      font-size: 0.7rem;
       font-weight: 750;
       white-space: nowrap;
     }
@@ -122,160 +142,54 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: var(--muted);
+      background: var(--faint);
       content: "";
     }
 
-    .system-chip.online {
-      border-color: rgba(72, 223, 181, 0.32);
-      color: var(--accent);
+    .system-chip.online { border-color: rgba(76, 227, 184, 0.34); color: var(--accent); }
+    .system-chip.online::before { background: var(--accent); box-shadow: 0 0 0 4px rgba(76, 227, 184, 0.14); }
+    .system-chip.warning { border-color: rgba(255, 200, 97, 0.34); color: var(--amber); }
+    .system-chip.warning::before { background: var(--amber); }
+
+    /* ---------- 리퀴드 글래스 ---------- */
+    .glass {
+      position: relative;
+      isolation: isolate;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      box-shadow: var(--glass-shadow);
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
     }
 
-    .system-chip.online::before {
-      background: var(--accent);
-      box-shadow: 0 0 0 4px rgba(72, 223, 181, 0.1);
+    .glass::before {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      background: radial-gradient(120% 90% at 12% 0%, rgba(255, 255, 255, 0.28), transparent 46%);
+      content: "";
+      pointer-events: none;
     }
 
-    .system-chip.warning {
-      border-color: rgba(255, 202, 104, 0.32);
-      color: var(--amber);
+    body.lite-effects .glass {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background: rgba(12, 16, 22, 0.74);
     }
 
-    .system-chip.warning::before {
-      background: var(--amber);
-    }
-
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .control-bar {
-      display: grid;
-      grid-template-columns: 1fr minmax(0, 1fr) 48px;
-      gap: 9px;
-      padding: 13px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .button {
-      min-height: 48px;
-      border: 1px solid transparent;
-      border-radius: 13px;
-      cursor: pointer;
-      font-size: 0.88rem;
-      font-weight: 800;
-      transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease;
-    }
-
-    .button:active:not(:disabled) {
-      transform: scale(0.975);
-    }
-
-    .button:focus-visible,
-    input:focus-visible,
-    select:focus-visible {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
-
-    .button:disabled {
-      cursor: not-allowed;
-      opacity: 0.48;
-    }
-
-    .button-primary {
-      background: var(--accent);
-      color: #05130f;
-    }
-
-    .button-secondary {
-      border-color: var(--line-strong);
-      background: var(--surface-raised);
-      color: var(--text);
-    }
-
-    .button-secondary.connected {
-      border-color: rgba(72, 223, 181, 0.42);
-      color: var(--accent);
-    }
-
-    .icon-button {
-      display: grid;
-      place-items: center;
-      width: 48px;
-      min-width: 48px;
-      padding: 0;
-      border-color: var(--line-strong);
-      background: var(--surface-raised);
-      color: var(--text);
-      font-size: 1.18rem;
-    }
-
-    .voice-control {
-      display: grid;
-      grid-template-columns: minmax(138px, 0.72fr) minmax(0, 1.28fr);
-      align-items: center;
-      gap: 10px;
-      padding: 11px 13px;
-      border-bottom: 1px solid var(--line);
-      background: var(--surface-soft);
-    }
-
-    .voice-button.listening {
-      border-color: rgba(255, 116, 116, 0.5);
-      background: rgba(255, 116, 116, 0.09);
-      color: var(--red);
-    }
-
-    .voice-status {
-      display: flex;
-      align-items: center;
-      min-width: 0;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 0.7rem;
-      line-height: 1.4;
-    }
-
-    .voice-status-dot {
-      flex: 0 0 auto;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
-
-    .voice-status.listening {
-      color: var(--accent);
-    }
-
-    .voice-status.listening .voice-status-dot {
-      background: var(--accent);
-      box-shadow: 0 0 0 4px rgba(72, 223, 181, 0.1);
-    }
-
-    .voice-status.error {
-      color: var(--red);
-    }
-
-    .voice-status.error .voice-status-dot {
-      background: var(--red);
-    }
-
-    .voice-status-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
+    /* ---------- 카메라 무대 ---------- */
     .camera-stage {
       position: relative;
+      width: max(min(100%, 290px), min(100%, calc((100svh - 200px) * 0.75)));
+      margin: 0 auto;
       aspect-ratio: 3 / 4;
-      background: #07090b;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: #05070a;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
       overflow: hidden;
     }
 
@@ -294,131 +208,399 @@
       object-fit: cover;
     }
 
-    .stage-badge {
+    .hud-top {
       position: absolute;
-      top: 13px;
-      left: 13px;
-      z-index: 2;
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .hud-top > * { pointer-events: auto; }
+
+    .stage-badge {
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      padding: 8px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.13);
+      min-width: 0;
+      padding: 7px 12px 7px 10px;
       border-radius: 999px;
-      background: rgba(7, 9, 11, 0.78);
-      backdrop-filter: blur(10px);
-      color: #dbe2e8;
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       font-weight: 800;
+      white-space: nowrap;
     }
 
-    .stage-badge::before {
-      width: 7px;
-      height: 7px;
+    .stage-badge::after {
+      order: -1;
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--amber);
       content: "";
     }
 
-    .stage-badge.live::before {
+    .stage-badge.live::after {
       background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(76, 227, 184, 0.22);
+      animation: live-pulse 1.6s ease-in-out infinite;
     }
 
-    .stage-help {
-      position: absolute;
-      right: 13px;
-      bottom: 13px;
-      left: 13px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      background: rgba(7, 9, 11, 0.78);
-      color: #b8c1ca;
-      font-size: 0.72rem;
-      line-height: 1.45;
-      text-align: center;
-      backdrop-filter: blur(10px);
+    @keyframes live-pulse {
+      50% { box-shadow: 0 0 0 7px rgba(76, 227, 184, 0); }
     }
 
-    .status-section {
-      padding: 15px;
-      border-top: 1px solid var(--line);
-    }
-
-    .section-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 11px;
-    }
-
-    .section-heading h2 {
-      font-size: 0.82rem;
-      letter-spacing: -0.01em;
-    }
-
-    .section-note {
-      color: var(--muted);
-      font-size: 0.68rem;
-    }
-
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .metric {
-      min-width: 0;
-      min-height: 72px;
-      padding: 11px 10px;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      background: var(--surface-soft);
-    }
-
-    .metric-label {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 0.65rem;
+    .stage-fps {
+      color: rgba(255, 255, 255, 0.6);
+      font-variant-numeric: tabular-nums;
       font-weight: 700;
     }
 
-    .metric-value {
+    .glass-icon-button {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .glass-icon-button svg { width: 19px; height: 19px; }
+
+    .hud-top-actions { display: flex; flex: 0 0 auto; gap: 8px; }
+
+    .stage-help {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 2;
+      width: min(82%, 320px);
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      text-align: center;
+      transform: translate(-50%, -50%);
+    }
+
+    .stage-help strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+
+    .hud-bottom {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      left: 10px;
+      z-index: 3;
+      display: grid;
+      gap: 6px;
+    }
+
+    .signal-card {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      padding: 7px 9px 7px 7px;
+      border-radius: 22px;
+      cursor: pointer;
+      text-align: left;
+      --motion-color: var(--stop);
+    }
+
+    .signal-card[data-motion="forward"] { --motion-color: var(--forward); }
+    .signal-card[data-motion="backward"] { --motion-color: var(--backward); }
+
+    .signal-glyph {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--motion-color) 30%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 1px color-mix(in srgb, var(--motion-color) 55%, transparent);
+      color: var(--motion-color);
+      transition: background-color 120ms ease;
+    }
+
+    .signal-glyph svg {
+      width: 26px;
+      height: 26px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+      transition: transform 140ms ease;
+      transform: rotate(var(--glyph-rot, 0deg));
+    }
+
+    .signal-glyph .glyph-stop { display: none; }
+    .signal-card[data-motion="stop"] .glyph-arrow { display: none; }
+    .signal-card[data-motion="stop"] .glyph-stop { display: block; }
+
+    .signal-text { min-width: 0; }
+
+    .hud-label {
+      display: block;
+      margin-bottom: 2px;
+      color: rgba(255, 255, 255, 0.66);
+      font-size: 0.64rem;
+      font-weight: 750;
+      letter-spacing: 0.02em;
+    }
+
+    .signal-value {
       display: block;
       overflow: hidden;
-      color: var(--text);
-      font-size: 0.9rem;
+      font-size: 1.18rem;
       font-weight: 850;
-      letter-spacing: -0.025em;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .metric-value.accent {
+    .signal-code {
+      display: grid;
+      place-items: center;
+      min-width: 40px;
+      height: 40px;
+      padding: 0 8px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.18);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .signal-card.flash .signal-code {
+      animation: code-flash 260ms ease-out;
+    }
+
+    @keyframes code-flash {
+      from { background: color-mix(in srgb, var(--motion-color) 70%, transparent); transform: scale(1.08); }
+      to { background: rgba(0, 0, 0, 0.18); transform: scale(1); }
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 7px 2px;
+      border-radius: 18px;
+    }
+
+    .hud-bottom.compact .metrics { display: none; }
+
+    .metric {
+      min-width: 0;
+      padding: 2px 9px;
+    }
+
+    .metric + .metric { border-left: 1px solid rgba(255, 255, 255, 0.16); }
+
+    .metric-value {
+      display: block;
+      overflow: hidden;
+      font-size: 0.9rem;
+      font-weight: 820;
+      letter-spacing: -0.03em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed-bar {
+      display: flex;
+      gap: 3px;
+      margin-top: 5px;
+    }
+
+    .speed-bar i {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .speed-bar i.on { background: var(--accent); box-shadow: 0 0 6px rgba(76, 227, 184, 0.6); }
+
+    .meter {
+      display: block;
+      position: relative;
+      height: 4px;
+      margin-top: 5px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .meter-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    .meter-mark {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 2px;
+      border-radius: 1px;
+      background: #fff;
+      opacity: 0.85;
+    }
+
+    /* ---------- 아래 도크 ---------- */
+    .voice-control {
+      display: grid;
+      grid-template-columns: minmax(130px, 0.7fr) minmax(0, 1.3fr);
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
+    .voice-button.listening {
+      border-color: rgba(255, 122, 122, 0.5);
+      background: rgba(255, 122, 122, 0.1);
+      color: var(--red);
+    }
+
+    .voice-status {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+
+    .voice-status-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--faint);
+    }
+
+    .voice-status.listening { color: var(--accent); }
+    .voice-status.listening .voice-status-dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(76, 227, 184, 0.12); }
+    .voice-status.error { color: var(--red); }
+    .voice-status.error .voice-status-dot { background: var(--red); }
+
+    .voice-status-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dock {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .button {
+      min-height: 54px;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      transition: transform 120ms ease, background-color 140ms ease, border-color 140ms ease;
+    }
+
+    .button:active:not(:disabled) { transform: scale(0.97); }
+
+    .button:focus-visible,
+    .glass-icon-button:focus-visible,
+    .signal-card:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+    .button-primary {
+      background: linear-gradient(180deg, #6befc9, var(--accent-strong));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 8px 22px rgba(34, 201, 151, 0.25);
+      color: #03140e;
+    }
+
+    .button-primary.running {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+      border-color: var(--line-strong);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      color: var(--text);
+    }
+
+    .button-secondary {
+      border-color: var(--line-strong);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      color: var(--text);
+    }
+
+    .button-secondary.connected {
+      border-color: rgba(76, 227, 184, 0.45);
       color: var(--accent);
     }
 
+    /* ---------- 로그 ---------- */
     .log-section {
-      margin-top: 13px;
+      margin-top: 12px;
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       background: var(--surface);
       overflow: hidden;
     }
 
-    .log-header {
+    .log-section summary {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 13px 15px;
-      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 800;
+      list-style: none;
     }
 
-    .log-header h2 {
-      font-size: 0.8rem;
+    .log-section summary::-webkit-details-marker { display: none; }
+
+    .log-section summary::after {
+      color: var(--muted);
+      content: "펼치기";
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .log-section[open] summary::after { content: "접기"; }
+
+    .log-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 16px 4px;
     }
 
     .text-button {
@@ -431,9 +613,9 @@
     }
 
     .log-panel {
-      max-height: 172px;
+      max-height: 200px;
       overflow-y: auto;
-      padding: 6px 14px 10px;
+      padding: 0 16px 10px;
       scrollbar-width: thin;
     }
 
@@ -441,30 +623,29 @@
       display: grid;
       grid-template-columns: 62px 1fr;
       gap: 8px;
-      padding: 9px 0;
-      border-bottom: 1px solid rgba(41, 49, 58, 0.66);
-      color: #c5cdd5;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      color: rgba(235, 242, 248, 0.8);
       font-size: 0.72rem;
       line-height: 1.45;
     }
 
-    .log-item:last-child {
-      border-bottom: 0;
-    }
+    .log-item:last-child { border-bottom: 0; }
 
     .log-time {
-      color: #67727e;
+      color: var(--faint);
       font-variant-numeric: tabular-nums;
     }
 
     .footer {
-      padding: 22px 10px 6px;
-      color: #66717c;
-      font-size: 0.68rem;
+      padding: 20px 10px 4px;
+      color: var(--faint);
+      font-size: 0.66rem;
       line-height: 1.55;
       text-align: center;
     }
 
+    /* ---------- 설정 ---------- */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -472,8 +653,9 @@
       display: grid;
       align-items: end;
       padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(6px);
+      background: rgba(0, 0, 0, 0.6);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
     }
 
     .settings-modal {
@@ -481,9 +663,9 @@
       max-height: min(88vh, 760px);
       margin: 0 auto;
       border: 1px solid var(--line-strong);
-      border-radius: 24px;
-      background: #15191e;
-      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.6);
+      border-radius: 28px;
+      background: #121820;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 28px 90px rgba(0, 0, 0, 0.6);
       overflow: hidden;
       animation: modal-up 180ms ease-out;
     }
@@ -501,15 +683,13 @@
       border-bottom: 1px solid var(--line);
     }
 
-    .modal-header h2 {
-      font-size: 1rem;
-    }
+    .modal-header h2 { font-size: 1rem; }
 
     .modal-close {
       width: 38px;
       height: 38px;
       border: 1px solid var(--line);
-      border-radius: 11px;
+      border-radius: 50%;
       background: var(--surface-raised);
       color: var(--muted);
       cursor: pointer;
@@ -517,7 +697,7 @@
     }
 
     .settings-body {
-      max-height: calc(min(88vh, 760px) - 132px);
+      max-height: calc(min(88vh, 760px) - 140px);
       overflow-y: auto;
       padding: 5px 18px 18px;
     }
@@ -527,9 +707,7 @@
       border-bottom: 1px solid var(--line);
     }
 
-    .settings-group:last-child {
-      border-bottom: 0;
-    }
+    .settings-group:last-child { border-bottom: 0; }
 
     .settings-group-title {
       margin-bottom: 13px;
@@ -540,9 +718,7 @@
       text-transform: uppercase;
     }
 
-    .setting-row + .setting-row {
-      margin-top: 16px;
-    }
+    .setting-row + .setting-row { margin-top: 16px; }
 
     .setting-head {
       display: flex;
@@ -581,12 +757,12 @@
     }
 
     select {
-      width: 104px;
+      width: 128px;
       min-height: 38px;
       padding: 0 10px;
       border: 1px solid var(--line-strong);
-      border-radius: 10px;
-      background: var(--surface-soft);
+      border-radius: 12px;
+      background: #0c1117;
       color: var(--text);
     }
 
@@ -632,20 +808,9 @@
       transition: transform 150ms ease, background-color 150ms ease;
     }
 
-    .switch input:checked + .switch-track {
-      border-color: var(--accent-strong);
-      background: var(--accent-strong);
-    }
-
-    .switch input:checked + .switch-track::after {
-      background: #06120f;
-      transform: translateX(19px);
-    }
-
-    .switch input:focus-visible + .switch-track {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
+    .switch input:checked + .switch-track { border-color: var(--accent-strong); background: var(--accent-strong); }
+    .switch input:checked + .switch-track::after { background: #06120f; transform: translateX(19px); }
+    .switch input:focus-visible + .switch-track { outline: 2px solid var(--blue); outline-offset: 2px; }
 
     .modal-actions {
       display: grid;
@@ -653,71 +818,210 @@
       gap: 9px;
       padding: 12px 18px max(12px, env(safe-area-inset-bottom));
       border-top: 1px solid var(--line);
-      background: #15191e;
+      background: #121820;
     }
 
-    .reset-button {
-      margin-right: auto;
-      color: var(--red);
-    }
+    .modal-actions .button { min-height: 48px; border-radius: 14px; }
+
+    .reset-button { margin-right: auto; color: var(--red); }
 
     .toast {
       position: fixed;
+      top: max(14px, env(safe-area-inset-top));
       right: 16px;
-      bottom: max(18px, env(safe-area-inset-bottom));
       left: 16px;
       z-index: 40;
       width: min(calc(100% - 32px), 440px);
       margin: 0 auto;
-      padding: 13px 15px;
-      border: 1px solid var(--line-strong);
-      border-radius: 13px;
-      background: #20262d;
-      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.45);
-      color: var(--text);
-      font-size: 0.77rem;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 0.78rem;
       line-height: 1.45;
       text-align: center;
     }
 
-    @media (min-width: 560px) {
-      body {
-        padding-top: 32px;
-      }
-
-      .modal-backdrop {
-        align-items: center;
-      }
+    /* ---------- 튜토리얼 ---------- */
+    .tutorial-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.72);
     }
 
-    @media (max-width: 390px) {
-      .control-bar {
-        grid-template-columns: 1fr 1fr 46px;
-        gap: 7px;
-        padding: 10px;
-      }
+    /* 움직이는 그림 뒤에 흐림 효과(backdrop-filter)가 겹치면 일부 휴대폰에서 매 프레임 깜빡인다.
+       그래서 튜토리얼 카드는 유리처럼 보이는 불투명 배경을 쓴다. */
+    .tutorial-card,
+    body.lite-effects .tutorial-card {
+      width: min(100%, 380px);
+      border-radius: 30px;
+      background: linear-gradient(160deg, #2a323c 0%, #171d25 55%, #1d252e 100%);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      overflow: hidden;
+      animation: modal-up 220ms ease-out;
+    }
 
-      .button {
-        min-height: 46px;
-        font-size: 0.78rem;
-      }
+    .tutorial-progress {
+      display: flex;
+      gap: 5px;
+      padding: 14px 16px 0;
+    }
 
-      .icon-button {
-        width: 46px;
-        min-width: 46px;
-      }
+    .tutorial-progress span {
+      position: relative;
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+      overflow: hidden;
+    }
 
-      .status-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    .tutorial-progress span::after {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      content: "";
+      transform: scaleX(0);
+      transform-origin: left;
+    }
 
-      .voice-control {
-        grid-template-columns: 1fr;
-      }
+    .tutorial-progress span.done::after { transform: scaleX(1); }
+    .tutorial-progress span.current::after { animation: tutorial-fill var(--slide-ms, 5000ms) linear forwards; }
+
+    @keyframes tutorial-fill { to { transform: scaleX(1); } }
+
+    .tutorial-slide { padding: 6px 20px 4px; text-align: center; }
+
+    .tutorial-art {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 34svh;
+    }
+
+    .tutorial-slide h2 {
+      margin-top: 2px;
+      font-size: 1.22rem;
+      letter-spacing: -0.03em;
+    }
+
+    .tutorial-slide p {
+      min-height: 3.1em;
+      margin-top: 6px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+    .code-chip {
+      display: inline-grid;
+      place-items: center;
+      min-width: 1.6em;
+      height: 1.6em;
+      margin: 0 1px;
+      padding: 0 5px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 7px;
+      background: rgba(0, 0, 0, 0.25);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.86em;
+      font-weight: 800;
+      vertical-align: baseline;
+    }
+
+    .tutorial-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 9px;
+      padding: 12px 16px 16px;
+    }
+
+    .tutorial-actions .button { min-height: 46px; border-radius: 15px; }
+
+    .gripper-list {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0 2px;
+      text-align: left;
+    }
+
+    .gripper-item {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      align-items: center;
+      gap: 11px;
+      padding: 9px 12px 9px 9px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .gripper-item svg { width: 44px; height: 44px; }
+    .gripper-item strong { display: block; font-size: 0.86rem; }
+    .gripper-item .gripper-desc { display: block; margin-top: 2px; color: rgba(255, 255, 255, 0.78); font-size: 0.76rem; line-height: 1.45; }
+
+    /* 일러스트 공통 */
+    .art-torso { fill: rgba(255, 255, 255, 0.12); stroke: rgba(255, 255, 255, 0.5); stroke-width: 2.5; stroke-linejoin: round; }
+    .art-arm { fill: none; stroke: rgba(255, 255, 255, 0.86); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .art-head { fill: rgba(255, 255, 255, 0.14); stroke: rgba(255, 255, 255, 0.6); stroke-width: 3; }
+    .art-link { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 5 5; stroke-linecap: round; }
+    .art-fist-a { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+    .art-fist-b { fill: var(--blue); stroke: #fff; stroke-width: 2; }
+    .art-line-back { stroke: var(--backward); stroke-width: 2.5; stroke-dasharray: 7 6; }
+    .art-text { fill: #fff; font-size: 11px; font-weight: 800; font-family: inherit; }
+    .art-text-back { fill: var(--backward); font-size: 11px; font-weight: 800; }
+    .art-bar { fill: rgba(255, 255, 255, 0.22); }
+
+    /* 팔·주먹의 움직임은 스크립트가 만든 SVG 애니메이션(SMIL)으로 처리한다. */
+
+    /* 2) 거리로 속도 */
+    .art-speed .art-bar-on { fill: var(--accent); animation: bar-on 4.4s ease-in-out infinite; }
+    .art-speed .art-bar-on:nth-of-type(2) { animation-name: bar-on-2; }
+    .art-speed .art-bar-on:nth-of-type(3) { animation-name: bar-on-3; }
+    .art-speed .art-bar-on:nth-of-type(4) { animation-name: bar-on-4; }
+    @keyframes bar-on { 0%, 100% { opacity: 1; } }
+    @keyframes bar-on-2 { 0%, 12% { opacity: 0; } 24%, 80% { opacity: 1; } 92%, 100% { opacity: 0; } }
+    @keyframes bar-on-3 { 0%, 22% { opacity: 0; } 34%, 70% { opacity: 1; } 82%, 100% { opacity: 0; } }
+    @keyframes bar-on-4 { 0%, 32% { opacity: 0; } 44%, 60% { opacity: 1; } 72%, 100% { opacity: 0; } }
+
+    /* 3) 기울이면 회전 */
+    .art-steer .art-left { animation: show-left 5.6s ease-in-out infinite; }
+    .art-steer .art-right { animation: show-right 5.6s ease-in-out infinite; }
+    @keyframes show-left { 0%, 10% { opacity: 0.25; } 24%, 40% { opacity: 1; } 54%, 100% { opacity: 0.25; } }
+    @keyframes show-right { 0%, 46% { opacity: 0.25; } 60%, 76% { opacity: 1; } 90%, 100% { opacity: 0.25; } }
+
+    /* 4) 후진선 위로 */
+    .art-back .art-link { animation: link-back 4.6s ease-in-out infinite; }
+    @keyframes link-back { 0%, 30% { stroke: var(--accent); } 42%, 72% { stroke: var(--backward); } 84%, 100% { stroke: var(--accent); } }
+
+    /* 5) 그리퍼 아이콘 */
+    .icon-stroke { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-wink { animation: wink 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes wink { 0%, 35%, 65%, 100% { transform: scaleY(1); } 45%, 55% { transform: scaleY(0.08); } }
+    .icon-wave { animation: wave 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .icon-wave:nth-of-type(2) { animation-delay: 0.15s; }
+    .icon-wave:nth-of-type(3) { animation-delay: 0.3s; }
+    .icon-wave:nth-of-type(4) { animation-delay: 0.45s; }
+    @keyframes wave { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+
+    @media (min-width: 560px) {
+      body { padding-top: 24px; }
+      .modal-backdrop { align-items: center; }
+    }
+
+    @media (max-width: 380px) {
+      .signal-value { font-size: 1.05rem; }
+      .metric { padding: 2px 6px; }
+      .metric-value { font-size: 0.8rem; }
+      .voice-control { grid-template-columns: 1fr; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
+      /* 튜토리얼 그림은 움직임 자체가 설명이므로 제외한다(0.01ms로 줄이면 빠르게 깜빡이게 된다). */
+      *:not(.tutorial-card *), *:not(.tutorial-card *)::before, *:not(.tutorial-card *)::after {
         scroll-behavior: auto !important;
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
@@ -729,76 +1033,87 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Pose Drive · 2026</p>
-        <h1>운반로봇 포즈모델 조종기</h1>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <p class="eyebrow">Pose Drive · 2026</p>
+          <h1>운반로봇 포즈모델 조종기</h1>
+        </div>
       </div>
       <div id="systemChip" class="system-chip" role="status">시스템 확인</div>
     </header>
 
-    <section class="panel" aria-label="로봇 조종기">
-      <div class="control-bar">
-        <button id="connectBtn" class="button button-secondary" type="button">BLE 연결</button>
-        <button id="cameraBtn" class="button button-primary" type="button">카메라 시작</button>
-        <button id="settingsBtn" class="button icon-button" type="button" aria-label="조종기 설정 열기" title="설정">⚙</button>
+    <section class="camera-stage" aria-label="전면 카메라 포즈 인식 화면">
+      <video id="videoElement" autoplay muted playsinline></video>
+      <canvas id="canvasElement" width="480" height="640"></canvas>
+
+      <div class="hud-top">
+        <div id="stageBadge" class="glass stage-badge"><span id="stageBadgeText">카메라 대기</span><span id="stageFps" class="stage-fps"></span></div>
+        <span class="hud-top-actions">
+        <button id="helpBtn" class="glass glass-icon-button" type="button" aria-label="조종 방법 보기" title="조종 방법">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.2 9a3 3 0 1 1 4.6 2.5c-1 .7-1.8 1.3-1.8 2.5"/><path d="M12 17.5v.01"/></svg>
+        </button>
+        <button id="settingsBtn" class="glass glass-icon-button" type="button" aria-label="조종기 설정 열기" title="설정">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+        </span>
       </div>
 
-      <div id="voiceControl" class="voice-control" hidden>
-        <button id="voiceBtn" class="button button-secondary voice-button" type="button">음성명령 시작</button>
-        <div id="voiceStatus" class="voice-status" role="status" aria-live="polite">
-          <span class="voice-status-dot" aria-hidden="true"></span>
-          <span id="voiceStatusText" class="voice-status-text">열 또는 닫 소리를 기다립니다.</span>
-        </div>
+      <div id="stageHelp" class="glass stage-help">
+        <strong>카메라를 시작하세요</strong>
+        두 주먹을 벌리면 전진, 기울이면 회전합니다.<br>BLE 연결 없이도 신호를 테스트할 수 있습니다.
       </div>
 
-      <div class="camera-stage" aria-label="전면 카메라 포즈 인식 화면">
-        <video id="videoElement" autoplay muted playsinline></video>
-        <canvas id="canvasElement" width="480" height="640"></canvas>
-        <div id="stageBadge" class="stage-badge">카메라 대기</div>
-        <div id="stageHelp" class="stage-help">BLE 연결 없이도 카메라를 시작해 포즈와 전송 신호를 테스트할 수 있습니다.</div>
-      </div>
+      <div id="hudBottom" class="hud-bottom">
+        <button id="signalCard" class="glass signal-card" type="button" data-motion="stop" aria-label="최근 신호. 누르면 상태 표시를 접거나 펼칩니다.">
+          <span class="signal-glyph" aria-hidden="true">
+            <svg class="glyph-arrow" id="glyphArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+            <svg class="glyph-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
+          </span>
+          <span class="signal-text">
+            <span class="hud-label">최근 신호</span>
+            <strong id="signalStatus" class="signal-value" role="status">—</strong>
+          </span>
+          <span id="signalCode" class="signal-code" aria-hidden="true">–</span>
+        </button>
 
-      <section class="status-section" aria-labelledby="statusTitle">
-        <div class="section-heading">
-          <h2 id="statusTitle">실시간 제어 상태</h2>
-          <span id="controlContext" class="section-note">오프라인 테스트 가능</span>
-        </div>
-        <div class="status-grid">
+        <div id="metricsCard" class="glass metrics">
           <div class="metric">
-            <span class="metric-label">주행 모드</span>
-            <strong id="modeStatus" class="metric-value">대기</strong>
-          </div>
-          <div class="metric">
-            <span class="metric-label">속도 단계</span>
+            <span class="hud-label">속도</span>
             <strong id="speedStatus" class="metric-value">0 / 5</strong>
+            <span id="speedBar" class="speed-bar" aria-hidden="true"></span>
           </div>
           <div class="metric">
-            <span class="metric-label">방향</span>
-            <strong id="directionStatus" class="metric-value">직진</strong>
-          </div>
-          <div class="metric">
-            <span class="metric-label">두 주먹 거리</span>
+            <span class="hud-label">주먹 거리</span>
             <strong id="distanceStatus" class="metric-value">0.00</strong>
+            <span class="meter" aria-hidden="true"><span id="distanceFill" class="meter-fill"></span><span id="distanceMark" class="meter-mark"></span></span>
           </div>
           <div class="metric">
-            <span class="metric-label">그리퍼</span>
+            <span class="hud-label">그리퍼</span>
             <strong id="gripperStatus" class="metric-value">대기</strong>
           </div>
-          <div class="metric">
-            <span class="metric-label">최근 신호</span>
-            <strong id="signalStatus" class="metric-value accent">—</strong>
-          </div>
         </div>
-      </section>
+      </div>
     </section>
 
-    <section class="log-section" aria-labelledby="logTitle">
-      <div class="log-header">
-        <h2 id="logTitle">신호 로그</h2>
-        <button id="clearLogBtn" class="text-button" type="button">로그 지우기</button>
+    <div id="voiceControl" class="voice-control" hidden>
+      <button id="voiceBtn" class="button button-secondary voice-button" type="button">음성명령 시작</button>
+      <div id="voiceStatus" class="voice-status" role="status" aria-live="polite">
+        <span class="voice-status-dot" aria-hidden="true"></span>
+        <span id="voiceStatusText" class="voice-status-text">열 또는 닫 소리를 기다립니다.</span>
       </div>
-      <div id="logPanel" class="log-panel" role="log" aria-live="polite"></div>
-    </section>
+    </div>
+
+    <div class="dock">
+      <button id="connectBtn" class="button button-secondary" type="button">BLE 연결</button>
+      <button id="cameraBtn" class="button button-primary" type="button">카메라 시작</button>
+    </div>
+
+    <details class="log-section">
+      <summary id="logTitle">신호 로그</summary>
+      <div class="log-toolbar"><button id="clearLogBtn" class="text-button" type="button">로그 지우기</button></div>
+      <div id="logPanel" class="log-panel" role="log" aria-live="off"></div>
+    </details>
 
     <footer class="footer">
       2026 Teacher Hong, Dept. of Robotics Mechanical Design,<br>
@@ -816,6 +1131,26 @@
       <div class="settings-body">
         <div class="settings-group">
           <h3 class="settings-group-title">Drive</h3>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="backwardGesture">후진 동작</label>
+              <select id="backwardGesture">
+                <option value="raise">주먹 올리기</option>
+                <option value="cross">주먹 교차</option>
+              </select>
+            </div>
+            <p class="setting-description">주먹 올리기: 두 주먹을 입 높이의 후진선보다 위로 올리면 후진합니다. 팔이 겹치지 않아 인식이 안정적입니다. 주먹 교차: 기존처럼 두 주먹을 X자로 교차합니다.</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="raiseLineOffset">후진선 높이</label>
+              <output id="raiseLineOffsetValue" class="setting-value" for="raiseLineOffset"></output>
+            </div>
+            <input id="raiseLineOffset" type="range" min="-10" max="15" step="1">
+            <p class="setting-description">주먹 올리기에서 화면에 보이는 주황색 후진선의 위치입니다. 두 주먹 점이 모두 이 선 위로 올라가면 후진합니다. 후진이 잘 안 걸리면 선을 아래로, 전진 중에 후진이 잘못 걸리면 위로 옮기세요.</p>
+          </div>
 
           <div class="setting-row">
             <div class="setting-head">
@@ -872,7 +1207,7 @@
           <div class="setting-row toggle-row">
             <div>
               <div class="setting-label">전진/후진 신호 반전</div>
-              <p class="setting-description">전진 2와 후진 8 신호를 서로 바꿉니다.</p>
+              <p class="setting-description">기본은 전진 8, 후진 2입니다. 켜면 두 신호를 서로 바꿉니다.</p>
             </div>
             <label class="switch">
               <input id="invertDrive" type="checkbox" aria-label="전후진 신호 반전">
@@ -964,6 +1299,40 @@
             </label>
           </div>
 
+          <div class="setting-row toggle-row">
+            <div>
+              <div class="setting-label">글래스 효과 줄이기</div>
+              <p class="setting-description">오래된 휴대폰에서 화면이 버벅이면 켜세요. 반투명 흐림 효과를 꺼서 포즈 인식에 처리 능력을 더 씁니다.</p>
+            </div>
+            <label class="switch">
+              <input id="liteEffects" type="checkbox" aria-label="글래스 효과 줄이기">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="performanceMode">성능 모드</label>
+              <select id="performanceMode">
+                <option value="eco">효율 우선</option>
+                <option value="balanced">균형</option>
+                <option value="performance">성능 우선</option>
+              </select>
+            </div>
+            <p class="setting-description">성능 우선: 포즈를 쉬지 않고 분석해 반응이 가장 빠르지만 배터리와 발열이 커집니다(대회용). 효율 우선: 초당 12번만 분석해 배터리를 아낍니다(연습·테스트용).</p>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-head">
+              <label class="setting-label" for="poseModel">포즈 모델</label>
+              <select id="poseModel">
+                <option value="lite">빠른 모델</option>
+                <option value="full">정밀 모델</option>
+              </select>
+            </div>
+            <p class="setting-description">정밀 모델은 팔이 겹치거나 어두울 때 인식률이 더 좋지만, 분석 한 번이 더 오래 걸려 반응이 느려지고 발열이 커집니다. 성능 좋은 휴대폰에서만 권장합니다.</p>
+          </div>
+
           <button id="resetSettingsBtn" class="text-button reset-button setting-row" type="button">기본 설정으로 초기화</button>
         </div>
       </div>
@@ -975,7 +1344,87 @@
     </section>
   </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="tutorialBackdrop" class="tutorial-backdrop" hidden>
+    <section class="glass tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+      <div id="tutorialProgress" class="tutorial-progress" aria-hidden="true"></div>
+
+      <div class="tutorial-slide" data-ms="6500">
+        <svg class="tutorial-art art-spread" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <g class="art-figure" data-figure="spread"></g>
+        </svg>
+        <h2 id="tutorialTitle">두 주먹을 벌리면 전진</h2>
+        <p>카메라 앞에서 두 주먹을 좌우로 벌리면 출발합니다. <span class="code-chip">8</span> 전송<br>주먹을 모으면 정지합니다. <span class="code-chip">5</span></p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="6500" hidden>
+        <svg class="tutorial-art art-speed" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <g class="art-figure" data-figure="speed"></g>
+          <g>
+            <rect class="art-bar" x="62" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="82" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="102" y="10" width="16" height="6" rx="3"/><rect class="art-bar" x="122" y="10" width="16" height="6" rx="3"/>
+          </g>
+          <g>
+            <rect class="art-bar-on" x="62" y="10" width="16" height="6" rx="3"/><rect class="art-bar-on" x="82" y="10" width="16" height="6" rx="3"/><rect class="art-bar-on" x="102" y="10" width="16" height="6" rx="3"/><rect class="art-bar-on" x="122" y="10" width="16" height="6" rx="3"/>
+          </g>
+        </svg>
+        <h2>벌리는 거리로 속도 조절</h2>
+        <p>더 넓게 벌리면 빨라집니다. <span class="code-chip">3</span> 전송<br>좁히면 느려집니다. <span class="code-chip">1</span> 전송</p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="8000" hidden>
+        <svg class="tutorial-art art-steer" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <g class="art-figure" data-figure="steer"></g>
+          <g class="art-left"><text class="art-text" x="14" y="18">좌회전 4</text></g>
+          <g class="art-right"><text class="art-text" x="186" y="18" text-anchor="end">우회전 6</text></g>
+        </svg>
+        <h2>기울이면 좌회전·우회전</h2>
+        <p>벌린 채로 핸들처럼 왼쪽으로 기울이면 좌회전 <span class="code-chip">4</span>, 오른쪽은 우회전 <span class="code-chip">6</span>.<br>회전 중에도 주먹 거리로 속도를 조절할 수 있습니다.</p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="7000" hidden>
+        <svg class="tutorial-art art-back" viewBox="0 0 200 150" aria-hidden="true">
+          <circle class="art-head" cx="100" cy="46" r="17"/>
+          <path class="art-torso" d="M78 74h44a12 12 0 0 1 12 12v64H66V86a12 12 0 0 1 12-12z"/>
+          <line class="art-line-back" x1="4" y1="53" x2="196" y2="53"/>
+          <text class="art-text-back" x="6" y="48">▲ 후진</text>
+          <g class="art-figure" data-figure="back"></g>
+        </svg>
+        <h2>후진선 위로 올리면 후진</h2>
+        <p>화면의 주황색 후진선(입 높이)보다 위로 두 주먹을 모두 올리면 후진합니다. <span class="code-chip">2</span> 전송</p>
+      </div>
+
+      <div class="tutorial-slide" data-ms="9000" hidden>
+        <h2 style="margin-top: 14px">그리퍼는 세 가지 방법으로</h2>
+        <div class="gripper-list">
+          <div class="gripper-item">
+            <svg viewBox="0 0 44 44" aria-hidden="true"><path class="icon-stroke" d="M6 22c4-7 9-10 16-10s12 3 16 10c-4 7-9 10-16 10S10 29 6 22z"/><circle class="icon-wink" cx="22" cy="22" r="5" fill="#fff"/></svg>
+            <div><strong>윙크</strong><span class="gripper-desc">오른쪽 눈 = 열기 <span class="code-chip">9</span> · 왼쪽 눈 = 닫기 <span class="code-chip">7</span></span></div>
+          </div>
+          <div class="gripper-item">
+            <svg viewBox="0 0 44 44" aria-hidden="true"><g fill="#fff"><path d="M5 21 Q13 13 19 15.5 Q22 17.5 25 15.5 Q31 13 39 21 Q22 23 5 21 Z"><animate attributeName="d" begin="indefinite" dur="2.8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.15;0.4;0.65;0.9;1" keySplines="0.45 0 0.25 1;0.45 0 0.25 1;0.45 0 0.25 1;0.45 0 0.25 1;0.45 0 0.25 1" values="M5 21 Q13 13 19 15.5 Q22 17.5 25 15.5 Q31 13 39 21 Q22 23 5 21 Z;M5 21 Q13 13 19 15.5 Q22 17.5 25 15.5 Q31 13 39 21 Q22 23 5 21 Z;M5 19 Q13 10 19 12.5 Q22 14.5 25 12.5 Q31 10 39 19 Q22 16 5 19 Z;M5 19 Q13 10 19 12.5 Q22 14.5 25 12.5 Q31 10 39 19 Q22 16 5 19 Z;M5 21 Q13 13 19 15.5 Q22 17.5 25 15.5 Q31 13 39 21 Q22 23 5 21 Z;M5 21 Q13 13 19 15.5 Q22 17.5 25 15.5 Q31 13 39 21 Q22 23 5 21 Z"/></path><path d="M5 21 Q22 23 39 21 Q22 35 5 21 Z"><animate attributeName="d" begin="indefinite" dur="2.8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.15;0.4;0.65;0.9;1" keySplines="0.45 0 0.25 1;0.45 0 0.25 1;0.45 0 0.25 1;0.45 0 0.25 1;0.45 0 0.25 1" values="M5 21 Q22 23 39 21 Q22 35 5 21 Z;M5 21 Q22 23 39 21 Q22 35 5 21 Z;M5 19 Q22 41 39 19 Q22 55 5 19 Z;M5 19 Q22 41 39 19 Q22 55 5 19 Z;M5 21 Q22 23 39 21 Q22 35 5 21 Z;M5 21 Q22 23 39 21 Q22 35 5 21 Z"/></path></g></svg>
+            <div><strong>입 모션</strong><span class="gripper-desc">벌리기 = 열기 <span class="code-chip">9</span> · 다물기 = 닫기 <span class="code-chip">7</span></span></div>
+          </div>
+          <div class="gripper-item">
+            <svg viewBox="0 0 44 44" aria-hidden="true"><g fill="#fff"><rect class="icon-wave" x="9" y="12" width="4" height="20" rx="2"/><rect class="icon-wave" x="17" y="8" width="4" height="28" rx="2"/><rect class="icon-wave" x="25" y="12" width="4" height="20" rx="2"/><rect class="icon-wave" x="33" y="16" width="4" height="12" rx="2"/></g></svg>
+            <div><strong>음성 명령</strong><span class="gripper-desc">“열어” = 열기 <span class="code-chip">9</span> · “닫아” = 닫기 <span class="code-chip">7</span></span></div>
+          </div>
+        </div>
+        <p style="min-height: 0">방식은 오른쪽 위 설정에서 고릅니다.</p>
+      </div>
+
+      <div class="tutorial-actions">
+        <button id="tutorialCloseBtn" class="button button-secondary" type="button">닫기</button>
+        <button id="tutorialNextBtn" class="button button-primary" type="button">다음</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast glass" role="status" aria-live="polite" hidden></div>
 
   <script>
     (() => {
@@ -983,7 +1432,8 @@
 
       const SERVICE_UUID = "00c0ffee-1234-1234-1234-123456789abc";
       const CHARACTERISTIC_UUID = "00c0ffee-4321-4321-4321-cba987654321";
-      const STORAGE_KEY = "srh-pose-controller-settings-v2";
+      const STORAGE_KEY = "srh-pose-controller-settings-v3";
+      const LEGACY_STORAGE_KEY = "srh-pose-controller-settings-v2";
       const DEVICE_KEY = "srh-pose-controller-device-id";
       const POSE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/";
       const FACE_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
@@ -991,10 +1441,20 @@
       const MOUTH_OPEN_THRESHOLD = 0.16;
       const MOUTH_CLOSE_THRESHOLD = 0.09;
       const MOUTH_STABLE_DURATION = 180;
+      const TUTORIAL_KEY = "srh-pose-controller-tutorial-seen";
+      const HUD_KEY = "srh-pose-controller-hud-compact";
+      // 반응속도 튜닝 값
+      const STOP_HYSTERESIS = 0.02;        // 출발한 뒤에는 데드존보다 조금 더 가까워져야 정지 (떨림 방지)
+      const STEERING_HYSTERESIS = 4;       // 회전 중에는 데드존보다 4° 더 수평이 되어야 직진 복귀
+      const SPEED_HYSTERESIS = 0.15;       // 속도 단계 경계에서 0.15단계 이상 넘어가야 단계 변경
+      const RAISE_EXIT_MARGIN = 0.035;     // 후진 중에는 후진선보다 이만큼 아래로 내려야 전진 복귀
+      const CROSS_EXIT_MARGIN = 0.05;      // 교차 후진 중에는 확실히 풀려야 전진 복귀
+      const RAISE_REACH_SCALE = 0.55;      // 올리기 후진 중 주먹 거리 기준(출발·최고속도)을 이 비율로 축소
+      const BACKWARD_RELEASE_MS = 150;     // 후진 해제 조건이 이 시간 이상 유지되어야 전진으로 전환
 
       const COMMANDS = Object.freeze({
-        forward: { code: "2", label: "전진" },
-        backward: { code: "8", label: "후진" },
+        forward: { code: "8", label: "전진" },
+        backward: { code: "2", label: "후진" },
         stop: { code: "5", label: "정지" },
         speedUp: { code: "3", label: "속도 증가" },
         speedDown: { code: "1", label: "속도 감소" },
@@ -1002,6 +1462,13 @@
         right: { code: "6", label: "우회전" },
         gripperClose: { code: "7", label: "그리퍼 닫기" },
         gripperOpen: { code: "9", label: "그리퍼 열기" }
+      });
+
+      // 성능 모드: 카메라 초당 장수와 포즈 분석 횟수 상한. 분석을 자주 할수록 빠르지만 배터리·발열이 늘어난다.
+      const PERFORMANCE_PROFILES = Object.freeze({
+        eco: { label: "효율 우선", cameraFps: 15, analysisFps: 12 },
+        balanced: { label: "균형", cameraFps: 24, analysisFps: 20 },
+        performance: { label: "성능 우선", cameraFps: 30, analysisFps: 0 }
       });
 
       const DEFAULT_SETTINGS = Object.freeze({
@@ -1017,7 +1484,12 @@
         winkHold: 500,
         poseConfidence: 0.50,
         haptics: true,
-        keepAwake: true
+        keepAwake: true,
+        backwardGesture: "raise",
+        liteEffects: false,
+        performanceMode: "balanced",
+        poseModel: "lite",
+        raiseLineOffset: 0
       });
 
       const state = {
@@ -1028,7 +1500,25 @@
         manualDisconnect: false,
         reconnectAttempts: 0,
         reconnectTimer: null,
-        writeChain: Promise.resolve(),
+        // 조종 신호 엔진: "지금 보내야 할 상태(target)"와 "아두이노가 받은 상태(sent)"를 비교해 차이만 전송한다.
+        drive: {
+          target: { motion: "stop", speed: 0, steering: "straight" },
+          sent: { motion: "stop", speed: 0, steering: "straight" },
+          events: [],
+          forceStop: false,
+          pumping: false
+        },
+        wristFilters: null,
+        backLineY: null,
+        backwardTooClose: false,
+        lastAnalysisAt: 0,
+        backwardReleaseSince: 0,
+        lastHapticAt: 0,
+        logQueue: [],
+        logFlushTimer: null,
+        fpsFrames: 0,
+        fpsSince: 0,
+        lastSignalCode: "",
         cameraStream: null,
         cameraRunning: false,
         processingFrame: false,
@@ -1071,8 +1561,9 @@
         [
           "connectBtn", "cameraBtn", "settingsBtn", "systemChip", "videoElement", "canvasElement",
           "voiceControl", "voiceBtn", "voiceStatus", "voiceStatusText",
-          "stageBadge", "stageHelp", "controlContext", "modeStatus", "speedStatus", "directionStatus",
-          "distanceStatus", "gripperStatus", "signalStatus", "logPanel", "clearLogBtn", "settingsBackdrop",
+          "stageBadge", "stageBadgeText", "stageFps", "stageHelp", "speedStatus",
+          "distanceStatus", "gripperStatus", "signalStatus", "signalCard", "signalCode", "glyphArrow", "hudBottom",
+          "speedBar", "distanceFill", "distanceMark", "helpBtn", "tutorialBackdrop", "tutorialProgress", "tutorialCloseBtn", "tutorialNextBtn", "logPanel", "clearLogBtn", "settingsBackdrop",
           "closeSettingsBtn", "cancelSettingsBtn", "saveSettingsBtn", "resetSettingsBtn", "toast"
         ].forEach((id) => { el[id] = document.getElementById(id); });
 
@@ -1082,11 +1573,136 @@
         populateSettingsForm(state.settings);
         updateAllSettingOutputs();
         updateGripperModeUi();
+        applyVisualSettings();
+        restoreHudMode();
         updateControlStatus("대기", 0, "직진");
         drawPlaceholder();
         addLog("카메라 단독 테스트 또는 BLE 연결을 시작하세요.");
         checkCapabilities();
         restoreKnownDevice();
+        // 튜토리얼은 이 기기에서 처음 열 때 한 번만 자동으로 띄운다. 다시 보려면 "?" 버튼.
+        let tutorialSeen = false;
+        try { tutorialSeen = localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (error) { /* 저장소 사용 불가 */ }
+        if (!tutorialSeen) openTutorial();
+      }
+
+      // ---------- 튜토리얼 ----------
+      // 처음 한 번 자동으로 보여 주고, 장면이 자동으로 넘어간 뒤 마지막 장면이 끝나면 스스로 닫힌다.
+      const tutorial = { index: 0, timer: null, slides: [], built: false };
+
+      // 일러스트 자세: [팔꿈치x, 팔꿈치y, 주먹x, 주먹y]. l = 화면 왼쪽 팔, r = 화면 오른쪽 팔.
+      const TUTORIAL_SHOULDERS = { l: [72, 84], r: [128, 84] };
+      const TUTORIAL_POSES = {
+        close: { l: [62, 112, 86, 104], r: [138, 112, 114, 104] },
+        mid: { l: [56, 106, 52, 96], r: [144, 106, 148, 96] },
+        wide: { l: [54, 98, 34, 98], r: [146, 98, 166, 98] },
+        tiltL: { l: [56, 104, 40, 120], r: [146, 92, 162, 76] },
+        tiltR: { l: [54, 92, 38, 76], r: [144, 104, 160, 120] },
+        raise: { l: [50, 70, 46, 28], r: [150, 70, 154, 28] }
+      };
+      // times는 0~1 사이 시점, poses는 그 시점의 자세. CSS 쪽 속도 막대·글자 애니메이션과 길이를 맞췄다.
+      const TUTORIAL_FIGURES = {
+        spread: { duration: 4.2, times: [0, 0.1, 0.42, 0.68, 1], poses: ["close", "close", "wide", "wide", "close"] },
+        speed: { duration: 4.4, times: [0, 0.08, 0.46, 0.58, 0.96, 1], poses: ["mid", "mid", "wide", "wide", "mid", "mid"] },
+        steer: { duration: 5.6, times: [0, 0.06, 0.24, 0.4, 0.6, 0.76, 0.94, 1], poses: ["wide", "wide", "tiltL", "tiltL", "tiltR", "tiltR", "wide", "wide"] },
+        back: { duration: 4.6, times: [0, 0.1, 0.42, 0.72, 1], poses: ["wide", "wide", "raise", "raise", "wide"] }
+      };
+
+      function buildTutorialFigures() {
+        if (tutorial.built) return;
+        tutorial.built = true;
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const still = false;
+        const make = (name, attributes) => {
+          const node = document.createElementNS(SVG_NS, name);
+          Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+          return node;
+        };
+
+        el.tutorialBackdrop.querySelectorAll(".art-figure").forEach((group) => {
+          const figure = TUTORIAL_FIGURES[group.dataset.figure];
+          if (!figure) return;
+          const frames = figure.poses.map((name) => TUTORIAL_POSES[name]);
+          const restFrame = still ? frames[Math.floor(frames.length / 2)] : frames[0];
+          const animate = (node, attribute, pick) => {
+            if (still) return;
+            node.append(make("animate", {
+              attributeName: attribute,
+              begin: "indefinite",
+              dur: figure.duration + "s",
+              repeatCount: "indefinite",
+              calcMode: "spline",
+              keyTimes: figure.times.join(";"),
+              keySplines: figure.times.slice(1).map(() => "0.45 0 0.25 1").join(";"),
+              values: frames.map(pick).join(";")
+            }));
+          };
+          const armPath = (side) => (frame) => {
+            const [sx, sy] = TUTORIAL_SHOULDERS[side];
+            const [ex, ey, fx, fy] = frame[side];
+            return `M${sx} ${sy} L${ex} ${ey} L${fx} ${fy}`;
+          };
+
+          const link = make("line", {
+            class: "art-link",
+            x1: restFrame.l[2], y1: restFrame.l[3], x2: restFrame.r[2], y2: restFrame.r[3]
+          });
+          animate(link, "x1", (frame) => frame.l[2]);
+          animate(link, "y1", (frame) => frame.l[3]);
+          animate(link, "x2", (frame) => frame.r[2]);
+          animate(link, "y2", (frame) => frame.r[3]);
+          group.append(link);
+
+          for (const side of ["l", "r"]) {
+            const arm = make("path", { class: "art-arm", d: armPath(side)(restFrame) });
+            animate(arm, "d", armPath(side));
+            const fist = make("circle", {
+              class: side === "l" ? "art-fist-a" : "art-fist-b",
+              cx: restFrame[side][2], cy: restFrame[side][3], r: 10
+            });
+            animate(fist, "cx", (frame) => frame[side][2]);
+            animate(fist, "cy", (frame) => frame[side][3]);
+            group.append(arm, fist);
+          }
+        });
+      }
+
+      function openTutorial() {
+        buildTutorialFigures();
+        try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (error) { /* 저장소 사용 불가 */ }
+        tutorial.slides = Array.from(el.tutorialBackdrop.querySelectorAll(".tutorial-slide"));
+        el.tutorialProgress.replaceChildren(...tutorial.slides.map(() => document.createElement("span")));
+        el.tutorialBackdrop.hidden = false;
+        showTutorialSlide(0);
+      }
+
+      function showTutorialSlide(index) {
+        clearTimeout(tutorial.timer);
+        if (index >= tutorial.slides.length) {
+          closeTutorial();
+          return;
+        }
+        tutorial.index = index;
+        const duration = Number(tutorial.slides[index].dataset.ms) || 5000;
+        tutorial.slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
+        // 팔 애니메이션을 화살표·막대 애니메이션과 같은 시점에서 다시 시작한다.
+        tutorial.slides[index].querySelectorAll("animate").forEach((node) => {
+          if (typeof node.beginElement === "function") node.beginElement();
+        });
+        Array.from(el.tutorialProgress.children).forEach((bar, barIndex) => {
+          bar.className = "";
+          bar.style.setProperty("--slide-ms", duration + "ms");
+          void bar.offsetWidth;   // 진행 막대 애니메이션을 처음부터 다시 시작
+          bar.className = barIndex < index ? "done" : (barIndex === index ? "current" : "");
+        });
+        el.tutorialNextBtn.textContent = index === tutorial.slides.length - 1 ? "시작하기" : "다음";
+        tutorial.timer = setTimeout(() => showTutorialSlide(index + 1), duration);
+      }
+
+      function closeTutorial() {
+        clearTimeout(tutorial.timer);
+        tutorial.timer = null;
+        el.tutorialBackdrop.hidden = true;
       }
 
       function bindEvents() {
@@ -1094,6 +1710,13 @@
         el.cameraBtn.addEventListener("click", toggleCamera);
         el.voiceBtn.addEventListener("click", toggleVoiceRecognition);
         el.settingsBtn.addEventListener("click", openSettings);
+        el.signalCard.addEventListener("click", toggleHudMode);
+        el.helpBtn.addEventListener("click", () => openTutorial());
+        el.tutorialCloseBtn.addEventListener("click", closeTutorial);
+        el.tutorialNextBtn.addEventListener("click", () => showTutorialSlide(tutorial.index + 1));
+        el.tutorialBackdrop.addEventListener("click", (event) => {
+          if (event.target === el.tutorialBackdrop) closeTutorial();
+        });
         el.closeSettingsBtn.addEventListener("click", closeSettings);
         el.cancelSettingsBtn.addEventListener("click", closeSettings);
         el.saveSettingsBtn.addEventListener("click", saveSettingsFromForm);
@@ -1107,18 +1730,27 @@
         });
         document.addEventListener("keydown", (event) => {
           if (event.key === "Escape" && !el.settingsBackdrop.hidden) closeSettings();
+          else if (event.key === "Escape" && !el.tutorialBackdrop.hidden) closeTutorial();
         });
         document.addEventListener("visibilitychange", handleVisibilityChange);
         window.addEventListener("pagehide", handlePageHide);
 
-        ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence"]
+        ["stopDeadzone", "speedSensitivity", "steeringDeadzone", "winkSensitivity", "winkHold", "poseConfidence", "raiseLineOffset"]
           .forEach((id) => document.getElementById(id).addEventListener("input", updateAllSettingOutputs));
         document.getElementById("gripperControlMode").addEventListener("change", syncGripperSettingsVisibility);
       }
 
       function loadSettings() {
         try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          let raw = localStorage.getItem(STORAGE_KEY);
+          let migrated = false;
+          if (raw === null) {
+            // 이전 버전 설정은 가져오되, 전후진 기본 신호가 바뀌었으므로(전진 8, 후진 2) 반전 스위치는 끈 상태로 시작한다.
+            raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+            migrated = raw !== null;
+          }
+          const saved = JSON.parse(raw || "{}");
+          if (migrated) saved.invertDrive = false;
           return sanitizeSettings({ ...DEFAULT_SETTINGS, ...saved });
         } catch (error) {
           addConsoleError("설정 불러오기 실패", error);
@@ -1140,7 +1772,12 @@
           winkHold: Math.round(clampNumber(value.winkHold, 250, 1000, DEFAULT_SETTINGS.winkHold)),
           poseConfidence: clampNumber(value.poseConfidence, 0.3, 0.8, DEFAULT_SETTINGS.poseConfidence),
           haptics: Boolean(value.haptics),
-          keepAwake: Boolean(value.keepAwake)
+          keepAwake: Boolean(value.keepAwake),
+          backwardGesture: ["raise", "cross"].includes(value.backwardGesture) ? value.backwardGesture : DEFAULT_SETTINGS.backwardGesture,
+          liteEffects: Boolean(value.liteEffects),
+          performanceMode: Object.hasOwn(PERFORMANCE_PROFILES, value.performanceMode) ? value.performanceMode : DEFAULT_SETTINGS.performanceMode,
+          poseModel: ["lite", "full"].includes(value.poseModel) ? value.poseModel : DEFAULT_SETTINGS.poseModel,
+          raiseLineOffset: Math.round(clampNumber(value.raiseLineOffset, -10, 15, DEFAULT_SETTINGS.raiseLineOffset))
         };
       }
 
@@ -1187,7 +1824,12 @@
           winkHold: document.getElementById("winkHold").value,
           poseConfidence: document.getElementById("poseConfidence").value,
           haptics: document.getElementById("haptics").checked,
-          keepAwake: document.getElementById("keepAwake").checked
+          keepAwake: document.getElementById("keepAwake").checked,
+          backwardGesture: document.getElementById("backwardGesture").value,
+          liteEffects: document.getElementById("liteEffects").checked,
+          performanceMode: document.getElementById("performanceMode").value,
+          poseModel: document.getElementById("poseModel").value,
+          raiseLineOffset: document.getElementById("raiseLineOffset").value
         });
       }
 
@@ -1196,6 +1838,8 @@
         document.getElementById("stopDeadzoneValue").textContent = Number(value("stopDeadzone")).toFixed(2);
         document.getElementById("speedSensitivityValue").textContent = Number(value("speedSensitivity")).toFixed(1) + "×";
         document.getElementById("steeringDeadzoneValue").textContent = value("steeringDeadzone") + "°";
+        const lineOffset = Number(value("raiseLineOffset"));
+        document.getElementById("raiseLineOffsetValue").textContent = lineOffset === 0 ? "입 높이" : (lineOffset > 0 ? `${lineOffset}% 아래` : `${-lineOffset}% 위`);
         document.getElementById("winkSensitivityValue").textContent = value("winkSensitivity") + " / 10";
         document.getElementById("winkHoldValue").textContent = value("winkHold") + " ms";
         document.getElementById("poseConfidenceValue").textContent = Math.round(Number(value("poseConfidence")) * 100) + "%";
@@ -1204,6 +1848,7 @@
       function saveSettingsFromForm() {
         const previousMode = state.settings.gripperControlMode;
         const previousMouthInverted = state.settings.invertMouthGripper;
+        const previousBackwardGesture = state.settings.backwardGesture;
         state.settings = readSettingsForm();
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state.settings));
@@ -1223,6 +1868,9 @@
         }
         applyModelSettings();
         updateGripperModeUi();
+        if (previousBackwardGesture !== state.settings.backwardGesture) state.backwardReleaseSince = 0;
+        applyVisualSettings();
+        applyCameraFrameRate();
         updateControlStatus(modeLabel(state.motion), state.speed, steeringLabel(state.steering));
         if (state.cameraRunning && state.settings.keepAwake) requestWakeLock();
         if (!state.settings.keepAwake) releaseWakeLock();
@@ -1369,7 +2017,9 @@
               setSystemStatus("BLE 연결됨", "online");
               updateBleUi();
               addLog(`BLE 연결 성공 · ${device.name || "이름 없는 장치"}`);
-              await transmitCommand(COMMANDS.stop, { forceLog: true });
+              // 연결 직후 아두이노 상태를 정지로 맞춘 뒤, 현재 손 동작 상태를 다시 전송한다.
+              state.drive.events = [];
+              requestForcedStop();
               return;
             } catch (error) {
               lastError = error;
@@ -1432,49 +2082,152 @@
         const connected = Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
         el.connectBtn.classList.toggle("connected", connected);
         el.connectBtn.textContent = connected ? "BLE 해제" : (state.bleDevice ? "BLE 재연결" : "BLE 연결");
-        el.controlContext.textContent = connected ? "아두이노 실시간 전송" : "오프라인 신호 테스트";
         if (state.cameraRunning) {
-          el.stageBadge.textContent = connected ? "실기 제어 중" : "오프라인 테스트 중";
+          el.stageBadgeText.textContent = connected ? "실기 제어 중" : "오프라인 테스트";
           el.stageBadge.classList.toggle("live", connected);
         }
       }
 
-      function transmitCommand(command, options = {}) {
-        const connectedAtQueueTime = Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
-        el.signalStatus.textContent = `${command.code} · ${command.label}`;
+      // ---------- 조종 신호 엔진 ----------
+      // 예전 방식: 신호가 생길 때마다 줄(대기열)에 세워서 하나씩 보냈다. 손이 조금만 떨려도
+      // "3,1,3,1…" 같은 신호가 줄에 쌓여, 정작 중요한 조향 신호가 그 뒤에서 기다렸다.
+      // 새 방식: "지금 원하는 상태"만 기억하고, 블루투스가 비는 순간마다 아두이노가 아는 상태와의
+      // 차이 중 가장 급한 것 하나만 보낸다. 오래된 신호는 줄을 서지 않고 버려진다.
+      function isBleConnected() {
+        return Boolean(state.bleCharacteristic && state.bleDevice?.gatt?.connected);
+      }
 
-        if (!connectedAtQueueTime) {
-          if (options.forceLog || options.logOffline !== false) addLog(`TEST · 신호 ${command.code} (${command.label})`);
-          pulseHaptic();
-          return Promise.resolve(false);
+      // 윙크·입·음성 그리퍼 신호와 일회성 신호는 순서대로 반드시 전송한다(기존과 동일한 신호).
+      function transmitCommand(command) {
+        state.drive.events.push(command);
+        pumpCommands();
+        return Promise.resolve(isBleConnected());
+      }
+
+      function requestForcedStop() {
+        state.drive.forceStop = true;
+        pumpCommands();
+      }
+
+      function nextDriveCommand() {
+        const drive = state.drive;
+        const target = drive.target;
+        const sent = drive.sent;
+
+        // 1순위: 정지
+        if (drive.forceStop || (target.motion === "stop" && sent.motion !== "stop")) {
+          drive.forceStop = false;
+          setSentStopped();
+          return COMMANDS.stop;
         }
 
-        state.writeChain = state.writeChain
-          .catch(() => undefined)
-          .then(async () => {
-            const characteristic = state.bleCharacteristic;
-            if (!characteristic || !state.bleDevice?.gatt?.connected) return false;
-            const payload = encoder.encode(command.code + "\n");
-            if (characteristic.properties?.writeWithoutResponse && typeof characteristic.writeValueWithoutResponse === "function") {
-              await characteristic.writeValueWithoutResponse(payload);
-            } else if (characteristic.properties?.write && typeof characteristic.writeValueWithResponse === "function") {
-              await characteristic.writeValueWithResponse(payload);
-            } else if (typeof characteristic.writeValue === "function") {
-              await characteristic.writeValue(payload);
-            } else {
-              throw new Error("쓰기 가능한 BLE 특성이 아닙니다.");
-            }
-            addLog(`TX · 신호 ${command.code} (${command.label})`);
-            pulseHaptic();
-            return true;
-          })
-          .catch((error) => {
-            addLog(`BLE 전송 실패 · ${error.message || error}`);
-            if (!state.bleDevice?.gatt?.connected) handleGattDisconnected();
-            return false;
-          });
+        // 2순위: 전진/후진 전환 (기존 프로토콜 그대로: 정지 → 주행 방향 → 증속)
+        if (target.motion !== "stop" && target.motion !== sent.motion) {
+          if (sent.motion !== "stop") {
+            setSentStopped();
+            return COMMANDS.stop;
+          }
+          sent.motion = target.motion;
+          sent.speed = 0;
+          sent.steering = "straight";
+          return driveCommand(target.motion);
+        }
 
-        return state.writeChain;
+        // 3순위: 그리퍼 등 일회성 신호
+        if (drive.events.length) return drive.events.shift();
+
+        if (target.motion === "stop") return null;
+
+        // 4순위: 조향 (속도 단계보다 먼저 보내 회전 반응을 빠르게)
+        if (target.steering !== sent.steering) {
+          sent.steering = target.steering;
+          return target.steering === "straight" ? driveCommand(target.motion) : steeringCommand(target.steering);
+        }
+
+        // 5순위: 속도 단계 (한 번에 한 단계씩, 최신 목표만 따라감)
+        if (target.speed !== sent.speed) {
+          const up = target.speed > sent.speed;
+          sent.speed += up ? 1 : -1;
+          return up ? COMMANDS.speedUp : COMMANDS.speedDown;
+        }
+        return null;
+      }
+
+      function setSentStopped() {
+        state.drive.sent.motion = "stop";
+        state.drive.sent.speed = 0;
+        state.drive.sent.steering = "straight";
+      }
+
+      function pumpCommands() {
+        if (state.drive.pumping) return;
+
+        if (!isBleConnected()) {
+          // 오프라인 테스트: 블루투스 대기 없이 바로 처리
+          let command;
+          let guard = 0;
+          while ((command = nextDriveCommand()) && guard < 40) {
+            guard += 1;
+            showSentSignal(command);
+            addLog(`TEST · 신호 ${command.code} (${command.label})`);
+          }
+          return;
+        }
+
+        state.drive.pumping = true;
+        (async () => {
+          try {
+            let command;
+            while ((command = nextDriveCommand())) {
+              if (!isBleConnected()) {
+                // 전송 중 연결이 끊기면 다음 연결 때 정지부터 다시 맞춘다.
+                state.drive.events = [];
+                break;
+              }
+              try {
+                await writeCommand(command);
+                showSentSignal(command);
+                addLog(`TX · 신호 ${command.code} (${command.label})`);
+              } catch (error) {
+                addLog(`BLE 전송 실패 · ${error.message || error}`);
+                if (!state.bleDevice?.gatt?.connected) {
+                  handleGattDisconnected();
+                  break;
+                }
+              }
+            }
+          } finally {
+            state.drive.pumping = false;
+          }
+        })();
+      }
+
+      async function writeCommand(command) {
+        const characteristic = state.bleCharacteristic;
+        if (!characteristic) throw new Error("BLE 특성이 없습니다.");
+        const payload = encoder.encode(command.code + "\n");
+        if (characteristic.properties?.writeWithoutResponse && typeof characteristic.writeValueWithoutResponse === "function") {
+          await characteristic.writeValueWithoutResponse(payload);
+        } else if (characteristic.properties?.write && typeof characteristic.writeValueWithResponse === "function") {
+          await characteristic.writeValueWithResponse(payload);
+        } else if (typeof characteristic.writeValue === "function") {
+          await characteristic.writeValue(payload);
+        } else {
+          throw new Error("쓰기 가능한 BLE 특성이 아닙니다.");
+        }
+      }
+
+      function showSentSignal(command) {
+        el.signalStatus.textContent = command.label;
+        el.signalCode.textContent = command.code;
+        if (typeof el.signalCode.animate === "function") {
+          el.signalCode.animate(
+            [{ transform: "scale(1.12)", opacity: 0.55 }, { transform: "scale(1)", opacity: 1 }],
+            { duration: 220, easing: "ease-out" }
+          );
+        }
+        if (command.code !== state.lastSignalCode) pulseHaptic();
+        state.lastSignalCode = command.code;
       }
 
       function toggleVoiceRecognition() {
@@ -1711,7 +2464,7 @@
                 facingMode: { ideal: "user" },
                 width: { ideal: 480, max: 720 },
                 height: { ideal: 640, max: 960 },
-                frameRate: { ideal: 20, max: 30 }
+                frameRate: { ideal: currentProfile().cameraFps, max: 30 }
               }
             });
           } catch (error) {
@@ -1733,11 +2486,16 @@
           state.frameErrors = 0;
           state.poseLostAt = 0;
           state.smoothedWrists = null;
+          state.wristFilters = null;
+          state.backLineY = null;
+          state.fpsFrames = 0;
+          state.fpsSince = performance.now();
           el.cameraBtn.textContent = "카메라 종료";
+          el.cameraBtn.classList.add("running");
           el.stageHelp.hidden = true;
           updateBleUi();
           if (!state.bleCharacteristic) {
-            el.stageBadge.textContent = "오프라인 테스트 중";
+            el.stageBadgeText.textContent = "오프라인 테스트";
             el.stageBadge.classList.remove("live");
           }
           addLog(state.bleCharacteristic ? "카메라 제어를 시작했습니다." : "카메라 테스트를 시작했습니다. 신호는 로그에만 표시됩니다.");
@@ -1774,8 +2532,9 @@
       function applyModelSettings() {
         if (state.pose) {
           state.pose.setOptions({
-            modelComplexity: 0,
-            smoothLandmarks: true,
+            modelComplexity: state.settings.poseModel === "full" ? 1 : 0,
+            // 모델 내부 스무딩을 끄고, 아래 One Euro 필터 한 번만 사용한다(이중 스무딩으로 인한 지연 제거).
+            smoothLandmarks: false,
             enableSegmentation: false,
             selfieMode: false,
             minDetectionConfidence: state.settings.poseConfidence,
@@ -1792,17 +2551,33 @@
         }
       }
 
+      function currentProfile() {
+        return PERFORMANCE_PROFILES[state.settings.performanceMode] || PERFORMANCE_PROFILES.balanced;
+      }
+
+      // 카메라가 켜진 상태에서 성능 모드를 바꾸면 카메라를 다시 켜지 않고 초당 장수만 바꾼다.
+      function applyCameraFrameRate() {
+        const track = state.cameraStream?.getVideoTracks?.()[0];
+        if (!track || typeof track.applyConstraints !== "function") return;
+        track.applyConstraints({ frameRate: { ideal: currentProfile().cameraFps, max: 30 } })
+          .catch((error) => addConsoleError("카메라 프레임 속도 변경 실패", error));
+      }
+
       async function processVideoFrame() {
         if (!state.cameraRunning) return;
-        if (state.processingFrame || el.videoElement.readyState < 2) {
+        const analysisFps = currentProfile().analysisFps;
+        const tooSoon = analysisFps > 0 && performance.now() - state.lastAnalysisAt < 1000 / analysisFps - 4;
+        if (tooSoon || state.processingFrame || el.videoElement.readyState < 2) {
           state.animationFrame = requestAnimationFrame(processVideoFrame);
           return;
         }
 
         state.processingFrame = true;
+        state.lastAnalysisAt = performance.now();
         try {
           await state.pose.send({ image: el.videoElement });
           state.frameCount += 1;
+          updateFps();
           if (state.settings.gripperControlMode !== "voice" && state.frameCount % 2 === 0) {
             await state.faceMesh.send({ image: el.videoElement });
           }
@@ -1834,8 +2609,13 @@
         // 전면 카메라 원본 좌표에서 16번(사용자 오른손)은 왼쪽, 15번(사용자 왼손)은 오른쪽에 보인다.
         const leftOnScreen = offsetWrist(landmarks[16]);
         const rightOnScreen = offsetWrist(landmarks[15]);
-        const visible = leftOnScreen.visibility > state.settings.poseConfidence && rightOnScreen.visibility > state.settings.poseConfidence;
+        // 교차 후진 중에는 팔이 겹쳐 손목 신뢰도가 떨어지므로 기준을 낮춰 놓치지 않게 한다.
+        const crossHold = state.settings.backwardGesture === "cross" && state.drive.target.motion === "backward";
+        const threshold = crossHold ? Math.max(0.2, state.settings.poseConfidence * 0.6) : state.settings.poseConfidence;
+        const visible = leftOnScreen.visibility > threshold && rightOnScreen.visibility > threshold;
         const inBounds = pointInBounds(leftOnScreen) && pointInBounds(rightOnScreen);
+        updateBackwardLine(landmarks);
+        drawBackwardLine();
 
         if (!visible || !inBounds) {
           handlePoseMissing();
@@ -1843,9 +2623,9 @@
         }
 
         state.poseLostAt = 0;
-        const wrists = smoothWrists(leftOnScreen, rightOnScreen);
+        const wrists = smoothWrists(leftOnScreen, rightOnScreen, results);
         drawWristGuide(wrists.left, wrists.right);
-        processWristControl(wrists.left, wrists.right);
+        processWristControl(wrists.left, wrists.right, landmarks);
       }
 
       function onFaceResults(results) {
@@ -1888,22 +2668,98 @@
       }
 
       function pointInBounds(point) {
-        return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+        // 주먹을 높이 들면 점이 화면 위쪽으로 살짝 벗어날 수 있어 위쪽은 여유를 둔다.
+        return point.x >= 0 && point.x <= 1 && point.y >= -0.08 && point.y <= 1;
+      }
+
+      // One Euro 필터: 손이 가만히 있을 때는 떨림을 강하게 걸러내고, 빠르게 움직이면 거의 지연 없이 따라간다.
+      // (예전 방식은 항상 같은 비율로 천천히 따라가서 동작이 한 박자 늦게 반영됐다.)
+      function createOneEuro(minCutoff, beta, dCutoff) {
+        let previous = null;
+        let previousDerivative = 0;
+        let previousTime = 0;
+        const smoothing = (cutoff, dt) => {
+          const tau = 1 / (2 * Math.PI * cutoff);
+          return 1 / (1 + tau / dt);
+        };
+        return (value, time) => {
+          if (previous === null) {
+            previous = value;
+            previousTime = time;
+            return value;
+          }
+          const dt = Math.min(0.25, Math.max(0.001, (time - previousTime) / 1000));
+          previousTime = time;
+          const derivative = (value - previous) / dt;
+          const aD = smoothing(dCutoff, dt);
+          previousDerivative += aD * (derivative - previousDerivative);
+          const cutoff = minCutoff + beta * Math.abs(previousDerivative);
+          previous += smoothing(cutoff, dt) * (value - previous);
+          return previous;
+        };
       }
 
       function smoothWrists(left, right) {
-        const alpha = 0.36;
-        if (!state.smoothedWrists) {
+        const now = performance.now();
+        if (!state.wristFilters || !state.smoothedWrists) {
+          const make = () => createOneEuro(1.6, 6.0, 1.0);
+          state.wristFilters = { lx: make(), ly: make(), rx: make(), ry: make() };
           state.smoothedWrists = { left: { ...left }, right: { ...right } };
-          return state.smoothedWrists;
         }
-        for (const side of ["left", "right"]) {
-          const source = side === "left" ? left : right;
-          state.smoothedWrists[side].x += (source.x - state.smoothedWrists[side].x) * alpha;
-          state.smoothedWrists[side].y += (source.y - state.smoothedWrists[side].y) * alpha;
-          state.smoothedWrists[side].visibility = source.visibility;
+        const f = state.wristFilters;
+        const w = state.smoothedWrists;
+        w.left.x = f.lx(left.x, now);
+        w.left.y = f.ly(left.y, now);
+        w.left.visibility = left.visibility;
+        w.right.x = f.rx(right.x, now);
+        w.right.y = f.ry(right.y, now);
+        w.right.visibility = right.visibility;
+        return w;
+      }
+
+      // 후진선: 입 높이를 따라다니는 기준선. 화면에 보이는 두 주먹 점이 모두 이 선 위에 있으면 후진이다.
+      function updateBackwardLine(landmarks) {
+        if (state.settings.backwardGesture !== "raise") {
+          state.backLineY = null;
+          return;
         }
-        return state.smoothedWrists;
+        // 포즈 모델의 9·10번이 입의 양 끝이다. 입이 안 보이면 마지막 위치를 그대로 쓴다.
+        const mouthA = landmarks[9];
+        const mouthB = landmarks[10];
+        if ((mouthA?.visibility ?? 0) < 0.35 || (mouthB?.visibility ?? 0) < 0.35) return;
+        const lineY = (mouthA.y + mouthB.y) / 2 + state.settings.raiseLineOffset / 100;
+        state.backLineY = state.backLineY === null ? lineY : state.backLineY + (lineY - state.backLineY) * 0.3;
+      }
+
+      function drawBackwardLine() {
+        if (state.backLineY === null) return;
+        const ctx = el.canvasContext;
+        const width = el.canvasElement.width;
+        const height = el.canvasElement.height;
+        const y = state.backLineY * height;
+        const active = state.drive.target.motion === "backward";
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.strokeStyle = active ? "rgba(255, 179, 71, 0.95)" : "rgba(255, 179, 71, 0.55)";
+        ctx.lineWidth = Math.max(2, width / (active ? 160 : 240));
+        ctx.setLineDash([Math.max(6, width / 60), Math.max(6, width / 60)]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const fontSize = Math.max(13, width / 30);
+        ctx.font = `800 ${fontSize}px -apple-system, "Apple SD Gothic Neo", sans-serif`;
+        ctx.textBaseline = "bottom";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+        ctx.fillStyle = active ? "#ffb347" : "rgba(255, 200, 120, 0.9)";
+        const label = active
+          ? "▲ 후진 중"
+          : (state.backwardTooClose ? "▲ 후진 준비 · 주먹을 더 벌리세요" : "▲ 후진");
+        ctx.strokeText(label, width * 0.03, y - 4);
+        ctx.fillText(label, width * 0.03, y - 4);
+        ctx.restore();
       }
 
       function drawWristGuide(left, right) {
@@ -1920,7 +2776,7 @@
         ctx.beginPath();
         ctx.moveTo(lx, ly);
         ctx.lineTo(rx, ry);
-        ctx.strokeStyle = "rgba(72, 223, 181, 0.9)";
+        ctx.strokeStyle = state.drive.target.motion === "backward" ? "rgba(255, 179, 71, 0.95)" : "rgba(72, 223, 181, 0.9)";
         ctx.lineWidth = Math.max(3, width / 150);
         ctx.setLineDash([12, 8]);
         ctx.stroke();
@@ -1977,64 +2833,116 @@
         if (performance.now() - state.poseLostAt > 320) {
           setMotion("stop", 0, "straight", "인식 대기");
         }
-        if (performance.now() - state.poseLostAt > 1000) state.smoothedWrists = null;
+        if (performance.now() - state.poseLostAt > 1000) {
+          state.smoothedWrists = null;
+          state.wristFilters = null;
+          state.backLineY = null;
+        }
       }
 
-      function processWristControl(left, right) {
+      function processWristControl(left, right, landmarks) {
         const dx = right.x - left.x;
         const dy = right.y - left.y;
         const distance = Math.hypot(dx, dy);
         const angle = Math.atan2(dy, Math.max(Math.abs(dx), 0.0001)) * 180 / Math.PI;
-        const crossed = left.x > right.x;
-        el.distanceStatus.textContent = distance.toFixed(2);
+        const target = state.drive.target;
+        const moving = target.motion !== "stop";
+        updateDistanceStatus(distance);
 
-        if (distance < state.settings.stopDeadzone) {
+        const backward = detectBackward(left, right, landmarks);
+        // 교차하면 두 주먹이 가까워질 수밖에 없으므로 교차 후진일 때는 출발 거리 기준을 낮춘다.
+        // 주먹을 얼굴 높이로 들면 팔이 접혀서 가슴 높이에서만큼 넓게 벌릴 수 없다.
+        // 그래서 올리기 후진일 때는 출발 거리와 최고 속도 거리를 함께 줄여 같은 느낌으로 조종되게 한다.
+        const raiseBackward = backward && state.settings.backwardGesture === "raise";
+        const reach = raiseBackward ? RAISE_REACH_SCALE : 1;
+        const deadzone = backward && state.settings.backwardGesture === "cross"
+          ? state.settings.stopDeadzone * 0.6
+          : state.settings.stopDeadzone * reach;
+        const maxDistance = MAX_DISTANCE * reach;
+        const stopAt = moving ? deadzone - STOP_HYSTERESIS : deadzone;
+        state.backwardTooClose = backward && distance < stopAt;
+
+        if (distance < stopAt) {
           setMotion("stop", 0, "straight", "정지");
           return;
         }
 
-        const normalized = Math.min(1, Math.max(0, (distance - state.settings.stopDeadzone) / (MAX_DISTANCE - state.settings.stopDeadzone)));
+        const normalized = Math.min(1, Math.max(0, (distance - deadzone) / (maxDistance - deadzone)));
         const response = Math.pow(normalized, 1 / state.settings.speedSensitivity);
-        const speed = Math.min(state.settings.speedSteps, Math.max(1, Math.ceil(response * state.settings.speedSteps)));
-        const steering = Math.abs(angle) <= state.settings.steeringDeadzone
-          ? "straight"
-          : (angle > 0 ? "left" : "right");
+        const steps = state.settings.speedSteps;
+        const level = response * steps;
+        let speed = Math.min(steps, Math.max(1, Math.ceil(level)));
+        const current = target.speed;
+        const releasing = backward && state.backwardReleaseSince > 0;
+        if (releasing) speed = current || speed;   // 후진 해제 판정 중에는 속도를 건드리지 않는다
+        else if (moving && current > 0 && speed !== current) {
+          if (speed > current && level <= current + SPEED_HYSTERESIS) speed = current;
+          else if (speed < current && level > current - 1 - SPEED_HYSTERESIS) speed = current;
+        }
 
-        setMotion(crossed ? "backward" : "forward", speed, steering);
+        const steeringDeadzone = state.settings.steeringDeadzone;
+        const turnSide = angle > 0 ? "left" : "right";
+        let steering;
+        if (Math.abs(angle) > steeringDeadzone) steering = turnSide;
+        else if (moving && target.steering === turnSide && Math.abs(angle) > Math.max(2, steeringDeadzone - STEERING_HYSTERESIS)) steering = target.steering;
+        else steering = "straight";
+
+        setMotion(backward ? "backward" : "forward", speed, steering);
+      }
+
+      // 후진 판정
+      // - 주먹 올리기(기본): 두 주먹 점이 모두 입 높이의 후진선보다 위에 있으면 후진. 팔이 겹치지 않아 모델이 손목을 놓치지 않는다.
+      // - 주먹 교차: 화면 좌우가 뒤바뀌면 후진. 교차 중 손목이 흔들려도 확실히 풀릴 때까지 후진을 유지한다.
+      function detectBackward(left, right, landmarks) {
+        const isBackward = state.drive.target.motion === "backward";
+        let enter;
+        let exit;
+
+        if (state.settings.backwardGesture === "raise") {
+          if (state.backLineY === null) return isBackward;
+          // 화면에 그려지는 주먹 점(둘 중 더 낮은 쪽)을 화면에 그려지는 후진선과 그대로 비교한다.
+          const lowerFistY = Math.max(left.y, right.y);
+          enter = lowerFistY < state.backLineY;
+          exit = lowerFistY > state.backLineY + RAISE_EXIT_MARGIN;
+        } else {
+          enter = left.x > right.x;
+          exit = left.x < right.x - CROSS_EXIT_MARGIN;
+        }
+
+        if (!isBackward) {
+          state.backwardReleaseSince = 0;
+          return enter;
+        }
+        if (!exit) {
+          state.backwardReleaseSince = 0;
+          return true;
+        }
+        const now = performance.now();
+        if (!state.backwardReleaseSince) state.backwardReleaseSince = now;
+        return now - state.backwardReleaseSince < BACKWARD_RELEASE_MS;
       }
 
       function setMotion(targetMotion, targetSpeed, targetSteering, displayOverride = "") {
+        const target = state.drive.target;
         if (targetMotion === "stop") {
-          if (state.motion !== "stop") transmitCommand(COMMANDS.stop);
-          state.motion = "stop";
-          state.speed = 0;
-          state.steering = "straight";
-          updateControlStatus(displayOverride || "정지", 0, "직진");
-          return;
+          target.motion = "stop";
+          target.speed = 0;
+          target.steering = "straight";
+          state.backwardReleaseSince = 0;
+        } else {
+          target.motion = targetMotion;
+          target.speed = targetSpeed;
+          target.steering = targetSteering;
         }
-
-        const motionChanged = targetMotion !== state.motion;
-        if (motionChanged) {
-          if (state.motion !== "stop") transmitCommand(COMMANDS.stop);
-          state.motion = targetMotion;
-          state.speed = 0;
-          state.steering = "straight";
-          transmitCommand(driveCommand(targetMotion));
-        }
-
-        if (targetSpeed !== state.speed) {
-          const speedCommand = targetSpeed > state.speed ? COMMANDS.speedUp : COMMANDS.speedDown;
-          const difference = Math.abs(targetSpeed - state.speed);
-          for (let count = 0; count < difference; count += 1) transmitCommand(speedCommand);
-          state.speed = targetSpeed;
-        }
-
-        if (targetSteering !== state.steering) {
-          transmitCommand(targetSteering === "straight" ? driveCommand(targetMotion) : steeringCommand(targetSteering));
-          state.steering = targetSteering;
-        }
-
-        updateControlStatus(modeLabel(targetMotion), targetSpeed, steeringLabel(targetSteering));
+        state.motion = target.motion;
+        state.speed = target.speed;
+        state.steering = target.steering;
+        pumpCommands();
+        updateControlStatus(
+          targetMotion === "stop" ? (displayOverride || "정지") : modeLabel(targetMotion),
+          target.speed,
+          steeringLabel(target.steering)
+        );
       }
 
       function driveCommand(motion) {
@@ -2160,16 +3068,17 @@
         cancelAnimationFrame(state.animationFrame);
         cleanupCameraStream();
         releaseWakeLock();
-        transmitCommand(COMMANDS.stop, { forceLog: true });
-        state.motion = "stop";
-        state.speed = 0;
-        state.steering = "straight";
+        state.drive.forceStop = true;
+        setMotion("stop", 0, "straight");
         state.smoothedWrists = null;
+        state.wristFilters = null;
         state.faceResults = null;
         resetWinks();
         resetMouthControl();
         el.cameraBtn.textContent = "카메라 시작";
-        el.stageBadge.textContent = "카메라 대기";
+        el.cameraBtn.classList.remove("running");
+        el.stageBadgeText.textContent = "카메라 대기";
+        el.stageFps.textContent = "";
         el.stageBadge.classList.remove("live");
         el.stageHelp.hidden = false;
         updateControlStatus("대기", 0, "직진");
@@ -2220,7 +3129,10 @@
       }
 
       function handlePageHide() {
-        if (state.cameraRunning) transmitCommand(COMMANDS.stop, { forceLog: false });
+        if (state.cameraRunning) {
+          state.drive.forceStop = true;
+          setMotion("stop", 0, "straight");
+        }
         state.voiceWanted = false;
         clearTimeout(state.voiceRestartTimer);
         if (state.speechRecognition) {
@@ -2230,13 +3142,87 @@
       }
 
       function pulseHaptic() {
+        const now = performance.now();
+        if (now - state.lastHapticAt < 120) return;
+        state.lastHapticAt = now;
         if (state.settings.haptics && typeof navigator.vibrate === "function") navigator.vibrate(18);
       }
 
+      const statusCache = {};
+      function setText(element, key, text) {
+        if (statusCache[key] === text) return;
+        statusCache[key] = text;
+        element.textContent = text;
+      }
+
       function updateControlStatus(mode, speed, direction) {
-        el.modeStatus.textContent = mode;
-        el.speedStatus.textContent = `${speed} / ${state.settings.speedSteps}`;
-        el.directionStatus.textContent = direction;
+        const steps = state.settings.speedSteps;
+        setText(el.speedStatus, "speed", `${speed} / ${steps}`);
+
+        if (el.speedBar.childElementCount !== steps) {
+          el.speedBar.replaceChildren(...Array.from({ length: steps }, () => document.createElement("i")));
+          statusCache.speedBar = -1;
+        }
+        if (statusCache.speedBar !== speed) {
+          statusCache.speedBar = speed;
+          Array.from(el.speedBar.children).forEach((bar, index) => bar.classList.toggle("on", index < speed));
+        }
+
+        const motion = state.drive.target.motion;
+        const glyphKey = motion + ":" + state.drive.target.steering;
+        if (statusCache.glyph !== glyphKey) {
+          statusCache.glyph = glyphKey;
+          el.signalCard.dataset.motion = motion;
+          const steering = state.drive.target.steering;
+          const turn = steering === "left" ? -40 : steering === "right" ? 40 : 0;
+          const rotation = motion === "backward" ? 180 - turn : turn;
+          el.glyphArrow.style.setProperty("--glyph-rot", rotation + "deg");
+        }
+        updateDistanceMark();
+      }
+
+      function updateDistanceStatus(distance) {
+        setText(el.distanceStatus, "distance", distance.toFixed(2));
+        const percent = Math.round(Math.min(1, distance / MAX_DISTANCE) * 100);
+        if (statusCache.distanceFill !== percent) {
+          statusCache.distanceFill = percent;
+          el.distanceFill.style.width = percent + "%";
+        }
+      }
+
+      function updateDistanceMark() {
+        const percent = Math.round(state.settings.stopDeadzone / MAX_DISTANCE * 100);
+        if (statusCache.distanceMark !== percent) {
+          statusCache.distanceMark = percent;
+          el.distanceMark.style.left = percent + "%";
+        }
+      }
+
+      function updateFps() {
+        state.fpsFrames += 1;
+        const now = performance.now();
+        const elapsed = now - state.fpsSince;
+        if (elapsed >= 1000) {
+          el.stageFps.textContent = `${Math.round(state.fpsFrames * 1000 / elapsed)} fps`;
+          state.fpsFrames = 0;
+          state.fpsSince = now;
+        }
+      }
+
+      function applyVisualSettings() {
+        document.body.classList.toggle("lite-effects", state.settings.liteEffects);
+      }
+
+      function restoreHudMode() {
+        let compact = false;
+        try { compact = localStorage.getItem(HUD_KEY) === "1"; } catch (error) { /* 저장소 사용 불가 */ }
+        el.hudBottom.classList.toggle("compact", compact);
+      }
+
+      function toggleHudMode() {
+        const compact = !el.hudBottom.classList.contains("compact");
+        el.hudBottom.classList.toggle("compact", compact);
+        try { localStorage.setItem(HUD_KEY, compact ? "1" : "0"); } catch (error) { /* 저장소 사용 불가 */ }
       }
 
       function modeLabel(motion) {
@@ -2274,17 +3260,31 @@
         ctx.fillText("CAMERA STANDBY", width / 2, height * 0.78);
       }
 
+      // 로그는 모아서 잠깐 뒤에 한 번에 그린다(신호마다 화면을 다시 그리느라 조종이 늦어지지 않도록).
       function addLog(message) {
         if (!el.logPanel) return;
-        const item = document.createElement("div");
-        const time = document.createElement("time");
-        const text = document.createElement("span");
-        item.className = "log-item";
-        time.className = "log-time";
-        time.textContent = new Date().toLocaleTimeString("ko-KR", { hour12: false });
-        text.textContent = message;
-        item.append(time, text);
-        el.logPanel.prepend(item);
+        state.logQueue.push([new Date().toLocaleTimeString("ko-KR", { hour12: false }), message]);
+        if (state.logQueue.length > 30) state.logQueue.splice(0, state.logQueue.length - 30);
+        if (!state.logFlushTimer) state.logFlushTimer = setTimeout(flushLog, 250);
+      }
+
+      function flushLog() {
+        state.logFlushTimer = null;
+        const fragment = document.createDocumentFragment();
+        for (let index = state.logQueue.length - 1; index >= 0; index -= 1) {
+          const [stamp, message] = state.logQueue[index];
+          const item = document.createElement("div");
+          const time = document.createElement("time");
+          const text = document.createElement("span");
+          item.className = "log-item";
+          time.className = "log-time";
+          time.textContent = stamp;
+          text.textContent = message;
+          item.append(time, text);
+          fragment.append(item);
+        }
+        state.logQueue = [];
+        el.logPanel.prepend(fragment);
         while (el.logPanel.children.length > 30) el.logPanel.lastElementChild.remove();
       }
 
